@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bgGrad6" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF9500" />
+      <stop offset="100%" stop-color="#FF3B30" />
+    </linearGradient>
+    <radialGradient id="buzzerRed" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#FF6B6B" />
+      <stop offset="60%" stop-color="#FF2D55" />
+      <stop offset="100%" stop-color="#C2185B" />
+    </radialGradient>
+    <filter id="shadow6" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#FF3B30" flood-opacity="0.4" />
+    </filter>
+  </defs>
+  
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bgGrad6)" filter="url(#shadow6)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+  
+  <!-- 搶答按鈕與電光波紋 -->
+  <g transform="translate(18, 18)">
+    <!-- 外圈光暈波紋 -->
+    <circle cx="46" cy="46" r="42" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2" stroke-dasharray="6 4" />
+    <circle cx="46" cy="46" r="36" fill="#FFFFFF" fill-opacity="0.15" />
+    
+    <!-- 搶答底座 (金屬斜台) -->
+    <ellipse cx="46" cy="62" rx="34" ry="18" fill="#3A3A3C" />
+    <ellipse cx="46" cy="58" rx="32" ry="16" fill="#636366" />
+    
+    <!-- 搶答紅色立體蘑菇圓鈕 -->
+    <ellipse cx="46" cy="44" rx="26" ry="18" fill="url(#buzzerRed)" filter="drop-shadow(0 6px 8px rgba(0,0,0,0.3))" />
+    <!-- 按鈕高光點 -->
+    <ellipse cx="42" cy="36" rx="14" ry="7" fill="#FFFFFF" fill-opacity="0.55" />
+    
+    <!-- 搶答閃電圖騰 -->
+    <path d="M48 28L36 44H46L44 58L56 42H46L48 28Z" fill="#FFD60A" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round" />
+    
+    <!-- 四周活力小閃電星芒 -->
+    <path d="M12 24L18 20L16 26L22 24L14 32L16 26L12 24Z" fill="#FFD60A" />
+    <path d="M80 20L74 24L78 28L70 30L78 34L76 28L80 20Z" fill="#FFD60A" />
+  </g>
+</svg>

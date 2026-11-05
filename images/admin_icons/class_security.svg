@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="secBgGrad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="50%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <filter id="secShadow" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#2563EB" flood-opacity="0.38" />
+    </filter>
+    <linearGradient id="shieldGrad" x1="34" y1="28" x2="94" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#E0F2FE" />
+    </linearGradient>
+    <linearGradient id="lockGrad" x1="48" y1="52" x2="80" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+  </defs>
+
+  <!-- 背景圓角卡片 -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#secBgGrad)" filter="url(#secShadow)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+
+  <!-- 裝飾微光泡泡與星星 -->
+  <circle cx="28" cy="28" r="16" fill="#FFFFFF" fill-opacity="0.12" />
+  <circle cx="102" cy="34" r="8" fill="#FFFFFF" fill-opacity="0.1" />
+
+  <!-- 主視覺：堅固守護盾牌 -->
+  <g transform="translate(4, 2)">
+    <!-- 盾牌外廓光暈 -->
+    <path d="M60 22C44 22 32 30 32 44C32 68 48 88 60 96C72 88 88 68 88 44C88 30 76 22 60 22Z" 
+          fill="url(#shieldGrad)" />
+    <!-- 盾牌內層精緻光影切面 -->
+    <path d="M60 25C46 25 35 32 35 44C35 66 49 85 60 92V25Z" 
+          fill="#FFFFFF" fill-opacity="0.4" />
+    <!-- 盾牌金屬外邊緣 -->
+    <path d="M60 22C44 22 32 30 32 44C32 68 48 88 60 96C72 88 88 68 88 44C88 30 76 22 60 22Z" 
+          stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round" />
+
+    <!-- 鎖頭扣環 -->
+    <path d="M51 52V44C51 39 55 35 60 35C65 35 69 39 69 44V52" 
+          stroke="#0284C7" stroke-width="4.5" stroke-linecap="round" fill="none" />
+
+    <!-- 鎖頭本體 (黃金防護鎖) -->
+    <rect x="47" y="50" width="26" height="23" rx="5" fill="url(#lockGrad)" stroke="#B45309" stroke-width="1.5" />
+    
+    <!-- 鎖孔與高光 -->
+    <circle cx="60" cy="59" r="2.8" fill="#FFFFFF" />
+    <path d="M59 60.5L58 67H62L61 60.5Z" fill="#FFFFFF" />
+
+    <!-- 右下角守護閃耀星芒 -->
+    <g transform="translate(80, 72)">
+      <circle cx="16" cy="16" r="14" fill="#10B981" stroke="#FFFFFF" stroke-width="2.5" />
+      <!-- 打勾符號 (安全通過) -->
+      <path d="M10 16L14 20L22 12" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF2D55" />
+      <stop offset="100%" stop-color="#FF9500" />
+    </linearGradient>
+    <filter id="shadow" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#FF2D55" flood-opacity="0.35" />
+    </filter>
+    <linearGradient id="speakerGrad" x1="28" y1="36" x2="68" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FFF0F5" />
+    </linearGradient>
+  </defs>
+
+  <!-- 背景圓角卡片 -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bgGrad)" filter="url(#shadow)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+
+  <!-- 裝飾微光泡泡 -->
+  <circle cx="28" cy="28" r="16" fill="#FFFFFF" fill-opacity="0.12" />
+
+  <!-- 主視覺：揚聲器與活力音符波形 -->
+  <g transform="translate(4, 2)">
+    <!-- 揚聲器主體 -->
+    <!-- 後音箱立方體 -->
+    <rect x="24" y="48" width="18" height="32" rx="4" fill="url(#speakerGrad)" />
+    <!-- 前喇叭錐體 -->
+    <path d="M42 48L64 34C66.5 32.5 70 34.2 70 37.2V90.8C70 93.8 66.5 95.5 64 94L42 80V48Z" fill="url(#speakerGrad)" />
+    <!-- 喇叭口微凹陷光影 -->
+    <path d="M68 40V88C68 89.5 66.5 90 65 89L44 76V52L65 39C66.5 38 68 38.5 68 40Z" fill="#FFE2EC" fill-opacity="0.5" />
+
+    <!-- 活力音波弧線 -->
+    <!-- 第一圈音波 -->
+    <path d="M78 48C83 53 86 60 86 64C86 68 83 75 78 80" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" fill="none" />
+    <!-- 第二圈音波 -->
+    <path d="M88 40C95 47 99 56 99 64C99 72 95 81 88 88" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-opacity="0.85" fill="none" />
+
+    <!-- 浮動音符 (左上方與右上方) -->
+    <!-- 音符 1 (雙八分音符) -->
+    <g transform="translate(68, 18) scale(0.85)">
+      <circle cx="10" cy="22" r="5" fill="#FFE81A" />
+      <circle cx="26" cy="18" r="5" fill="#FFE81A" />
+      <path d="M14 22V6H30V18" stroke="#FFE81A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M14 10H30" stroke="#FFE81A" stroke-width="3" />
+    </g>
+
+    <!-- 齒輪設定徽章 (右下角代表自訂設定) -->
+    <g transform="translate(76, 74)">
+      <circle cx="18" cy="18" r="17" fill="#FFD60A" stroke="#FFFFFF" stroke-width="2.5" />
+      <!-- 齒輪形狀 -->
+      <path d="M18 7C18.5 7 19 7.4 19 8V9.2C19.7 9.5 20.4 9.9 21 10.4L22 9.4C22.4 9 23 9 23.4 9.4L24.6 10.6C25 11 25 11.6 24.6 12L23.6 13C24.1 13.6 24.5 14.3 24.8 15H26C26.6 15 27 15.5 27 16V17.5C27 18 26.6 18.5 26 18.5H24.8C24.5 19.2 24.1 19.9 23.6 20.5L24.6 21.5C25 21.9 25 22.5 24.6 22.9L23.4 24.1C23 24.5 22.4 24.5 22 24.1L21 23.1C20.4 23.6 19.7 24 19 24.3V25.5C19 26.1 18.5 26.5 18 26.5H16.5C16 26.5 15.5 26.1 15.5 25.5V24.3C14.8 24 14.1 23.6 13.5 23.1L12.5 24.1C12.1 24.5 11.5 24.5 11.1 24.1L9.9 22.9C9.5 22.5 9.5 21.9 9.9 21.5L10.9 20.5C10.4 19.9 10 19.2 9.7 18.5H8.5C8 18.5 7.5 18 7.5 17.5V16C7.5 15.5 8 15 8.5 15H9.7C10 14.3 10.4 13.6 10.9 13L9.9 12C9.5 11.6 9.5 11 9.9 10.6L11.1 9.4C11.5 9 12.1 9 12.5 9.4L13.5 10.4C14.1 9.9 14.8 9.5 15.5 9.2V8C15.5 7.4 16 7 16.5 7H18Z" fill="#D97706" />
+      <circle cx="17.2" cy="16.7" r="4" fill="#FFD60A" />
+    </g>
+  </g>
+</svg>

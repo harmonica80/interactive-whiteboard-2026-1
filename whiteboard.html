@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>互動白板（ChatGPT 修正版）</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=4">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=4">
+  <link rel="icon" type="image/png" href="favicon.png?v=4">
+  <link rel="shortcut icon" href="favicon.ico?v=4">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
+
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+
+  <!-- jsPDF & JSZip CDN (匯出多頁 PDF 與 ZIP 壓縮包) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script type="application/x-firebase-auth" data-auth-src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="js/board-connection.js?v=c3"></script>
+  <script src="js/firebase-config.js?v=c2"></script>
+  <script defer src="js/board-start.js?v=c5"></script>
+
+  <script>
+    (function() {
+      function applyWbTheme(theme) {
+        var t = theme || window.boardStorage?.local.getItem('whiteboard_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      }
+      try {
+        if (window.parent && window.parent.document && window.parent.document.documentElement) {
+          var parentTheme = window.parent.document.documentElement.getAttribute('data-theme');
+          applyWbTheme(parentTheme);
+        } else {
+          applyWbTheme();
+        }
+      } catch (e) {
+        applyWbTheme();
+      }
+      window.addEventListener('storage', function(e) {
+        if (e.key === window.boardStorage?.prefix + 'whiteboard_theme') applyWbTheme(e.newValue);
+      });
+      window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'THEME_CHANGE') applyWbTheme(e.data.theme);
+      });
+    })();
+  </script>
+  <style>
+    /* ===== 四大色系主題變數 (與 index.html / css/style.css 100% 同步連動) ===== */
+    :root {
+      --bg-primary: #f0f2f5;
+      --bg-card: #ffffff;
+      --bg-header: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --bg-input: #f8f9fa;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border-color: #e9ecef;
+      --accent-color: #667eea;
+      --accent-hover: #5a6fd6;
+      --danger-color: #dc3545;
+      --success-color: #28a745;
+      --shadow: 0 8px 30px rgba(0,0,0,0.08);
+      --shadow-hover: 0 12px 40px rgba(0,0,0,0.12);
+      /* 白板相容對應變數 */
+      --primary: var(--accent-color);
+      --primary-hover: var(--accent-hover);
+      --primary-light: var(--bg-input);
+      --primary-border: var(--accent-color);
+      --text-main: var(--text-primary);
+      --bg-topbar: var(--bg-card);
+      --bg-canvas: var(--bg-primary);
+      --danger: var(--danger-color);
+      --danger-hover: var(--danger-color);
+      --sticky-bg: #fef08a;
+      --sticky-border: #facc15;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1a1a2e;
+      --bg-card: #16213e;
+      --bg-header: linear-gradient(135deg, #0f3460 0%, #533483 100%);
+      --bg-input: #1a1a2e;
+      --text-primary: #eaeaea;
+      --text-secondary: #b0b0b0;
+      --text-muted: #707070;
+      --border-color: #2a2a4a;
+      --accent-color: #e94560;
+      --accent-hover: #d63851;
+      --danger-color: #e94560;
+      --success-color: #4ecca3;
+      --shadow: 0 8px 30px rgba(0,0,0,0.3);
+      --shadow-hover: 0 12px 40px rgba(0,0,0,0.4);
+    }
+
+    [data-theme="pink"] {
+      --bg-primary: #fff0f5;
+      --bg-card: #ffffff;
+      --bg-header: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --bg-input: #fff5f8;
+      --text-primary: #4a4a4a;
+      --text-secondary: #7a7a7a;
+      --text-muted: #aaaaaa;
+      --border-color: #fce4ec;
+      --accent-color: #f5576c;
+      --accent-hover: #e4455a;
+      --danger-color: #f5576c;
+      --success-color: #4caf50;
+      --shadow: 0 8px 30px rgba(245,87,108,0.1);
+      --shadow-hover: 0 12px 40px rgba(245,87,108,0.15);
+    }
+
+    [data-theme="brown"] {
+      --bg-primary: #f5f0e8;
+      --bg-card: #fffef9;
+      --bg-header: linear-gradient(135deg, #8d6e63 0%, #a1887f 100%);
+      --bg-input: #faf7f2;
+      --text-primary: #4e342e;
+      --text-secondary: #795548;
+      --text-muted: #a1887f;
+      --border-color: #d7ccc8;
+      --accent-color: #8d6e63;
+      --accent-hover: #795548;
+      --danger-color: #c62828;
+      --success-color: #558b2f;
+      --shadow: 0 8px 30px rgba(141,110,99,0.1);
+      --shadow-hover: 0 12px 40px rgba(141,110,99,0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-canvas);
+      color: var(--text-main);
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* ===== 頂部標題列 ===== */
+    .whiteboard-topbar {
+      height: 48px;
+      background: var(--bg-topbar);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .topbar-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .topbar-canvas-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 14px;
+      padding-left: 14px;
+      border-left: 1px solid var(--border-color);
+    }
+
+    .btn-help-guide {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 12px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-help-guide:hover {
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .topbar-title svg {
+      width: 20px;
+      height: 20px;
+      color: #ef4444;
+    }
+
+    .btn-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-close:hover {
+      background: var(--bg-input);
+      color: var(--text-primary);
+    }
+
+    /* ===== 次工具列 (畫布切換、頁數、縮放、權限開關) ===== */
+    .whiteboard-subbar {
+      min-height: 48px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 16px;
+      flex-shrink: 0;
+      gap: 12px;
+      overflow-x: auto;
+      z-index: 25;
+    }
+
+    .subbar-left, .subbar-center, .subbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* 下拉選單與畫布標籤 */
+    .canvas-select-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .canvas-select {
+      appearance: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 6px 28px 6px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+      outline: none;
+      min-width: 95px;
+      transition: all 0.15s ease;
+    }
+
+    .canvas-select:hover {
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+    }
+
+    .canvas-select:focus {
+      border-color: var(--accent-color);
+    }
+
+    .canvas-select-arrow {
+      position: absolute;
+      right: 8px;
+      pointer-events: none;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .btn-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn-pill:hover {
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .btn-pill.active,
+    .btn-pill.is-fullscreen-active {
+      background: var(--accent-color) !important;
+      color: #ffffff !important;
+      border-color: var(--accent-color) !important;
+    }
+
+    .btn-pill.purple {
+      background: var(--accent-color);
+      color: #ffffff;
+      border-color: var(--accent-color);
+    }
+
+    .btn-pill.purple:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    /* 題庫管理風格通用工具列按鈕 (與主系統 100% 統一連動主題色) */
+    .presentation-tool-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .presentation-tool-btn:hover {
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .presentation-tool-btn.active {
+      background: var(--accent-color);
+      color: #ffffff;
+      border-color: var(--accent-color);
+    }
+
+    .presentation-tool-btn.active:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .presentation-tool-btn.danger {
+      color: var(--danger-color);
+      border-color: rgba(220, 53, 69, 0.35);
+      background: rgba(220, 53, 69, 0.08);
+    }
+
+    .presentation-tool-btn.danger:hover {
+      background: rgba(220, 53, 69, 0.16);
+    }
+
+    /* 白板歷程卡片 */
+    .wb-archive-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      gap: 12px;
+      transition: all 0.15s ease;
+    }
+
+    .wb-archive-card:hover {
+      border-color: var(--accent-color);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    /* 頁籤清單 */
+    .pages-tabs-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .page-tab-item {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .page-tab-item:hover {
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    /* 目前所在頁數跟隨主題強調色 */
+    .page-tab-item.active {
+      border: 1px solid var(--accent-color) !important;
+      background: var(--accent-color) !important;
+      color: #ffffff !important;
+      box-shadow: none !important;
+    }
+
+    /* 頁數刪除小按鈕 (Item 2) */
+    .page-del-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.08);
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1;
+      margin-left: 2px;
+      transition: all 0.15s;
+    }
+
+    .page-del-btn:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    .page-tab-item.active .page-del-btn {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+
+    .page-tab-item.active .page-del-btn:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    /* 縮放控制組 */
+    .zoom-group {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 2px;
+    }
+
+    .btn-zoom {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .btn-zoom:hover {
+      background: #f3f4f6;
+    }
+
+    .zoom-value {
+      padding: 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      min-width: 48px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    /* 權限切換開關與危險操作按鈕 (與同步簡報按鈕樣式一致) */
+    .btn-toggle-perm {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn-toggle-perm:hover {
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+    }
+
+    .btn-toggle-perm.is-active {
+      background: var(--accent-color);
+      color: #ffffff;
+      border-color: var(--accent-color);
+    }
+
+    .btn-toggle-perm.is-active:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-toggle-perm.is-inactive {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+
+    /* 學生端唯讀顯示權限狀態（僅顯示狀態、不可點擊修改） */
+    .btn-toggle-perm.is-student-readonly {
+      cursor: default;
+    }
+
+    .btn-toggle-perm.is-student-readonly.is-active:hover {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+    }
+
+    .btn-toggle-perm.is-student-readonly.is-inactive:hover {
+      background: var(--bg-card);
+      border-color: var(--border-color);
+    }
+
+    .btn-danger {
+      color: var(--danger-color) !important;
+      border-color: rgba(220, 53, 69, 0.35) !important;
+      background: rgba(220, 53, 69, 0.08) !important;
+    }
+
+    .btn-danger:hover {
+      background: rgba(220, 53, 69, 0.16) !important;
+    }
+
+    /* ===== 主畫布區域與視角容器 ===== */
+    .whiteboard-main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    #canvasViewport {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    #canvasViewport.cursor-select {
+      cursor: default;
+    }
+
+    #canvasViewport.cursor-grab {
+      cursor: grab !important;
+    }
+
+    #canvasViewport.cursor-grabbing {
+      cursor: grabbing !important;
+    }
+
+    #canvasViewport.cursor-eraser {
+      cursor: cell;
+    }
+
+    #canvasViewport.cursor-eraser .board-sticky-note .sticky-content {
+      pointer-events: none !important;
+      user-select: none !important;
+    }
+
+    /* 畫布網格背景 */
+    .grid-bg {
+      background-size: 24px 24px;
+      background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px);
+    }
+
+    /* 包含縮放與平移的空間容器 */
+    #canvasWorld {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    /* SVG 繪圖層 (筆劃、形狀、箭頭) */
+    #svgLayer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    #svgLayer * {
+      pointer-events: auto;
+    }
+
+    /* HTML 物件層 (便利貼、圖片、PDF 頁面、作者標籤) */
+    #htmlLayer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: visible;
+    }
+
+    /* ===== 物件作者姓名標籤 (如圖 1 橘色小膠囊) ===== */
+    .obj-author-badge {
+      position: absolute;
+      top: -22px;
+      left: 0;
+      background: #f97316;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      z-index: 10;
+      line-height: 1.4;
+    }
+
+    /* 便利貼 (Sticky Note) */
+    .board-sticky-note {
+      position: absolute;
+      width: 200px;
+      min-height: 140px;
+      background: var(--sticky-bg);
+      border: 1px solid var(--sticky-border);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #333333;
+      cursor: move;
+      outline: none;
+      word-break: break-word;
+      transition: box-shadow 0.15s;
+    }
+
+    .board-sticky-note:focus-within {
+      box-shadow: 0 0 0 2px var(--primary), 0 6px 18px rgba(0,0,0,0.12);
+    }
+
+    .board-sticky-note .sticky-content {
+      width: 100%;
+      min-height: 110px;
+      outline: none;
+      user-select: text;
+    }
+
+    .board-sticky-note a {
+      color: #0284c7;
+      text-decoration: underline;
+      cursor: pointer;
+      word-break: break-all;
+    }
+
+    /* 圖片與 PDF 頁面卡片 */
+    .board-image-item {
+      position: absolute;
+      cursor: move;
+      border-radius: 6px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      display: inline-block;
+    }
+
+    .board-image-item img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+      pointer-events: none;
+    }
+
+    /* 選取框與變形邊界 (Selection Handle) */
+    .selected-border {
+      outline: 2px dashed var(--primary) !important;
+      outline-offset: 3px;
+    }
+
+    .resize-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #ffffff;
+      border: 2px solid var(--primary);
+      border-radius: 50%;
+      z-index: 20;
+    }
+
+    .resize-handle.handle-br {
+      right: -6px;
+      bottom: -6px;
+      cursor: se-resize;
+    }
+
+    /* ===== 左側浮動膠囊工具列 (如圖 1，支援往左收合與拖曳移動) ===== */
+    .floating-toolbar {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      padding: 8px 8px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 25;
+      transition: left 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+    }
+
+    .floating-toolbar.is-custom-pos {
+      transform: none;
+    }
+
+    .floating-toolbar.is-dragging {
+      transition: none !important;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+      user-select: none;
+    }
+
+    .floating-toolbar.is-collapsed {
+      left: 0 !important;
+      transform: translate(-100%, -50%) !important;
+    }
+
+    .floating-toolbar.is-custom-pos.is-collapsed {
+      left: 0 !important;
+      transform: translateX(-100%) !important;
+    }
+
+    .toolbar-drag-handle {
+      width: 100%;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      border-radius: 8px;
+      background: var(--bg-input);
+      touch-action: none;
+      user-select: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .toolbar-drag-handle:hover {
+      background: #e2e8f0;
+      color: var(--primary);
+    }
+
+    .toolbar-drag-handle:active {
+      cursor: grabbing;
+      background: #ffedd5;
+      color: var(--primary);
+    }
+
+    .toolbar-collapse-tab {
+      position: absolute;
+      right: -24px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 48px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-left: none;
+      border-radius: 0 10px 10px 0;
+      box-shadow: 4px 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 800;
+      z-index: 26;
+      padding: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .toolbar-collapse-tab:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    @media (max-width: 768px), (max-height: 680px) {
+      .floating-toolbar {
+        left: 8px;
+        padding: 6px 6px 8px 6px;
+        gap: 4px;
+        border-radius: 16px;
+      }
+      .toolbar-grid {
+        grid-template-columns: repeat(2, 30px) !important;
+        gap: 4px !important;
+      }
+      .tool-btn {
+        width: 30px !important;
+        height: 30px !important;
+        border-radius: 8px !important;
+      }
+      .tool-btn svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+      .toolbar-styles {
+        gap: 4px !important;
+        padding-top: 4px !important;
+      }
+      .color-current-dot {
+        width: 20px !important;
+        height: 20px !important;
+      }
+      .stroke-size-select {
+        width: 54px !important;
+        padding: 2px !important;
+        font-size: 14px !important;
+      }
+      .toolbar-history {
+        padding-top: 4px !important;
+        gap: 4px !important;
+      }
+      .tool-btn-history {
+        width: 26px !important;
+        height: 24px !important;
+      }
+    }
+
+    .toolbar-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 36px);
+      gap: 6px;
+    }
+
+    .tool-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tool-btn:hover {
+      background: var(--bg-input);
+      color: var(--text-primary);
+    }
+
+    .tool-btn.active {
+      background: var(--primary) !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 6px rgba(249,115,22,0.3);
+    }
+
+    .tool-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* 工具列下方：顏色與粗細選擇 */
+    .toolbar-styles {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-color);
+      align-items: center;
+    }
+
+    .color-btn-wrapper {
+      position: relative;
+    }
+
+    .color-current-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 1px #d1d5db;
+      cursor: pointer;
+      background: #1e293b;
+    }
+
+    .stroke-size-select {
+      width: 60px;
+      padding: 3px 4px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-input);
+      color: var(--text-primary);
+      cursor: pointer;
+      outline: none;
+      text-align: center;
+    }
+
+    /* 顏色快選浮窗 */
+    .color-palette-popover {
+      position: absolute;
+      left: 100%;
+      top: 0;
+      margin-left: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      padding: 8px;
+      display: none;
+      grid-template-columns: repeat(4, 24px);
+      gap: 6px;
+      z-index: 30;
+    }
+
+    /* 還原 / 重做按鈕樣式 (Item 1) */
+    .toolbar-history {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-color);
+      width: 100%;
+    }
+    .tool-btn-history {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      transition: all 0.15s;
+    }
+    .tool-btn-history:hover:not(:disabled) {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+    .tool-btn-history:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* 學生列表鎖定按鈕與狀態標籤 (Item 8) */
+    .lock-duration-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .btn-lock-time {
+      padding: 10px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-input);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .btn-lock-time:hover {
+      background: #e0f2fe;
+      border-color: #0284c7;
+      color: #0369a1;
+    }
+    .btn-lock-perm {
+      grid-column: span 2;
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #dc2626;
+    }
+    .btn-lock-perm:hover {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #b91c1c;
+    }
+    .btn-student-lock-action {
+      padding: 3px 8px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: #f8fafc;
+      color: var(--text-main);
+      transition: all 0.15s;
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+    .btn-student-lock-action:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #ef4444;
+    }
+    .btn-student-unlock-action {
+      background: #fef2f2;
+      border-color: #fca5a5;
+      color: #ef4444;
+    }
+    .btn-student-unlock-action:hover {
+      background: #f0fdf4;
+      border-color: #86efac;
+      color: #16a34a;
+    }
+    .student-locked-tag {
+      font-size: 14px;
+      font-weight: 700;
+      color: #dc2626;
+      background: #fef2f2;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #fecaca;
+      margin-left: 4px;
+      white-space: nowrap;
+    }
+
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.1s;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.15);
+    }
+
+    /* ===== 右側參與者名單抽屜 (圖 1 右側) ===== */
+    .participants-drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 280px;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border-color);
+      box-shadow: -4px 0 16px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      z-index: 25;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .participants-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent-color);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .drawer-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .drawer-user-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .user-list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #f8fafc;
+      font-size: 14px;
+    }
+
+    .user-info-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .user-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .user-role-badge {
+      font-size: 14px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .role-teacher {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .role-student {
+      background: #e0f2fe;
+      color: #0284c7;
+    }
+
+    /* ===== PDF 選擇頁面彈出對話框 (圖 2) ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.open,
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      width: 95%;
+      max-width: 1050px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pdf-select-toolbar {
+      padding: 10px 24px;
+      background: var(--bg-input);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .badge-count {
+      padding: 3px 10px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 12px;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    /* 物件懸停外框提示 */
+    .hover-target-outline {
+      outline: 2px dashed #0284c7 !important;
+      outline-offset: 3px;
+      cursor: pointer !important;
+    }
+    .wb-hover-box {
+      position: absolute;
+      border: 2px dashed #0284c7;
+      border-radius: 4px;
+      pointer-events: none;
+      box-sizing: border-box;
+      z-index: 998;
+    }
+
+    /* 拖曳框選框 (Item 9) */
+    .selection-marquee {
+      position: absolute;
+      border: 1.5px dashed #2563eb;
+      background: rgba(37, 99, 235, 0.12);
+      pointer-events: none;
+      z-index: 999;
+      border-radius: 2px;
+    }
+
+    /* 物件編輯變形與 8 個控制點 + 旋轉把手 + 影像裁切 */
+    .wb-transform-overlay {
+      position: absolute;
+      border: 1.5px solid var(--accent-color, #2563eb);
+      pointer-events: none;
+      z-index: 1000;
+      box-sizing: border-box;
+      border-radius: 4px;
+    }
+    
+    .wb-rot-stem {
+      position: absolute;
+      top: -24px;
+      left: 50%;
+      width: 0;
+      height: 24px;
+      border-left: 1.5px solid var(--accent-color, #2563eb);
+      pointer-events: none;
+      transform: translateX(-50%);
+    }
+
+    .wb-handle {
+      position: absolute;
+      pointer-events: auto;
+      box-sizing: border-box;
+      z-index: 1001;
+      user-select: none;
+      touch-action: none;
+    }
+
+    /* 旋轉控制點 */
+    .wb-handle-rot {
+      top: -36px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg-card, #ffffff);
+      border: 2px solid var(--accent-color, #2563eb);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      color: var(--accent-color, #2563eb);
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+    .wb-handle-rot:hover {
+      background: var(--accent-color, #2563eb);
+      color: #ffffff;
+      transform: translateX(-50%) scale(1.15);
+    }
+    .wb-handle-rot:active {
+      cursor: grabbing;
+    }
+
+    /* 4 個頂點放大/縮小控制點 */
+    .wb-handle-corner {
+      width: 12px;
+      height: 12px;
+      background: #ffffff;
+      border: 2px solid var(--accent-color, #2563eb);
+      border-radius: 3px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      transition: transform 0.1s ease;
+    }
+    .wb-handle-corner:hover {
+      transform: scale(1.25);
+      background: var(--accent-color, #2563eb);
+    }
+    .wb-handle-nw { top: -6px; left: -6px; cursor: nwse-resize; }
+    .wb-handle-ne { top: -6px; right: -6px; cursor: nesw-resize; }
+    .wb-handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+    .wb-handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+
+    /* 4 個邊中間節點：一般物件邊界調節 */
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-edge {
+      width: 10px;
+      height: 10px;
+      background: #ffffff;
+      border: 1.5px solid var(--accent-color, #2563eb);
+      border-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-edge:hover {
+      background: var(--accent-color, #2563eb);
+      transform: scale(1.2);
+    }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-n { top: -5px; left: calc(50% - 5px); cursor: ns-resize; }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-s { bottom: -5px; left: calc(50% - 5px); cursor: ns-resize; }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-w { left: -5px; top: calc(50% - 5px); cursor: ew-resize; }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-e { right: -5px; top: calc(50% - 5px); cursor: ew-resize; }
+
+    /* 影像物件專屬：4 個邊中間節點為「裁切節點」 */
+    .wb-transform-overlay.is-image-object .wb-handle-edge {
+      background: var(--accent-color, #2563eb);
+      border: 1.5px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      transition: background 0.12s, transform 0.12s;
+    }
+    .wb-transform-overlay.is-image-object .wb-handle-n,
+    .wb-transform-overlay.is-image-object .wb-handle-s {
+      width: 24px;
+      height: 7px;
+      border-radius: 4px;
+      left: calc(50% - 12px);
+      cursor: ns-resize;
+    }
+    .wb-transform-overlay.is-image-object .wb-handle-n { top: -4.5px; }
+    .wb-transform-overlay.is-image-object .wb-handle-s { bottom: -4.5px; }
+
+    .wb-transform-overlay.is-image-object .wb-handle-w,
+    .wb-transform-overlay.is-image-object .wb-handle-e {
+      width: 7px;
+      height: 24px;
+      border-radius: 4px;
+      top: calc(50% - 12px);
+      cursor: ew-resize;
+    }
+    .wb-transform-overlay.is-image-object .wb-handle-w { left: -4.5px; }
+    .wb-transform-overlay.is-image-object .wb-handle-e { right: -4.5px; }
+
+    .wb-transform-overlay.is-image-object .wb-handle-edge:hover {
+      background: #10b981;
+      transform: scale(1.15);
+    }
+
+    /* 選取物件操作與對齊工具列 (Item 5 & Item 9) */
+    .selection-action-bar {
+      position: absolute;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.16);
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      z-index: 40;
+      white-space: nowrap;
+      pointer-events: auto;
+      transform: translate(-50%, -100%);
+      margin-top: -12px;
+    }
+    .action-btn-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .action-btn {
+      padding: 4px 7px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.15s;
+    }
+    .action-btn:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .btn-action-danger {
+      color: #ef4444;
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+    .btn-action-danger:hover {
+      background: #fee2e2;
+    }
+    .action-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--border-color);
+      margin: 0 2px;
+    }
+
+    .pdf-thumbnail-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      grid-auto-rows: max-content;
+      gap: 20px 16px;
+      align-items: start;
+    }
+
+    .pdf-page-card {
+      position: relative;
+      background: #ffffff;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      width: 100%;
+      height: auto;
+      padding: 0;
+    }
+
+    .pdf-page-card:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+    }
+
+    .pdf-page-card.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-border);
+    }
+
+    .pdf-page-card canvas {
+      width: 100%;
+      height: auto;
+      max-height: 220px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .page-index-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      backdrop-filter: blur(2px);
+    }
+
+    .page-check-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      font-size: 14px;
+      font-weight: 900;
+      transition: all 0.15s;
+    }
+
+    .pdf-page-card.selected .page-check-badge {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .modal-footer {
+      padding: 14px 24px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      background: var(--bg-input);
+    }
+
+    .btn-secondary {
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .btn-primary {
+      padding: 8px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(249,115,22,0.3);
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* 唯讀/不可編輯遮罩提示 */
+    .readonly-banner {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 41, 59, 0.9);
+      color: #ffffff;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      pointer-events: none;
+      z-index: 15;
+      display: none;
+    }
+
+    /* 隱藏原生檔案上傳 input */
+    .hidden-file-input {
+      display: none;
+    }
+
+    /* ===== 右下角縮放控制與白板物件導覽視窗 (Item 5, 如圖 4) ===== */
+    .canvas-minimap-widget {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+      z-index: 35;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    .minimap-header {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 4px 6px;
+      background: var(--bg-card);
+    }
+
+    .btn-minimap-zoom {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      transition: all 0.12s;
+    }
+
+    .btn-minimap-zoom:hover {
+      background: var(--bg-card);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .minimap-zoom-val {
+      min-width: 44px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+
+    .btn-minimap-toggle {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+    }
+
+    .btn-minimap-toggle:hover {
+      background: var(--bg-card);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .btn-minimap-toggle.expanded svg {
+      transform: rotate(90deg);
+    }
+
+    .minimap-body {
+      position: relative;
+      width: 200px;
+      height: 130px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      cursor: crosshair;
+      overflow: hidden;
+    }
+
+    #minimapCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .minimap-viewport-rect {
+      position: absolute;
+      border: 1.5px solid var(--accent-color);
+      background: rgba(37, 99, 235, 0.15);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    /* ===== 匯出選單按鈕樣式 (Item 6, 如圖 5) ===== */
+    .btn-export-choice {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.18s;
+      border: 1px solid var(--border-color);
+    }
+    .btn-export-primary {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: #ffffff;
+      border: none;
+      box-shadow: 0 4px 12px rgba(249,115,22,0.3);
+    }
+    .btn-export-primary:hover {
+      background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(249,115,22,0.4);
+    }
+    .btn-export-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1.5px solid var(--border-color);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .btn-export-secondary:hover {
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+      transform: translateY(-1px);
+    }
+  </style>
+  <link rel="stylesheet" href="css/board-setup.css?v=c2">
+</head>
+<body>
+  <dialog id="boardConnectionStatus" aria-label="修正版連線狀態" oncancel="event.preventDefault()">
+    <h2>ChatGPT 修正版</h2>
+    <p role="status">正在連線至指定的 Firebase 專案…</p>
+    <button type="button" class="presentation-tool-btn" data-retry hidden onclick="location.reload()">重新連線</button>
+    <a class="presentation-tool-btn" href="teacher-guide.html#setup">設定白板連線</a>
+  </dialog>
+  <div id="app">
+    <!-- 1. 頂部標題與畫布管理列 -->
+    <header class="whiteboard-topbar">
+      <div class="topbar-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          <path d="M2 2l7.586 7.586"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+        <span>互動白板</span>
+        <button class="btn-help-guide" id="btnHelpGuide" title="點擊查看互動白板使用說明">
+          <span style="color:#ef4444; font-weight:900;">?</span>
+          <span>使用說明</span>
+        </button>
+
+        <!-- 畫布選擇與管理控制項 (依圖 1 往上移至標題列右側，減少下方控制列出現水平捲軸的機會) -->
+        <div class="topbar-canvas-group">
+          <div class="canvas-select-wrapper">
+            <select class="canvas-select" id="canvasSelect">
+              <option value="main">主白板</option>
+            </select>
+            <span class="canvas-select-arrow">▼</span>
+          </div>
+          <button class="btn-pill" id="btnAddCanvas">+ 畫布</button>
+          <button class="btn-pill" id="btnRenameCanvas" title="修改目前畫布名稱">✏️ 重新命名</button>
+          <button class="btn-pill btn-danger" id="btnDeleteCanvas" title="刪除目前畫布" style="display:none;">🗑️ 刪除畫布</button>
+          <button class="btn-pill" id="btnCloudArchive" title="白板雲端檔案庫管理">☁️ 雲端檔案庫</button>
+          <button class="btn-pill purple" id="btnExport" title="匯入與匯出畫布資料">
+            <span>📁 匯入 / 匯出</span>
+          </button>
+          <button class="btn-pill" id="btnFullscreen" title="全螢幕切換">
+            <span>⛶ 全螢幕</span>
+          </button>
+          <button class="btn-pill btn-danger" id="btnClearOrEnd" title="清空或結束白板">
+            <span>💥 結束白板</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. 次工具列 (分頁標籤、權限開關) -->
+    <div class="whiteboard-subbar">
+      <!-- 左側：分頁標籤與增頁 -->
+      <div class="subbar-left">
+        <div class="pages-tabs-wrapper" id="pagesTabs">
+          <div class="page-tab-item active" data-page="page_1">頁 1</div>
+        </div>
+        <button class="btn-pill" id="btnAddPage">+ 頁</button>
+      </div>
+
+      <!-- 右側：老師權限開關、匯出、參與者、結束 -->
+      <div class="subbar-right">
+        <!-- 老師專屬權限開關 (學生端會隱藏或唯讀) -->
+        <button class="btn-toggle-perm is-active" id="btnToggleStudentEdit" title="設定學生是否可以編輯畫布">
+          <span>🔒 學生可編輯</span>
+        </button>
+        <button class="btn-toggle-perm is-active" id="btnToggleMoveOthers" title="設定學生是否可移動別人的物件">
+          <span>👥 可動他人物件</span>
+        </button>
+        <!-- 學生增減頁面權限開關 (Item 7, 如圖 6) -->
+        <button class="btn-toggle-perm is-inactive" id="btnToggleStudentPages" title="設定學生是否可以增減畫布與頁數">
+          <span>🔒 僅老師管頁面</span>
+        </button>
+
+        <!-- 視角模式 (全班跟隨 / 自由分組) -->
+        <button class="btn-pill" id="btnFollowMode" title="切換全班跟隨老師視角或自由分組">
+          <span>🎯 全班跟隨</span>
+        </button>
+        <button class="btn-pill active" id="btnSummonAll" style="display:none;" title="召集所有學生回目前畫面">
+          <span>📢 召集全班</span>
+        </button>
+
+        <button class="btn-pill" id="btnToggleDrawer" title="開啟參與者名單">
+          <span>👥</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. 主畫布與工具列區域 -->
+    <main class="whiteboard-main">
+      <!-- 畫布平移與縮放視窗 -->
+      <div id="canvasViewport" class="grid-bg">
+        <div id="canvasWorld">
+          <!-- 向量繪圖層 (SVG) -->
+          <svg id="svgLayer" width="10000" height="10000">
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#f97316"/>
+              </marker>
+            </defs>
+          </svg>
+          <!-- HTML 互動層 (便利貼、圖片、作者標籤) -->
+          <div id="htmlLayer"></div>
+          <!-- 拖曳框選虛線框 (Item 9) -->
+          <div id="selectionMarquee" class="selection-marquee" style="display:none;"></div>
+          <!-- 物件變形與控制點覆蓋層 (8 個控制點 + 旋轉把手 + 裁切) -->
+          <div id="wbTransformOverlay" class="wb-transform-overlay" style="display:none;"></div>
+          <!-- SVG 物件懸停虛線外框 -->
+          <div id="wbHoverBox" class="wb-hover-box" style="display:none;"></div>
+        </div>
+
+        <!-- 選取物件懸浮操作與對齊工具列 (Item 5 & Item 9) -->
+        <div id="selectionActionBar" class="selection-action-bar" style="display:none;">
+          <div class="action-btn-group" title="調整圖層順序">
+            <button class="action-btn" id="btnLayerFront" title="移至最前">🔝 置頂</button>
+            <button class="action-btn" id="btnLayerForward" title="上移一層">🔼 上移</button>
+            <button class="action-btn" id="btnLayerBackward" title="下移一層">🔽 下移</button>
+            <button class="action-btn" id="btnLayerBack" title="移至最後">⏬ 置底</button>
+          </div>
+          <div class="action-btn-group" id="groupMultiAlign" style="display:none;" title="多物件對齊與均分">
+            <span class="action-divider"></span>
+            <button class="action-btn" id="btnAlignLeft" title="靠左對齊">⬅️ 左</button>
+            <button class="action-btn" id="btnAlignCenter" title="水平置中">↔️ 中</button>
+            <button class="action-btn" id="btnAlignRight" title="靠右對齊">➡️ 右</button>
+            <button class="action-btn" id="btnAlignTop" title="靠上對齊">⬆️ 頂</button>
+            <button class="action-btn" id="btnAlignMiddle" title="垂直置中">↕️ 中</button>
+            <button class="action-btn" id="btnAlignBottom" title="靠下對齊">⬇️ 底</button>
+            <span class="action-divider"></span>
+            <button class="action-btn" id="btnDistributeH" title="水平平均分配間距">⏸️ 水平均分</button>
+            <button class="action-btn" id="btnDistributeV" title="垂直平均分配間距">⏸️ 垂直均分</button>
+          </div>
+          <div class="action-btn-group" id="groupTransformActions">
+            <button class="action-btn" id="btnResetRotation" style="display:none;" title="重設旋轉角度為 0 度">🔄 轉正</button>
+            <button class="action-btn" id="btnResetCrop" style="display:none;" title="重設裁切 (恢復完整全圖)">✂️ 重設裁切</button>
+          </div>
+          <span class="action-divider"></span>
+          <button class="action-btn btn-action-danger" id="btnActionDelete" title="刪除選取物件">🗑️ 刪除</button>
+        </div>
+
+        <!-- 右下角縮放控制與白板物件導覽視窗 (Item 5, 如圖 4) -->
+        <div class="canvas-minimap-widget" id="canvasMinimapWidget">
+          <div class="minimap-header">
+            <button class="btn-minimap-zoom" id="btnZoomOut" title="縮小 (Ctrl + 滾輪)">−</button>
+            <span class="minimap-zoom-val" id="zoomVal" title="點擊重設 100%">100%</span>
+            <button class="btn-minimap-zoom" id="btnZoomIn" title="放大 (Ctrl + 滾輪)">+</button>
+            <button class="btn-minimap-zoom" id="btnZoomReset" title="讓所有物件完全顯示在畫面中 (如圖 4)">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 9 4 4 9 4"></polyline>
+                <polyline points="20 9 20 4 15 4"></polyline>
+                <polyline points="4 15 4 20 9 20"></polyline>
+                <polyline points="20 15 20 20 15 20"></polyline>
+              </svg>
+            </button>
+            <button class="btn-minimap-toggle" id="btnToggleMinimap" title="展開/收合白板物件預覽 (如圖 4)">
+              <svg id="iconMinimapToggle" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+          <div class="minimap-body" id="minimapBody" style="display: none;">
+            <canvas id="minimapCanvas" width="200" height="130"></canvas>
+            <div id="minimapViewportRect" class="minimap-viewport-rect"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 左側直立浮動膠囊工具列 (如圖 1，支援往左收合與按住頂部拖曳移動) -->
+      <aside class="floating-toolbar" id="floatingToolbar">
+        <div class="toolbar-drag-handle" id="toolbarDragHandle" title="按住可拖曳移動工具列位置">⋮⋮</div>
+        <button type="button" class="toolbar-collapse-tab" id="btnToggleFloatingToolbar" title="往左收合 / 展開工具列">◀</button>
+        <div class="toolbar-grid">
+          <!-- 1. 選取 / 移動 -->
+          <button class="tool-btn active" data-tool="select" title="選取與移動物件 (V)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3l7 18 3-7 7-3L3 3z"/>
+            </svg>
+          </button>
+          <!-- 2. 手繪筆 (Pencil - 如圖 1 鉛筆圖示) -->
+          <button class="tool-btn" data-tool="pen" title="鉛筆手繪工具 (P)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L19.5 7.5l-3-3L18.5 2.5z" fill="currentColor"/>
+              <path d="M16.5 4.5l3 3"/>
+              <path d="M16.5 4.5 7 14l3 3 9.5-9.5"/>
+              <path d="m9.5 11.5 8-8"/>
+              <path d="m11.5 13.5 8-8"/>
+              <path d="m7 14-4 7 7-4"/>
+              <path d="m3 21 2.2-.8-1.4-1.4L3 21z" fill="currentColor"/>
+            </svg>
+          </button>
+          <!-- 3. 矩形 -->
+          <button class="tool-btn" data-tool="rect" title="矩形方框 (R)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            </svg>
+          </button>
+          <!-- 4. 圓形 / 橢圓 -->
+          <button class="tool-btn" data-tool="circle" title="圓形或橢圓 (O)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+            </svg>
+          </button>
+          <!-- 5. 箭頭直線 -->
+          <button class="tool-btn" data-tool="arrow" title="箭頭指示線 (A)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="19" x2="19" y2="5"/>
+              <polyline points="10 5 19 5 19 14"/>
+            </svg>
+          </button>
+          <!-- 6. 便利貼 (Sticky Note - 黃色便條紙圖示) -->
+          <button class="tool-btn" data-tool="sticky" title="黃色便利貼 (S)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z" fill="#fef08a" stroke="#ca8a04"/>
+              <path d="M15 3v6h6" stroke="#ca8a04"/>
+              <line x1="7" y1="13" x2="13" y2="13" stroke="#a16207"/>
+              <line x1="7" y1="17" x2="11" y2="17" stroke="#a16207"/>
+            </svg>
+          </button>
+          <!-- 7. 抓手平移 -->
+          <button class="tool-btn" data-tool="hand" title="平移畫布 (按住空白鍵或 H)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
+              <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/>
+              <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/>
+              <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.83l1.76 1.77"/>
+            </svg>
+          </button>
+          <!-- 8. 橡皮擦 (標準雙色/斜切橡皮擦圖示) -->
+          <button class="tool-btn" data-tool="eraser" title="標準橡皮擦 (E)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/>
+              <path d="M22 21H7"/>
+              <path d="m5 11 9 9"/>
+            </svg>
+          </button>
+          <!-- 9. 插入圖片 -->
+          <button class="tool-btn" id="btnInsertImage" title="插入圖片 (或直接 Ctrl+V)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </button>
+          <!-- 10. 插入 PDF (常見 PDF 圖示) -->
+          <button class="tool-btn" id="btnInsertPdf" title="插入 PDF 檔案並自由選頁">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <rect x="5.5" y="11.5" width="13" height="7" rx="1.5" fill="#ef4444" stroke="#dc2626"/>
+              <text x="6.8" y="16.8" font-size="4.8" font-weight="900" fill="#ffffff" stroke="none" letter-spacing="0.4">PDF</text>
+            </svg>
+          </button>
+          <!-- 11. 清空畫布 (納入「老師管理頁面」權限範圍，預設隱藏) -->
+          <button class="tool-btn" id="btnTrashCanvas" title="清空當前頁面所有物件" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+          <!-- 12. 作者姓名標籤顯示開關 (圖 1 人像膠囊) -->
+          <button class="tool-btn active" id="btnToggleAuthorBadge" title="切換是否在物件上顯示作者姓名">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 顏色與線條粗細設定 -->
+        <div class="toolbar-styles">
+          <div class="color-btn-wrapper">
+            <div class="color-current-dot" id="colorCurrentDot" style="background:#2563eb;" title="選擇筆刷與形狀顏色"></div>
+            <!-- 顏色快選盤 -->
+            <div class="color-palette-popover" id="colorPalette">
+              <div class="color-swatch" style="background:#2563eb;" data-color="#2563eb"></div>
+              <div class="color-swatch" style="background:#1e293b;" data-color="#1e293b"></div>
+              <div class="color-swatch" style="background:#ef4444;" data-color="#ef4444"></div>
+              <div class="color-swatch" style="background:#f97316;" data-color="#f97316"></div>
+              <div class="color-swatch" style="background:#eab308;" data-color="#eab308"></div>
+              <div class="color-swatch" style="background:#10b981;" data-color="#10b981"></div>
+              <div class="color-swatch" style="background:#06b6d4;" data-color="#06b6d4"></div>
+              <div class="color-swatch" style="background:#8b5cf6;" data-color="#8b5cf6"></div>
+            </div>
+          </div>
+          <select class="stroke-size-select" id="strokeSizeSelect" title="筆刷粗細">
+            <option value="2">細</option>
+            <option value="4" selected>中</option>
+            <option value="8">粗</option>
+          </select>
+        </div>
+
+        <!-- 還原 / 重做操作按鈕 (Item 1) -->
+        <div class="toolbar-history">
+          <button class="tool-btn-history" id="btnUndo" title="還原上一步 (Ctrl + Z)" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7v6h6"/>
+              <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+            </svg>
+          </button>
+          <button class="tool-btn-history" id="btnRedo" title="重做下一步 (Ctrl + Y / Ctrl + Shift + Z)" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 7v6h-6"/>
+              <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
+            </svg>
+          </button>
+        </div>
+      </aside>
+
+      <!-- 唯讀提示 Banner -->
+      <div class="readonly-banner" id="readonlyBanner">
+        🔒 老師目前已關閉學生編輯權限（僅供檢視）
+      </div>
+
+      <!-- 右側參與者抽屜 (圖 1 右側) -->
+      <aside class="participants-drawer" id="participantsDrawer">
+        <div class="drawer-header">
+          <div class="drawer-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span>參與者 (<span id="userCount">1</span>)</span>
+          </div>
+          <div class="drawer-desc">
+            物件權限開關位於上方工具列（🔒 學生可編輯 / 👥 可動他人物件）。
+          </div>
+        </div>
+        <div class="drawer-user-list" id="userList">
+          <!-- 線上使用者項目 -->
+        </div>
+      </aside>
+    </main>
+
+    <!-- 4. 插入 PDF 自由選頁 Modal (圖 2) -->
+    <div class="modal-overlay" id="pdfModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>📄 選擇要插入的 PDF 頁面</span>
+            <span style="font-weight:normal; color:var(--text-muted); font-size:15px;">（共 <span id="pdfTotalPages">0</span> 頁）</span>
+          </div>
+          <button class="btn-close" id="btnClosePdfModal">✕</button>
+        </div>
+        <div class="pdf-select-toolbar">
+          <label class="checkbox-label">
+            <input type="checkbox" id="pdfSelectAll" checked style="accent-color: var(--primary); width:16px; height:16px;">
+            <span>全選</span>
+          </label>
+          <span class="badge-count" id="pdfSelectedBadge">已選 0 頁</span>
+        </div>
+        <div class="pdf-thumbnail-grid" id="pdfThumbnailGrid">
+          <!-- 動態載入縮圖卡片 -->
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="btnCancelPdf">取消</button>
+          <button class="btn-primary" id="btnConfirmInsertPdf">插入選取頁面</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. 使用說明彈窗 (圖 2) -->
+    <div class="modal-overlay" id="guideModal">
+      <div class="modal-card" style="max-width: 620px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span style="color: #ef4444;">💡 互動白板使用說明</span>
+          </div>
+          <button class="btn-close" id="btnCloseGuideModal">✕</button>
+        </div>
+        <div style="padding: 20px 24px; font-size: 14px; line-height: 1.8; color: var(--text-main); max-height: 70vh; overflow-y: auto;">
+          <ol style="padding-left: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <li><strong>多白板與分頁</strong>：左上方可點選「+ 畫布」增加並自訂命名白板，各白板支援獨立分頁切換（頁 1、頁 2、+ 頁）。</li>
+            <li><strong>剪貼簿即時貼上</strong>：在白板上按 <code>Ctrl+V</code>，若為圖片將自動置中貼上；若為文字將自動生成<strong>黃色便利貼</strong>，且文字中的網址會自動轉換為超連結！</li>
+            <li><strong>PDF 頁面解析插入</strong>：點選工具列「📄 PDF」圖示，即可自由預覽勾選所需頁面，系統會自動在畫布上整齊依序編排不重疊。</li>
+            <li><strong>教學控場與權限</strong>：老師可在上方即時開關「🔒 學生可編輯」、「👥 可動他人物件（關閉時學生僅能動自己物件）」、「🎯 全班跟隨視角 / 自由分組」，並可切換「👤 作者姓名標籤」。</li>
+            <li><strong>畫布縮放與平移</strong>：使用手掌工具拖曳（或按住空白鍵 / 滑鼠滾輪拖曳），滾輪可自由放大縮小。</li>
+          </ol>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" id="btnConfirmGuide">我知道了</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 隱藏檔案選取 Input -->
+    <input type="file" id="imageFileInput" class="hidden-file-input" accept="image/*">
+    <input type="file" id="pdfFileInput" class="hidden-file-input" accept="application/pdf">
+
+    <!-- 6. 匯出與備份選單彈窗 (Item 6, 如圖 5) -->
+    <div class="modal-overlay" id="exportModal">
+      <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span style="font-size: 18px;">💾</span>
+            <span>匯出 / 匯入</span>
+          </div>
+          <button class="btn-close" id="btnCloseExportModal">✕</button>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 14px;">
+          <!-- 1. 匯出目前畫布為 PDF (所有頁面) -->
+          <button class="btn-export-choice btn-export-primary" id="btnExportPdf">
+            <span style="font-size: 20px;">📄</span>
+            <span>匯出目前畫布為 PDF（所有頁面）</span>
+          </button>
+          <!-- 2. 匯出圖檔 (PNG) -->
+          <button class="btn-export-choice btn-export-secondary" id="btnExportPng">
+            <span style="font-size: 20px;">🖼️</span>
+            <span>匯出當前頁面為圖檔（PNG 高畫質）</span>
+          </button>
+          <!-- 3. 匯出 ZIP 壓縮的 JSON 格式 -->
+          <button class="btn-export-choice btn-export-secondary" id="btnExportZip">
+            <span style="font-size: 20px;">📦</span>
+            <span>匯出 ZIP 壓縮的 JSON 備份包</span>
+          </button>
+          <!-- 4. 匯出 JSON 備份 -->
+          <button class="btn-export-choice btn-export-secondary" id="btnExportJson">
+            <span style="font-size: 20px;">💾</span>
+            <span>匯出 JSON 備份檔</span>
+          </button>
+          <!-- 5. 匯入 JSON -->
+          <button class="btn-export-choice btn-export-secondary" id="btnImportJson">
+            <span style="font-size: 20px;">📁</span>
+            <span>匯入 JSON 備份</span>
+          </button>
+          <input type="file" id="jsonFileInput" class="hidden-file-input" accept=".json,.zip">
+        </div>
+      </div>
+    </div>
+    <!-- 7. 學生個別鎖定彈窗 (Item 8, 如圖 7) -->
+    <div class="modal-overlay" id="studentLockModal">
+      <div class="modal-card" style="max-width: 440px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span style="font-size: 18px;">🔒</span>
+            <span>設定學生編輯限制：<span id="lockStudentTargetName" style="color:var(--primary); font-weight:700;"></span></span>
+          </div>
+          <button class="btn-close" id="btnCloseStudentLockModal">✕</button>
+        </div>
+        <div style="padding: 20px 24px;">
+          <p style="font-size: 14px; color: var(--text-muted); margin: 0 0 12px 0;">
+            鎖定後該學生將暫時無法新增、編輯或移動白板上的任何物件：
+          </p>
+          <div class="lock-duration-grid">
+            <button class="btn-lock-time" data-duration="30">⏱️ 30 秒</button>
+            <button class="btn-lock-time" data-duration="60">⏱️ 1 分鐘</button>
+            <button class="btn-lock-time" data-duration="180">⏱️ 3 分鐘</button>
+            <button class="btn-lock-time" data-duration="300">⏱️ 5 分鐘</button>
+            <button class="btn-lock-time" data-duration="600">⏱️ 10 分鐘</button>
+            <button class="btn-lock-time" data-duration="1800">⏱️ 30 分鐘</button>
+            <button class="btn-lock-time btn-lock-perm" data-duration="-1">🛑 永久鎖定（需手動解鎖）</button>
+          </div>
+          <div id="lockStudentStatusBox" style="display:none; margin-top:14px; padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size: 14px; color:#b91c1c; display:flex; align-items:center; justify-content:space-between;">
+            <span id="lockStudentStatusText">目前狀態：已鎖定</span>
+            <button class="btn-secondary" id="btnUnlockStudentDirect" style="padding:4px 10px; font-size: 14px; border-color:#fca5a5; color:#dc2626; background:#fff;">解除鎖定</button>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end;">
+          <button class="btn-secondary" id="btnCancelStudentLockModal">關閉</button>
+        </div>
+      </div>
+    </div>
+    <!-- 8. 白板雲端歷程檔案庫彈窗 (圖 1 題庫管理樣式) -->
+    <div class="modal-overlay" id="whiteboardArchiveModal" style="display: none; z-index: 20000;">
+      <div class="modal-card" style="max-width: 820px; width: 92%;">
+        <div class="modal-header">
+          <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">☁️</span>
+            <span style="font-size: 16px; font-weight: 700;">白板雲端檔案庫</span>
+          </div>
+          <button class="btn-close" id="btnCloseWbArchiveModal" title="關閉">✕</button>
+        </div>
+        
+        <div style="padding: 18px 24px 24px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; max-height: calc(85vh - 70px);">
+          <!-- 頂部操作按鈕列 (題庫管理工具列樣式) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button type="button" class="presentation-tool-btn active" id="btnSaveCurrentWbToCloud" style="height: 34px; padding: 0 14px; font-size: 14px; border-radius: 10px;" title="將目前課堂白板包含所有畫布與分頁儲存為一筆雲端檔案">
+                ➕ 儲存目前白板
+              </button>
+              <button type="button" class="presentation-tool-btn" id="btnRefreshWbArchives" style="height: 34px; padding: 0 10px; font-size: 14px; border-radius: 10px;" title="重新整理雲端歷程清單">
+                🔄 重新整理
+              </button>
+            </div>
+            <span id="wbArchiveCountBadge" style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">共 0 筆歷程檔案</span>
+          </div>
+
+          <!-- 搜尋過濾列 -->
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="wbArchiveSearchInput" placeholder="🔍 搜尋歷程名稱、建立者姓名..." style="flex: 1; height: 38px; padding: 0 14px; border-radius: 10px; border: 1.5px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px; outline: none; transition: border-color 0.2s;">
+          </div>
+
+          <!-- 歷程檔案卡片清單容器 -->
+          <div id="wbArchiveListContainer" style="display: flex; flex-direction: column; gap: 10px; min-height: 180px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
+            <!-- 動態渲染歷程卡片 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. 載入模式選擇對話框 (大家繼續編輯 vs 唯讀觀摩模式) -->
+    <div class="modal-overlay" id="wbArchiveLoadChoiceModal" style="display: none; z-index: 21000;">
+      <div class="modal-card" style="max-width: 500px; width: 92%;">
+        <div class="modal-header">
+          <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">🚀</span>
+            <span style="font-size: 16px; font-weight: 700;">載入白板歷程檔案</span>
+          </div>
+          <button class="btn-close" id="btnCloseWbLoadChoiceModal">✕</button>
+        </div>
+        <div style="padding: 20px 24px;">
+          <p style="font-size: 14px; color: var(--text-primary); margin: 0 0 6px 0; font-weight: 600;">
+            即將載入：<span id="wbLoadChoiceArchiveTitle" style="color: var(--accent-color);">--</span>
+          </p>
+          <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.5;">
+            請選擇載入白板後的課堂共編模式：
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button type="button" class="presentation-tool-btn active" id="btnConfirmLoadEdit" style="height: 44px; font-size: 14px; border-radius: 10px; font-weight: bold; justify-content: flex-start; padding: 0 16px;">
+              ✏️ 大家繼續編輯（全班可共同書寫、移動自己物件與新增頁面）
+            </button>
+            <button type="button" class="presentation-tool-btn" id="btnConfirmLoadReadonly" style="height: 44px; font-size: 14px; border-radius: 10px; font-weight: bold; justify-content: flex-start; padding: 0 16px; border-color: var(--accent-color); color: var(--accent-color);">
+              🔒 唯讀觀摩模式（鎖定學生編輯權限，供全班檢視複習）
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end;">
+          <button class="btn-secondary" id="btnCancelLoadChoice" style="height: 34px; padding: 0 16px; font-size: 14px; border-radius: 10px;">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. 白板專屬全螢幕友好通用彈窗 (支援輸入名稱與確認對話框，避免原生 prompt/confirm/alert 造成全螢幕被強制中斷退回視窗) -->
+    <div class="modal-overlay" id="whiteboardDialogModal" style="display: none; z-index: 99999;">
+      <div class="modal-card" style="max-width: 420px;">
+        <div class="modal-header">
+          <div class="modal-title" id="wbDialogTitle">
+            <span style="font-size: 18px;">✏️</span>
+            <span id="wbDialogTitleText">提示</span>
+          </div>
+          <button class="btn-close" id="wbDialogCloseBtn">✕</button>
+        </div>
+        <div style="padding: 20px 24px;">
+          <p id="wbDialogMessage" style="font-size: 14px; color: var(--text-main); margin: 0 0 12px 0;"></p>
+          <input type="text" id="wbDialogInput" class="question-input" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); font-size: 14px; color: var(--text-main); display: none;">
+        </div>
+        <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end; gap: 10px;">
+          <button class="btn-secondary" id="wbDialogCancelBtn">取消</button>
+          <button class="btn-primary" id="wbDialogConfirmBtn">確定</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="application/x-board-script" data-src="js/whiteboard_core.js?v=c1"></script>
+</body>
+</html>

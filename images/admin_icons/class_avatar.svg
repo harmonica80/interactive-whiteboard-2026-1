@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bgGrad2" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#AF52DE" />
+      <stop offset="100%" stop-color="#FF2D55" />
+    </linearGradient>
+    <filter id="shadow2" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#AF52DE" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bgGrad2)" filter="url(#shadow2)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+  <circle cx="100" cy="28" r="16" fill="#FFFFFF" fill-opacity="0.12" />
+  
+  <!-- 畫板與可愛頭像圖鑑 -->
+  <g transform="translate(18, 18)">
+    <!-- 圓角畫布底盤 -->
+    <rect x="6" y="8" width="80" height="76" rx="16" fill="#FFFFFF" fill-opacity="0.95" />
+    
+    <!-- 可愛熊熊頭像輪廓 -->
+    <!-- 耳朵 -->
+    <circle cx="33" cy="30" r="10" fill="#FF8A65" />
+    <circle cx="33" cy="30" r="5" fill="#FFCCBC" />
+    <circle cx="59" cy="30" r="10" fill="#FF8A65" />
+    <circle cx="59" cy="30" r="5" fill="#FFCCBC" />
+    <!-- 臉頰 -->
+    <ellipse cx="46" cy="46" rx="20" ry="18" fill="#FF8A65" />
+    <!-- 鼻子嘴巴口套 -->
+    <ellipse cx="46" cy="51" rx="9" ry="7" fill="#FFFFFF" />
+    <ellipse cx="46" cy="48" rx="4" ry="2.5" fill="#5D4037" />
+    <path d="M46 51V54M43.5 53.5C44.5 55 47.5 55 48.5 53.5" stroke="#5D4037" stroke-width="1.5" stroke-linecap="round" />
+    <!-- 眼睛 -->
+    <circle cx="39" cy="43" r="2.5" fill="#3E2723" />
+    <circle cx="53" cy="43" r="2.5" fill="#3E2723" />
+    <circle cx="40" cy="42" r="0.8" fill="#FFFFFF" />
+    <circle cx="54" cy="42" r="0.8" fill="#FFFFFF" />
+    <!-- 腮紅 -->
+    <circle cx="33" cy="48" r="3" fill="#FF80AB" fill-opacity="0.6" />
+    <circle cx="59" cy="48" r="3" fill="#FF80AB" fill-opacity="0.6" />
+    
+    <!-- 繪圖調色盤與畫筆 (右下角徽章) -->
+    <g transform="translate(48, 48)">
+      <circle cx="20" cy="20" r="18" fill="#FFD60A" stroke="#FFFFFF" stroke-width="2.5" />
+      <circle cx="13" cy="15" r="3" fill="#FF2D55" />
+      <circle cx="21" cy="12" r="3" fill="#34C759" />
+      <circle cx="28" cy="17" r="3" fill="#007AFF" />
+      <circle cx="27" cy="26" r="3" fill="#AF52DE" />
+      <!-- 畫筆 -->
+      <path d="M12 28L8 32L6 31L7 29L11 25L12 28Z" fill="#5D4037" />
+      <path d="M12 28L25 15L28 18L15 31L12 28Z" fill="#FFA726" />
+    </g>
+  </g>
+</svg>

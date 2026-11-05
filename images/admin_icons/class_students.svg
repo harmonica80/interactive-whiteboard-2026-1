@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="studBgGrad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#8B5CF6" />
+    </linearGradient>
+    <filter id="studShadow" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#4F46E5" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  
+  <!-- 背景卡片 -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#studBgGrad)" filter="url(#studShadow)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+  
+  <!-- 裝飾微光 -->
+  <circle cx="28" cy="28" r="16" fill="#FFFFFF" fill-opacity="0.15" />
+  
+  <!-- 學生與名冊歷程主題圖示 (學士帽 + 學生剪影與打勾歷程) -->
+  <g transform="translate(14, 16)">
+    <!-- 學生名冊底板/卡片 -->
+    <rect x="18" y="24" width="64" height="66" rx="8" fill="#FFFFFF" fill-opacity="0.95" />
+    <rect x="26" y="52" width="48" height="6" rx="3" fill="#E2E8F0" />
+    <rect x="26" y="64" width="36" height="6" rx="3" fill="#E2E8F0" />
+    <rect x="26" y="76" width="42" height="6" rx="3" fill="#E2E8F0" />
+
+    <!-- 學生頭像圓圈 -->
+    <circle cx="50" cy="38" r="12" fill="#60A5FA" />
+    <circle cx="50" cy="35" r="5" fill="#FFFFFF" />
+    <path d="M42 46C42 42.6863 44.6863 40 48 40H52C55.3137 40 58 42.6863 58 46V47H42V46Z" fill="#FFFFFF" />
+
+    <!-- 頂部學士帽 (象徵學生與學習歷程) -->
+    <path d="M50 8L82 22L50 36L18 22L50 8Z" fill="#FBBF24" />
+    <path d="M50 11L76 22L50 33L24 22L50 11Z" fill="#F59E0B" />
+    <path d="M34 29V42C34 42 41 46 50 46C59 46 66 42 66 42V29" stroke="#D97706" stroke-width="3" stroke-linecap="round" fill="none" />
+    <!-- 流蘇 -->
+    <path d="M78 24V38" stroke="#FDE68A" stroke-width="2.5" stroke-linecap="round" />
+    <circle cx="78" cy="40" r="2.5" fill="#FDE68A" />
+
+    <!-- 綠色歷程核取勾勾徽章 -->
+    <circle cx="74" cy="74" r="13" fill="#10B981" />
+    <path d="M68 74L72 78L80 70" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

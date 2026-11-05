@@ -1,0 +1,1696 @@
+/* ==========================================================================
+   📽️ 同步互動簡報樣式表 (Synchronized Interactive Presentation Styles)
+   支援：16:9 自適應畫布、雷射筆特效、多題互動面板、浮動表情條、PDF 預覽選取器
+   ========================================================================== */
+
+/* 主容器與外框 (預設嚴格隱藏，絕不與提問區或其它卡片同時出現) */
+.presentation-panel-card {
+  padding: 0 !important;
+  background: var(--bg-card) !important;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  display: none !important;
+  flex-direction: column;
+  min-height: 640px;
+  height: calc(100vh - 120px);
+  position: relative;
+}
+
+.presentation-panel-card.active {
+  display: flex !important;
+}
+
+/* 頂部主選單同步簡報按鈕樣式 (圖 1) */
+.presentation-top-btn {
+  flex: none !important;
+  max-width: none !important;
+  padding: 8px 14px !important;
+  font-size: 14px !important;
+  border: 1.5px solid var(--accent-color) !important;
+  background: transparent !important;
+  color: var(--accent-color) !important;
+  border-radius: 10px !important;
+  white-space: nowrap;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.presentation-top-btn:hover,
+.presentation-top-btn.active {
+  background: var(--accent-color) !important;
+  color: white !important;
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 768px) {
+  .header-buttons .presentation-top-btn {
+    flex: 0 0 auto !important;
+    justify-content: center;
+    padding: 5px 10px !important;
+    font-size: 14px !important;
+    border-radius: 10px !important;
+    white-space: nowrap !important;
+    min-height: 28px !important;
+    line-height: 1.2 !important;
+  }
+}
+
+/* 頂部導航與控制列 (圖 4：整合為單一行) */
+.presentation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 10;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.presentation-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.presentation-main-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.presentation-perm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.presentation-perm-btn.is-active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #ffffff;
+}
+
+.presentation-perm-btn:hover:not(.is-student-readonly) {
+  filter: brightness(0.96);
+}
+
+.presentation-perm-btn.is-student-readonly {
+  cursor: default;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.presentation-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.presentation-nav-group,
+.presentation-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* 標記筆選色小工具列樣式 (圖 2) */
+.presentation-pen-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.presentation-pen-color-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+  margin-right: 4px;
+  transition: background-color 0.2s;
+}
+
+.presentation-pen-palette {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 100;
+  animation: fadeInDown 0.18s ease-out;
+}
+
+.presentation-palette-color {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.presentation-palette-color:hover {
+  transform: scale(1.18);
+}
+
+.presentation-palette-color.is-selected {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2563eb;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.presentation-live-badge {
+  font-size: 14px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.presentation-live-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: #dc2626;
+  border-radius: 50%;
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+/* 工作區三欄佈局 (左側頁面列表、中間簡報視區、右側即時提交) */
+.presentation-workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: var(--bg-primary);
+  position: relative;
+}
+
+/* ===== 左側邊欄 ===== */
+.presentation-left-sidebar {
+  width: 170px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 12px 10px;
+  gap: 10px;
+  overflow: hidden;
+  z-index: 5;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), padding 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.presentation-left-sidebar.is-collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-right: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+/* 側欄頂部控制列 */
+.presentation-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 2px;
+}
+
+.presentation-sidebar-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.presentation-sidebar-toggle-btn {
+  border: 1px solid var(--border-color, #cbd5e1);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-secondary, #64748b);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.presentation-sidebar-toggle-btn:hover {
+  background: var(--bg-secondary, #f1f5f9);
+  color: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
+}
+
+/* 收合後懸浮展開按鈕 */
+.presentation-sidebar-expand-pill {
+  position: absolute;
+  top: 14px;
+  z-index: 25;
+  background: var(--bg-card);
+  border: 1.5px solid var(--accent-color);
+  color: var(--accent-color, #007aff);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.presentation-sidebar-expand-pill.expand-left {
+  left: 14px;
+}
+
+.presentation-sidebar-expand-pill.expand-right {
+  right: 14px;
+}
+
+.presentation-sidebar-expand-pill:hover {
+  background: var(--accent-color, #007aff);
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 6px 18px rgba(0, 122, 255, 0.35);
+}
+
+.presentation-btn-start {
+  width: 100%;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+  transition: all 0.2s;
+}
+
+.presentation-btn-start:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+  transform: translateY(-1px);
+}
+
+.presentation-btn-start.is-active {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.presentation-add-page-btn {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.presentation-add-page-btn:hover {
+  background: var(--bg-input);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+/* 純色頁背景選色浮窗 (圖 1) */
+.presentation-add-color-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.presentation-color-picker-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  padding: 10px 12px;
+  z-index: 100;
+  width: 168px;
+  box-sizing: border-box;
+  animation: fadeInDown 0.18s ease-out;
+}
+
+.presentation-color-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.presentation-color-swatch-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.presentation-color-swatch-btn:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.presentation-thumbnails-container {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.presentation-thumbnail-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--border-color);
+  background: #0f172a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.presentation-thumbnail-card:hover {
+  border-color: #94a3b8;
+  transform: scale(1.02);
+}
+
+.presentation-thumbnail-card.active {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px var(--accent-color);
+}
+
+.presentation-thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.presentation-thumbnail-color {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.presentation-thumbnail-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  backdrop-filter: blur(2px);
+}
+
+.presentation-thumbnail-del {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+
+.presentation-thumbnail-del:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ===== 中央展示區 ===== */
+.presentation-center-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-input);
+  position: relative;
+}
+
+.presentation-stage-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  overflow: hidden;
+}
+
+/* 16:9 簡報投影幕 */
+.presentation-screen {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  aspect-ratio: 16 / 9;
+  flex-shrink: 0;
+  background: #0f172a;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.presentation-screen-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #0f172a;
+}
+
+.presentation-screen-empty-hint {
+  color: #94a3b8;
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+}
+
+/* 繪圖標註畫布層 */
+.presentation-annotation-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.presentation-annotation-canvas.interactive {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+/* 雷射筆發光效果 (如圖 3：半透明黃色圓圈 + 點擊指針手勢) */
+.presentation-laser-dot {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(-36px, -36px);
+  z-index: 15;
+  display: none;
+  transition: opacity 0.15s;
+}
+
+/* 外部 URL 懸浮容器與按鈕 (z-index 提高至 30，確保高於手繪作答畫布 22 可正常點按；支援最多 3 個連結) */
+.presentation-url-badges-container {
+  position: absolute;
+  z-index: 30;
+  pointer-events: auto !important;
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  max-width: 90%;
+}
+
+.presentation-url-badge {
+  position: relative;
+  z-index: 30;
+  pointer-events: auto !important;
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #ffffff;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.25);
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+}
+
+.presentation-url-badge:hover {
+  background: rgba(37, 99, 235, 0.95);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  border-color: rgba(255,255,255,0.5);
+  /* 移除 transform，滑鼠懸停時完全維持在原位不產生位移跳動 (圖 1) */
+}
+
+.presentation-url-pos-center { top: 50%; left: 50%; transform: translate(-50%, -50%) !important; }
+.presentation-url-pos-center:hover { transform: translate(-50%, -50%) !important; }
+.presentation-url-pos-top-left { top: 20px; left: 20px; transform: none !important; }
+.presentation-url-pos-top-left:hover { transform: none !important; }
+.presentation-url-pos-top-right { top: 20px; right: 20px; transform: none !important; }
+.presentation-url-pos-top-right:hover { transform: none !important; }
+.presentation-url-pos-bottom-left { bottom: 20px; left: 20px; transform: none !important; }
+.presentation-url-pos-bottom-left:hover { transform: none !important; }
+.presentation-url-pos-bottom-right { bottom: 20px; right: 20px; transform: none !important; }
+.presentation-url-pos-bottom-right:hover { transform: none !important; }
+
+/* ===== 底部控制列 ===== */
+.presentation-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  z-index: 10;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.presentation-bottom-left,
+.presentation-bottom-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.presentation-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.presentation-tool-btn:hover {
+  background: var(--bg-input);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.presentation-tool-btn.active {
+  background: var(--accent-color);
+  color: #ffffff;
+  border-color: var(--accent-color);
+}
+
+.presentation-tool-btn.purple {
+  background: var(--accent-color);
+  color: #ffffff;
+  border-color: var(--accent-color);
+}
+
+.presentation-tool-btn.purple:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #ffffff;
+}
+
+.presentation-tool-btn.danger {
+  color: var(--danger-color);
+  border-color: rgba(220, 53, 69, 0.35);
+  background: rgba(220, 53, 69, 0.08);
+}
+
+.presentation-tool-btn.danger:hover {
+  background: rgba(220, 53, 69, 0.16);
+}
+
+.presentation-tool-btn.success {
+  color: var(--success-color);
+  border-color: rgba(52, 199, 89, 0.4);
+  background: rgba(52, 199, 89, 0.1);
+}
+
+.presentation-tool-btn.success:hover {
+  background: rgba(52, 199, 89, 0.2);
+}
+
+.presentation-tool-btn.warning {
+  color: #ff9500;
+  border-color: rgba(255, 149, 0, 0.4);
+  background: rgba(255, 149, 0, 0.1);
+}
+
+.presentation-tool-btn.warning:hover {
+  background: rgba(255, 149, 0, 0.2);
+}
+
+#btnSlidePrev,
+#btnSlideNext {
+  min-width: 38px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.presentation-page-counter {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 48px;
+  text-align: center;
+}
+
+/* ===== 右側邊欄 (即時回應) ===== */
+.presentation-right-sidebar {
+  width: 260px;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  gap: 12px;
+  overflow: hidden;
+  z-index: 5;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), padding 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.presentation-right-sidebar.is-collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-left: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+.presentation-right-header {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.presentation-submissions-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.presentation-submissions-empty {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  padding: 12px 4px;
+}
+
+.presentation-submission-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.presentation-submission-card:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.presentation-submission-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.presentation-student-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.presentation-submission-time {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.presentation-submission-answer {
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.presentation-btn-download-responses {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.presentation-btn-download-responses:hover {
+  background: var(--bg-card);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+/* ===== 學生端互動作答介面 ===== */
+/* A. 浮動表情回饋條 (Floating Reaction Bar) */
+.presentation-floating-reaction-bar {
+  position: relative;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 30px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  z-index: 25;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.presentation-reaction-btn {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 999px;
+  transition: transform 0.15s, background-color 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.presentation-reaction-btn.is-custom-text {
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 5px 12px;
+  line-height: 1.2;
+}
+
+.presentation-reaction-btn:hover {
+  transform: scale(1.25);
+}
+
+.presentation-reaction-btn:active {
+  transform: scale(0.95);
+}
+
+.presentation-reaction-count {
+  font-size: 14px;
+  color: #cbd5e1;
+  font-weight: 700;
+  position: absolute;
+  bottom: -10px;
+}
+
+/* B. 學生端作答卡片彈窗 (Step / Scroll Mode) */
+.presentation-student-dialog {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  max-width: calc(100% - 40px);
+  max-height: calc(100% - 40px);
+  background: var(--bg-card);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.presentation-student-dialog-head {
+  padding: 12px 16px;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.presentation-student-dialog-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.presentation-student-dialog-body {
+  padding: 14px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 400px;
+}
+
+.presentation-student-q-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+/* 色塊快速選擇題選項 */
+.presentation-quick-color-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.presentation-color-opt-btn {
+  height: 52px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.presentation-color-opt-btn.opt-red { background: #ef4444; }
+.presentation-color-opt-btn.opt-yellow { background: #f59e0b; }
+.presentation-color-opt-btn.opt-blue { background: #3b82f6; }
+.presentation-color-opt-btn.opt-green { background: #10b981; }
+
+.presentation-color-opt-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.presentation-color-opt-btn.selected {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.4);
+}
+
+/* 是非題大型符號 (圖 1: ○X 選項的大顆 ○ 與醒目 ✕) */
+.presentation-color-opt-btn.is-circle-btn {
+  font-size: 38px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+.presentation-color-opt-btn.is-cross-btn {
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+/* 一般選擇題清單 */
+.presentation-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.presentation-choice-btn {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.presentation-choice-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-color);
+}
+
+.presentation-choice-btn.selected {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.presentation-text-answer-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.presentation-student-dialog-footer {
+  padding: 10px 16px;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 分步卡片進度條 (Step Mode) */
+.presentation-step-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.presentation-step-progress-bar {
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.presentation-step-progress-fill {
+  height: 100%;
+  background: var(--accent-color);
+  transition: width 0.25s ease;
+}
+
+/* 浮動表情條中的作答按鈕 (Floating Mode) */
+.presentation-floating-drawer-wrap {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 25;
+}
+
+.presentation-floating-drawer-btn {
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.presentation-floating-drawer-btn:hover {
+  transform: scale(1.05);
+  background: #1d4ed8;
+}
+
+/* ===== 匯入/匯出彈窗樣式 (圖 3) ===== */
+.presentation-modal-card {
+  width: 90%;
+  max-width: 580px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.presentation-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.presentation-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.presentation-modal-tip {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  background: var(--bg-input);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 3px solid #f59e0b;
+}
+
+.presentation-btn-gradient-pdf {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+  transition: all 0.2s;
+}
+
+.presentation-btn-gradient-pdf:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.presentation-btn-modal-action {
+  width: 100%;
+  padding: 11px 16px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s;
+}
+
+.presentation-btn-modal-action:hover {
+  background: var(--bg-input);
+  border-color: var(--accent-color);
+}
+
+.presentation-modal-footer {
+  padding: 12px 20px;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 全螢幕模式 */
+.presentation-panel-card:fullscreen,
+.presentation-panel-card:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.presentation-panel-card:fullscreen .presentation-screen,
+.presentation-panel-card:-webkit-full-screen .presentation-screen {
+  max-width: 95vw;
+  max-height: 82vh;
+}
+
+/* 全螢幕模式下的彈窗層級保證 (解決全螢幕下本頁設定被遮擋問題) */
+.presentation-panel-card:fullscreen .modal-overlay,
+.presentation-panel-card:-webkit-full-screen .modal-overlay {
+  z-index: 100000 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+/* 全螢幕作用中的按鈕醒目樣式 */
+.presentation-tool-btn.is-fullscreen-active {
+  background: var(--accent-color, #2563eb) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+/* 更多色塊選項樣式 (圖 2: 5~6 個選項支援) */
+.presentation-color-opt-btn.opt-purple { background: #8b5cf6; }
+.presentation-color-opt-btn.opt-pink { background: #ec4899; }
+.presentation-color-opt-btn.opt-orange { background: #f97316; }
+
+/* 學生手繪標記作答畫布 (圖 3) */
+.presentation-student-draw-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 22;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* 學生端手繪工具列 (圖 2: 移至畫面上方，支援行動裝置自適應完整顯示不裁切) */
+.presentation-student-draw-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 9999px;
+  padding: 6px 16px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  flex-wrap: wrap;
+  white-space: nowrap;
+  z-index: 24;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.presentation-draw-hint {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.presentation-draw-colors {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.presentation-draw-color-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.presentation-draw-color-btn:hover {
+  transform: scale(1.18);
+}
+
+.presentation-draw-color-btn.active-color,
+.presentation-draw-color-btn.is-selected {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2563eb;
+}
+
+.presentation-draw-width-select {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-color);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  cursor: pointer;
+}
+
+.presentation-draw-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* 左側縮圖在同步跟隨中鎖定學生自行點擊操作 (圖 1) */
+.presentation-thumbnails-container.is-sync-locked .presentation-thumbnail-card {
+  cursor: not-allowed !important;
+  opacity: 0.82;
+}
+
+.presentation-thumbnails-container.is-sync-locked .presentation-thumbnail-card:not(.active):hover {
+  border-color: #cbd5e1 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.active-green {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+
+.active-green:hover {
+  background: #059669 !important;
+}
+
+/* 學生作答卡片收合與展開按鈕 (圖 3: 大尺寸箭頭無中文) */
+.presentation-collapse-dialog-btn {
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 900;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.presentation-collapse-dialog-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  transform: scale(1.1);
+}
+
+.presentation-collapsed-pill {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: slideUp 0.2s ease-out;
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.presentation-collapsed-pill:hover {
+  transform: scale(1.05);
+  background: #1d4ed8;
+}
+
+/* 即時提交底欄與縮圖成果 (圖 4) */
+.presentation-submissions-footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.presentation-selected-count-badge {
+  background: var(--bg-card);
+  color: var(--accent-color);
+  border: 1px solid var(--border-color);
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.presentation-sub-footer-btn {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.presentation-sub-footer-btn:hover {
+  background: var(--bg-input);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.presentation-submissions-count-badge {
+  display: inline-block;
+  background: var(--bg-input);
+  color: var(--accent-color);
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.presentation-draw-submission-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s;
+}
+
+.presentation-draw-submission-card:hover {
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.presentation-draw-submission-thumb-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0f172a;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.presentation-draw-submission-checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 18px;
+  height: 18px;
+  z-index: 10;
+  accent-color: #2563eb;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+}
+
+.presentation-draw-submission-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.presentation-draw-submission-author {
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border-color);
+}
+
+/* RWD 行動裝置調適 */
+@media (max-width: 900px) {
+  .presentation-panel-card {
+    height: auto !important;
+    min-height: calc(100vh - 100px);
+    overflow: visible !important;
+  }
+  .presentation-workspace {
+    flex-direction: column;
+    overflow: visible !important;
+  }
+  .presentation-left-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 140px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .presentation-thumbnails-container {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .presentation-thumbnail-card {
+    width: 120px;
+    height: 68px;
+  }
+  .presentation-center-area {
+    overflow: visible !important;
+  }
+  .presentation-stage-wrapper {
+    justify-content: flex-start !important;
+    padding: 12px 10px 30px 10px !important;
+    gap: 12px;
+    overflow: visible !important;
+  }
+  .presentation-student-draw-bar {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 14px !important;
+    padding: 6px 8px !important;
+    gap: 6px 8px !important;
+    margin-bottom: 2px !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    box-sizing: border-box !important;
+  }
+  .presentation-draw-hint {
+    display: none !important;
+  }
+  .presentation-draw-colors {
+    gap: 6px !important;
+  }
+  .presentation-draw-color-btn {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .presentation-draw-width-select {
+    padding: 3px 6px !important;
+    font-size: 14px !important;
+  }
+  .presentation-draw-actions {
+    gap: 6px !important;
+  }
+  .presentation-draw-actions .presentation-tool-btn {
+    padding: 5px 10px !important;
+    font-size: 14px !important;
+    min-width: 34px;
+    justify-content: center;
+  }
+  .presentation-draw-actions .draw-btn-text {
+    display: none !important;
+  }
+  .presentation-student-interaction-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .presentation-student-dialog {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin-top: 4px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+  .presentation-student-dialog-body {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .presentation-collapsed-pill {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+    margin-top: 4px;
+  }
+  .presentation-floating-drawer-wrap {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin-top: 4px;
+    max-width: 100%;
+  }
+  .presentation-right-sidebar {
+    width: 100%;
+    height: 200px;
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+/* 確保簡報專用彈窗能正常顯現 (僅限同步簡報容器內之彈窗，避免覆蓋全站其他彈窗層級) */
+#panel-presentation .modal-overlay.active {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 10000 !important;
+}
+
+/* 簡報雲端教材卡片 */
+.presentation-bank-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  gap: 12px;
+  transition: all 0.15s ease;
+}
+
+.presentation-bank-card:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}

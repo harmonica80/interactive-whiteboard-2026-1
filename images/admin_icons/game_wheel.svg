@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bgGradWheel" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="50%" stop-color="#D946EF" />
+      <stop offset="100%" stop-color="#EC4899" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF3B0" />
+      <stop offset="50%" stop-color="#FFD700" />
+      <stop offset="100%" stop-color="#FFA000" />
+    </linearGradient>
+    <filter id="shadowWheel" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#D946EF" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bgGradWheel)" filter="url(#shadowWheel)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+
+  <!-- 轉盤主體與星芒 -->
+  <g id="wheelGroup">
+    <!-- 外圈光暈 -->
+    <circle cx="64" cy="68" r="42" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2" stroke-dasharray="5 3" />
+    <!-- 轉盤外金邊 -->
+    <circle cx="64" cy="68" r="37" fill="#1E1B4B" stroke="url(#goldGrad)" stroke-width="3" />
+
+    <!-- 8 扇區彩色圓弧 -->
+    <path d="M64 68 L99.5 68 A35.5 35.5 0 0 1 89.1 93.1 Z" fill="#EF4444" />
+    <path d="M64 68 L89.1 93.1 A35.5 35.5 0 0 1 64 103.5 Z" fill="#F97316" />
+    <path d="M64 68 L64 103.5 A35.5 35.5 0 0 1 38.9 93.1 Z" fill="#FACC15" />
+    <path d="M64 68 L38.9 93.1 A35.5 35.5 0 0 1 28.5 68 Z" fill="#22C55E" />
+    <path d="M64 68 L28.5 68 A35.5 35.5 0 0 1 38.9 42.9 Z" fill="#06B6D4" />
+    <path d="M64 68 L38.9 42.9 A35.5 35.5 0 0 1 64 32.5 Z" fill="#3B82F6" />
+    <path d="M64 68 L64 32.5 A35.5 35.5 0 0 1 89.1 42.9 Z" fill="#8B5CF6" />
+    <path d="M64 68 L89.1 42.9 A35.5 35.5 0 0 1 99.5 68 Z" fill="#EC4899" />
+
+    <!-- 扇區分隔細線 -->
+    <circle cx="64" cy="68" r="35.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1" />
+    
+    <!-- 金色外緣飾釘 -->
+    <circle cx="97.7" cy="82" r="1.5" fill="#FFD700" />
+    <circle cx="78" cy="101.7" r="1.5" fill="#FFD700" />
+    <circle cx="50" cy="101.7" r="1.5" fill="#FFD700" />
+    <circle cx="30.3" cy="82" r="1.5" fill="#FFD700" />
+    <circle cx="30.3" cy="54" r="1.5" fill="#FFD700" />
+    <circle cx="50" cy="34.3" r="1.5" fill="#FFD700" />
+    <circle cx="78" cy="34.3" r="1.5" fill="#FFD700" />
+    <circle cx="97.7" cy="54" r="1.5" fill="#FFD700" />
+
+    <!-- 中心金軸圓蓋 -->
+    <circle cx="64" cy="68" r="11" fill="url(#goldGrad)" stroke="#FFFFFF" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))" />
+    <circle cx="64" cy="68" r="6" fill="#FFFFFF" fill-opacity="0.8" />
+    <circle cx="62" cy="66" r="2.5" fill="#FFFFFF" />
+
+    <!-- 頂部指針 (指向中心) -->
+    <path d="M64 42 L58 24 C58 21 70 21 70 24 Z" fill="url(#goldGrad)" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round" filter="drop-shadow(0 3px 5px rgba(0,0,0,0.35))" />
+    <circle cx="64" cy="26" r="3" fill="#FFFFFF" />
+
+    <!-- 四周閃耀星芒 -->
+    <path d="M22 26 L24 20 L26 26 L32 28 L26 30 L24 36 L22 30 L16 28 Z" fill="#FFD700" />
+    <path d="M102 24 L103.5 19 L105 24 L110 25.5 L105 27 L103.5 32 L102 27 L97 25.5 Z" fill="#FFD700" />
+    <path d="M104 96 L105.5 92 L107 96 L111 97.5 L107 99 L105.5 103 L104 99 L100 97.5 Z" fill="#FFD700" />
+  </g>
+</svg>

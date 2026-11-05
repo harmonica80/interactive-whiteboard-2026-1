@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="ptsBgGrad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+    <filter id="ptsShadow" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#D97706" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#ptsBgGrad)" filter="url(#ptsShadow)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.5" />
+  <circle cx="28" cy="28" r="16" fill="#FFFFFF" fill-opacity="0.2" />
+
+  <!-- 星星與榮譽獎章 -->
+  <g transform="translate(18, 16)">
+    <!-- 獎牌掛帶 -->
+    <path d="M30 4 L46 36 L14 36 Z" fill="#FDE047" opacity="0.8" />
+    <path d="M62 4 L46 36 L78 36 Z" fill="#FDE047" opacity="0.8" />
+    <!-- 獎牌圓形 -->
+    <circle cx="46" cy="52" r="32" fill="#FEF08A" stroke="#FFFFFF" stroke-width="3" />
+    <!-- 星星圖騰 -->
+    <path d="M46 30 L52 44 L66 45 L55 55 L58 69 L46 61 L34 69 L37 55 L26 45 L40 44 Z" fill="#EA580C" />
+    <!-- 光芒特效 -->
+    <circle cx="76" cy="26" r="5" fill="#FFFFFF" opacity="0.9" />
+    <circle cx="16" cy="74" r="4" fill="#FFFFFF" opacity="0.7" />
+  </g>
+</svg>

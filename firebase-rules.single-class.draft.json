@@ -1,0 +1,46 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "registered_classes": {
+      "CHATGPT_TEST": {
+        ".read": "auth != null && (root.child('chatgpt_test_members').child(auth.uid).val() === 'teacher' || root.child('chatgpt_test_members').child(auth.uid).val() === 'student')"
+      }
+    },
+    "classes": {
+      "CHATGPT_TEST": {
+        "whiteboard_v2": {
+          "settings": {
+            ".read": "auth != null && (root.child('chatgpt_test_members').child(auth.uid).val() === 'teacher' || root.child('chatgpt_test_members').child(auth.uid).val() === 'student')",
+            ".write": "auth != null && root.child('chatgpt_test_members').child(auth.uid).val() === 'teacher'"
+          }
+        },
+        "quiz": {
+          "current": {
+            ".read": "auth != null && (root.child('chatgpt_test_members').child(auth.uid).val() === 'teacher' || root.child('chatgpt_test_members').child(auth.uid).val() === 'student')",
+            ".write": "auth != null && root.child('chatgpt_test_members').child(auth.uid).val() === 'teacher'"
+          },
+          "answers": {
+            ".read": "auth != null && root.child('chatgpt_test_members').child(auth.uid).val() === 'teacher'",
+            ".write": "auth != null && root.child('chatgpt_test_members').child(auth.uid).val() === 'teacher'",
+            "$uid": {
+              ".read": "auth != null && root.child('chatgpt_test_members').child(auth.uid).val() === 'student' && $uid === auth.uid",
+              ".write": "auth != null && root.child('chatgpt_test_members').child(auth.uid).val() === 'student' && $uid === auth.uid && !data.exists() && newData.exists() && root.child('classes/CHATGPT_TEST/quiz/current').child('active').val() === true && root.child('classes/CHATGPT_TEST/quiz/current').child('quizType').val() === 'single'",
+              ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 1)"
+            }
+          }
+        }
+      }
+    },
+    "chatgpt_test_members": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+    "teachers": {
+      "$teacherId": {
+        ".read": "auth != null && root.child('chatgpt_test_members').child(auth.uid).val() === 'teacher' && root.child('registered_classes/CHATGPT_TEST/ownerTeacherId').val() === $teacherId"
+      }
+    }
+  }
+}

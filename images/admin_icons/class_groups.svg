@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="groupBgGrad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0EA5E9" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+    <filter id="groupShadow" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0284C7" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  
+  <!-- 背景卡片 -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#groupBgGrad)" filter="url(#groupShadow)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+  
+  <!-- 裝飾微光 -->
+  <circle cx="28" cy="28" r="16" fill="#FFFFFF" fill-opacity="0.15" />
+  
+  <!-- 小組協同合作主題圖示 (中央隊長 + 左右組員 + 合作連結徽章) -->
+  <g transform="translate(14, 16)">
+    <!-- 圓圈背景底板 -->
+    <rect x="12" y="22" width="76" height="68" rx="14" fill="#FFFFFF" fill-opacity="0.95" />
+
+    <!-- 左組員 (淡藍) -->
+    <g transform="translate(18, 38)">
+      <circle cx="12" cy="8" r="7" fill="#93C5FD" />
+      <path d="M4 27C4 21 7.5 18 12 18C16.5 18 20 21 20 27" fill="#93C5FD" />
+    </g>
+
+    <!-- 右組員 (淡紫) -->
+    <g transform="translate(50, 38)">
+      <circle cx="12" cy="8" r="7" fill="#C4B5FD" />
+      <path d="M4 27C4 21 7.5 18 12 18C16.5 18 20 21 20 27" fill="#C4B5FD" />
+    </g>
+
+    <!-- 中央組長/隊長 (鮮明金橘與藍色) -->
+    <g transform="translate(34, 30)">
+      <circle cx="16" cy="11" r="10" fill="#3B82F6" />
+      <circle cx="16" cy="8" r="4" fill="#FFFFFF" />
+      <path d="M6 35C6 27 10.5 24 16 24C21.5 24 26 27 26 35" fill="#3B82F6" />
+      <!-- 小皇冠/榮譽隊長星星 -->
+      <polygon points="16,0 18,3.5 22,4 19,7 20,11 16,9 12,11 13,7 10,4 14,3.5" fill="#F59E0B" />
+    </g>
+
+    <!-- 底部小組連結鏈線 -->
+    <path d="M30 76C30 76 40 80 50 80C60 80 70 76 70 76" stroke="#0284C7" stroke-width="3" stroke-linecap="round" fill="none" />
+    <!-- 旗幟徽章 (右上) -->
+    <g transform="translate(62, 10)">
+      <circle cx="14" cy="14" r="12" fill="#10B981" />
+      <path d="M10 18V9H17L19 12L17 15H10" fill="#FFFFFF" />
+    </g>
+  </g>
+</svg>

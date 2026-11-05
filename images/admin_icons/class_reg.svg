@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF9500" />
+      <stop offset="100%" stop-color="#FF453A" />
+    </linearGradient>
+    <linearGradient id="roofGrad" x1="64" y1="28" x2="64" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FFE8D6" />
+    </linearGradient>
+    <filter id="shadow" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#FF3B30" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  
+  <!-- 背景卡片 -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bgGrad)" filter="url(#shadow)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+  
+  <!-- 裝飾微光 -->
+  <circle cx="28" cy="28" r="16" fill="#FFFFFF" fill-opacity="0.12" />
+  
+  <!-- 學校主建築 (校舍/開課) -->
+  <g transform="translate(0, 2)">
+    <!-- 建築本體 -->
+    <rect x="34" y="58" width="60" height="40" rx="4" fill="#FFFFFF" fill-opacity="0.95" />
+    <!-- 拱門大門 -->
+    <path d="M56 98V78C56 73.58 59.58 70 64 70C68.42 70 72 73.58 72 78V98H56Z" fill="#FF5E3A" />
+    <!-- 窗戶 -->
+    <rect x="40" y="66" width="10" height="12" rx="2" fill="#FFA26B" />
+    <rect x="78" y="66" width="10" height="12" rx="2" fill="#FFA26B" />
+    
+    <!-- 屋頂三角 -->
+    <path d="M64 24L26 54H102L64 24Z" fill="url(#roofGrad)" />
+    
+    <!-- 鐘樓與旗幟 -->
+    <rect x="60" y="16" width="8" height="12" rx="1.5" fill="#FFFFFF" />
+    <circle cx="64" cy="38" r="5" fill="#FF5E3A" />
+    <path d="M64 12V20" stroke="#FFE8D6" stroke-width="2" stroke-linecap="round" />
+    <path d="M64 12L74 15L64 18V12Z" fill="#FFD60A" />
+    
+    <!-- 前方台階 -->
+    <rect x="28" y="97" width="72" height="4" rx="2" fill="#FFEFEA" />
+    
+    <!-- 開課星星鑰匙徽章 -->
+    <g transform="translate(80, 72)">
+      <circle cx="16" cy="16" r="15" fill="#FFD60A" stroke="#FFFFFF" stroke-width="2" />
+      <path d="M16 7L18.8 12.6L25 13.5L20.5 17.9L21.6 24L16 21L10.4 24L11.5 17.9L7 13.5L13.2 12.6L16 7Z" fill="#FF9500" />
+    </g>
+  </g>
+</svg>

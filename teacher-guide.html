@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>📚 教師專屬建置與連線指南 - 即時互動白板</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=4">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=4">
+  <link rel="icon" type="image/png" href="favicon.png?v=4">
+  <link rel="shortcut icon" href="favicon.ico?v=4">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
+  <link rel="stylesheet" href="css/style.css?v=183">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 24px 16px;
+      line-height: 1.8;
+    }
+    .guide-container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .guide-header {
+      text-align: center;
+      margin-bottom: 36px;
+      background: var(--bg-card);
+      padding: 32px 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      border: 1px solid var(--border-color);
+    }
+    .guide-header h1 {
+      margin: 0 0 12px 0;
+      color: var(--accent-color);
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .guide-header p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+    .step-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 36px;
+      border: 1px solid var(--border-color);
+      border-left: 6px solid var(--accent-color);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    }
+    .step-title {
+      font-size: 19px;
+      font-weight: bold;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .step-num {
+      background: var(--accent-color);
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .step-content {
+      font-size: 15px;
+      color: var(--text-primary);
+    }
+    .step-content ol {
+      margin: 0;
+      padding-left: 22px;
+    }
+    .step-content li {
+      margin-bottom: 28px;
+      line-height: 1.8;
+    }
+    /* 垂直單欄原尺寸截圖 (Vertical Single Column Images: max-width 100%, width/height auto) */
+    .step-img-box {
+      margin: 16px 0 24px 0;
+      text-align: center;
+    }
+    .step-img {
+      max-width: 100% !important;
+      width: auto !important;
+      height: auto !important;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      display: inline-block;
+      margin: 0 auto;
+    }
+    .code-box-wrapper {
+      position: relative;
+      background: #282c34;
+      color: #abb2bf;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+      overflow-x: auto;
+      max-height: 240px;
+    }
+    .tool-box {
+      background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(52, 199, 89, 0.05) 100%);
+      border: 2px dashed var(--accent-color);
+      border-radius: 16px;
+      padding: 28px;
+      margin: 36px 0;
+    }
+    .tool-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--accent-color);
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .generator-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .generator-input {
+      flex: 1;
+      min-width: 260px;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+    .generator-btn {
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .result-group {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+  <link rel="stylesheet" href="css/board-setup.css?v=c4">
+</head>
+<body>
+  <div class="guide-container">
+    <div class="guide-header">
+      <h1>📚 教師專屬建置與連線指南（ChatGPT 修正版）</h1>
+      <p>依照以下步驟，立刻為您的班級建立免費專屬的即時互動白板，並設定教師專屬密碼與安全自救機制！</p>
+    </div>
+
+    <!-- 步驟 1 -->
+    <div class="step-card">
+      <details class="board-step-disclosure"><summary>步驟 1　建立免費的 Firebase 即時資料庫專案</summary>
+      <div class="step-content">
+        <ol>
+          <li>前往 <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--accent-color); font-weight: bold;">Firebase 主控台 🔗</a>，登入您的 Google 帳號。</li>
+          <li>點選「<strong>+ 新增專案</strong>」，輸入班級名稱（例如：<code>my-class-whiteboard</code>），一路點選「繼續」完成建立：
+            <div class="step-img-box"><img src="images/guide/step01.png" alt="步驟1-1" class="step-img"></div>
+            <div class="step-img-box"><img src="images/guide/step02.png" alt="步驟1-2" class="step-img"></div>
+            <div class="step-img-box"><img src="images/guide/step03.png" alt="步驟1-3" class="step-img"></div>
+            <div class="step-img-box"><img src="images/guide/step04.png" alt="步驟1-4" class="step-img"></div>
+          </li>
+          <li>建立完成後，在左側選單點選「<strong>資料庫和儲存空間</strong>」 ➔ 「<strong>Realtime Database</strong>」：
+            <!-- 圖片05 -->
+            <div class="step-img-box"><img src="images/guide/step05.png" alt="步驟1-5 選單導覽" class="step-img"></div>
+          </li>
+          <li>點選頁面中的「<strong>建立資料庫</strong>」按鈕：
+            <!-- 圖片06 -->
+            <div class="step-img-box"><img src="images/guide/step06.png" alt="步驟1-6 建立資料庫" class="step-img"></div>
+          </li>
+          <li>資料庫位置建議選擇 <span style="color:#ff3b30; font-weight:bold;">新加坡 (asia-southeast1)</span>，點選「下一步」：
+            <!-- 圖片07 -->
+            <div class="step-img-box"><img src="images/guide/step07.png" alt="步驟1-7 選擇位置" class="step-img"></div>
+          </li>
+          <li>在新專案建立資料庫，先採用鎖定模式，再設定課堂需要的規則。<div class="step-img-box"><img src="images/guide/board-locked-mode.png" alt="Firebase 建立資料庫時選擇預設為鎖定模式" loading="lazy"></div></li>
+        </ol>
+      </div>
+    </details>
+</div>
+
+              <section class="board-setup">
+            <details class="board-step-disclosure">
+              <summary>步驟 2　設定新專案的存取權限</summary>
+<!-- 步驟 3 -->
+    <div class="step-card" style="border-left-color: #34c759;">
+      <div class="step-title">
+        <span class="step-num" style="background: #34c759;">A</span>
+        <span>複製您的資料庫 URL 網址</span>
+      </div>
+      <div class="step-content">
+        <ol>
+          <li>切換回 <span style="color:#34c759; font-weight:bold;">資料 (Data)</span> 頁籤。</li>
+          <li>在頁面頂部會看到一串以 <code>https://</code> 開頭的資料庫網址，點選該網址右側的「<strong>複製</strong>」按鈕：
+            <!-- 圖片11 -->
+            <div class="step-img-box"><img src="images/guide/step11.png" alt="步驟3-2 複製資料庫網址" class="step-img"></div>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <section class="board-setup" id="setup" data-board-setup></section>
+            </details>
+          </section>
+<!-- 步驟 5：登入管理後台與設定專屬密碼 -->
+    <div class="step-card" style="border-left: 6px solid #4f46e5; padding: 24px; margin-bottom: 36px; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+      <details class="board-step-disclosure"><summary>步驟 3　登入管理後台並設定「教師專屬安全密碼」</summary>
+            <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.6; padding-left: 42px;">
+        為維護班級測驗與學生資料安全，白板採用新一代 SHA-256 加密防護體系。完成建置後，請依循以下 3 階段完成專屬身分綁定：
+      </p>
+
+      <!-- 圖檔導引流程圖 -->
+      <div style="margin-left: 42px; margin-bottom: 20px;" class="step-img-box">
+        <img src="images/guide/step12_security_guide.svg" alt="步驟5 教師專屬安全設定流程" class="step-img" style="max-width: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
+      </div>
+
+      <ol style="font-size: 14px; margin: 0 0 16px 0; padding-left: 64px; color: var(--text-primary); line-height: 1.8;">
+        <li style="margin-bottom: 12px;">
+          <strong>首次進入管理後台</strong>：點選白板畫面右上角的「<span style="color: var(--accent-color); font-weight: bold;">⚙️ 管理後台</span>」按鈕。首次登入時可使用初始預設密碼 <code>1234</code> 進入（享有自首次啟用起算一週／7 天寬限期）；登入後請及早設定專屬密碼與安全自救問題。
+        </li>
+        <li style="margin-bottom: 12px;">
+          <strong>前往 F 項目設定專屬密碼</strong>：登入後，請於「班級管理」選單點選「<span style="color: #4f46e5; font-weight: bold;">F. 教師身分與密碼安全設定</span>」。在此自訂您的專屬管理密碼（至少 4 碼）。<strong>一旦設定完成，舊預設密碼即刻失效</strong>，避免他人任意進入。
+        </li>
+        <li style="margin-bottom: 12px;">
+          <strong>填寫安全提示與自救問題</strong>：強烈建議設定「密碼提示」與「安全自救問題」（例如：第一所任教學校）。若日後遺忘密碼，不需外部 Email，點選登入畫面的「❓ 忘記密碼？」即可回答題目秒自救重設！
+        </li>
+        <li style="margin-bottom: 8px;">
+          <strong>一組密碼，所有班級白板通用</strong>：同位老師所建立或綁定的多個班級白板，均自動共用您所設定的專屬密碼，免除記誦多組密碼的負擔。
+        </li>
+      </ol>
+
+      <div style="margin-left: 42px; background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3); border-radius: 10px; padding: 14px 18px; font-size: 13px; color: var(--text-primary); line-height: 1.6;">
+        <strong style="color: #16a34a; font-size: 13.5px; display: block; margin-bottom: 6px;">💡 密碼自救與自主架設安全保障（各自獨立，自給自足）：</strong>
+        <div style="margin-bottom: 6px;">本白板採「完全獨立與去中心化」架構，您的白板資料與 Firebase 完全由您自主掌控，系統無任何全域萬能鑰匙或後門。若遺忘密碼時的自救途徑如下：</div>
+        <ul style="margin: 0; padding-left: 20px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.65;">
+          <li><strong>第一線自救（安全問題）</strong>：只要您有在後台設定「安全問題」，在登入畫面點選「❓ 忘記密碼？」並回答問題，即可即時驗證並重設密碼（答案經 SHA-256 加密儲存，無洩漏風險）。</li>
+          <li><strong>終極自救（Firebase 控制台）</strong>：若連安全問題都忘了，由於您是資料庫的擁有者，您只需登入自己的 Firebase 控制台，在 <code>teachers/</code> 節點下刪除密碼欄位（或直接刪除該教師節點），重新整理白板網頁即可直接重新設定密碼！</li>
+        </ul>
+      </div>
+    </details>
+</div>
+  </div>
+
+  <script src="js/board-connection.js?v=c3"></script>
+  <script src="js/board-setup.js?v=c7"></script>
+</body>
+</html>

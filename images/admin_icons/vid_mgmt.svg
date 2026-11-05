@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bgGrad10" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#4338CA" />
+    </linearGradient>
+    <filter id="shadow10" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#4338CA" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bgGrad10)" filter="url(#shadow10)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+  
+  <g transform="translate(18, 18)">
+    <!-- 經典底片格條/放映機框 -->
+    <rect x="6" y="10" width="80" height="68" rx="12" fill="#1E1B4B" stroke="#FFFFFF" stroke-width="2" filter="drop-shadow(0 6px 10px rgba(0,0,0,0.25))" />
+    
+    <!-- 上方底片齒孔 -->
+    <rect x="14" y="14" width="8" height="8" rx="2" fill="#FFFFFF" fill-opacity="0.8" />
+    <rect x="30" y="14" width="8" height="8" rx="2" fill="#FFFFFF" fill-opacity="0.8" />
+    <rect x="46" y="14" width="8" height="8" rx="2" fill="#FFFFFF" fill-opacity="0.8" />
+    <rect x="62" y="14" width="8" height="8" rx="2" fill="#FFFFFF" fill-opacity="0.8" />
+    
+    <!-- 下方底片齒孔 -->
+    <rect x="14" y="66" width="8" height="8" rx="2" fill="#FFFFFF" fill-opacity="0.8" />
+    <rect x="30" y="66" width="8" height="8" rx="2" fill="#FFFFFF" fill-opacity="0.8" />
+    <rect x="46" y="66" width="8" height="8" rx="2" fill="#FFFFFF" fill-opacity="0.8" />
+    <rect x="62" y="66" width="8" height="8" rx="2" fill="#FFFFFF" fill-opacity="0.8" />
+    
+    <!-- 中間放映大播放鍵圓盤 -->
+    <circle cx="46" cy="44" r="16" fill="#818CF8" />
+    <polygon points="42,36 54,44 42,52" fill="#FFFFFF" />
+    
+    <!-- 攝影鏡頭小徽章 (右下角) -->
+    <g transform="translate(52, 46)">
+      <circle cx="16" cy="16" r="14" fill="#EC4899" stroke="#FFFFFF" stroke-width="2" />
+      <!-- 攝影機圖示 -->
+      <rect x="8" y="11" width="10" height="10" rx="2" fill="#FFFFFF" />
+      <polygon points="19,13 24,10 24,22 19,19" fill="#FFFFFF" />
+    </g>
+  </g>
+</svg>

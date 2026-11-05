@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bgGrad7" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34C759" />
+      <stop offset="100%" stop-color="#00A86B" />
+    </linearGradient>
+    <filter id="shadow7" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#34C759" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bgGrad7)" filter="url(#shadow7)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5" />
+  
+  <!-- 靶心與專注力飛鏢/星芒 -->
+  <g transform="translate(18, 18)">
+    <!-- 靶心外環 (白) -->
+    <circle cx="46" cy="46" r="38" fill="#FFFFFF" filter="drop-shadow(0 4px 10px rgba(0,0,0,0.15))" />
+    <!-- 綠色環 -->
+    <circle cx="46" cy="46" r="30" fill="#30B0C7" />
+    <!-- 白色環 -->
+    <circle cx="46" cy="46" r="22" fill="#FFFFFF" />
+    <!-- 紅色正中紅心 -->
+    <circle cx="46" cy="46" r="14" fill="#FF3B30" />
+    <!-- 中心微點 -->
+    <circle cx="46" cy="46" r="5" fill="#FFD60A" />
+    
+    <!-- 十字準心準線 -->
+    <path d="M46 4V14M46 78V88M4 46H14M78 46H88" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" />
+    
+    <!-- 命中飛鏢 (右上傾斜插入) -->
+    <g transform="translate(46, 46) rotate(-35)">
+      <!-- 針尖 -->
+      <polygon points="0,0 -2,-8 2,-8" fill="#8E8E93" />
+      <!-- 箭桿 -->
+      <rect x="-2" y="-28" width="4" height="20" rx="1.5" fill="#FF9500" />
+      <!-- 箭羽 (翼片) -->
+      <path d="M-2 -22L-10 -30L-2 -28ZM2 -22L10 -30L2 -28Z" fill="#FF2D55" />
+    </g>
+    
+    <!-- 專注力四芒星 (左上角) -->
+    <g transform="translate(10, 10)">
+      <path d="M8 0L9.8 6.2L16 8L9.8 9.8L8 16L6.2 9.8L0 8L6.2 6.2L8 0Z" fill="#FFD60A" />
+    </g>
+  </g>
+</svg>

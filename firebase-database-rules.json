@@ -1,0 +1,70 @@
+{
+  "rules": {
+    /* ⚠️ 只有真正透過我們白板網頁連線、持有合法 Session Token 的師生才能讀寫。
+       任何人在網址列直接敲 https://.../xxx.json 或寫爬蟲，一律 Permission Denied！ */
+
+    /* 1. 教室與課堂管理專區 */
+    "registered_classes": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    /* 2. 各班級獨立教學空間 (各班測驗、提問、分享、留言等) */
+    "classes": {
+      "$classCode": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    /* 3. 免代碼一次性大廳資料節點 (公用空間) */
+    "questions": { ".read": "auth != null", ".write": "auth != null" },
+    "images": { ".read": "auth != null", ".write": "auth != null" },
+    "image_blobs": { ".read": "auth != null", ".write": "auth != null" },
+    "videos": { ".read": "auth != null", ".write": "auth != null" },
+    "video_blobs": { ".read": "auth != null", ".write": "auth != null" },
+    "teacherShares": { ".read": "auth != null", ".write": "auth != null" },
+    "quiz": { ".read": "auth != null", ".write": "auth != null" },
+    "comments": { ".read": "auth != null", ".write": "auth != null" },
+    "attachments": { ".read": "auth != null", ".write": "auth != null" },
+    "classroom": { ".read": "auth != null", ".write": "auth != null" },
+    "settings": { ".read": "auth != null", ".write": "auth != null" },
+    "presence": { ".read": "auth != null", ".write": "auth != null" },
+
+    /* 4. 互動白板畫布、分頁與物件同步 */
+    "whiteboard_v2": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    /* 5. 白板歷程筆記庫 (僅在需要時讀取) */
+    "whiteboard_archives": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    /* 6. 同步簡報線上廣播與雲端教材庫 */
+    "presentation": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "presentation_materials": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    /* 7. 系統空間配額與流量監測統計 */
+    "system": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    /* 8. 教師身分與密碼雜湊防護 (僅允許讀寫各自資料，禁止整批 dump) */
+    "teachers": {
+      "$teacherId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    }
+  }
+}

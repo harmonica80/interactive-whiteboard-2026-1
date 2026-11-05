@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF3B30" />
+      <stop offset="50%" stop-color="#FF2D55" />
+      <stop offset="100%" stop-color="#AF52DE" />
+    </linearGradient>
+    <filter id="shadow" x="0" y="4" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#FF2D55" flood-opacity="0.35" />
+    </filter>
+    <linearGradient id="heartGrad" x1="28" y1="30" x2="88" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FFE5EC" />
+    </linearGradient>
+  </defs>
+
+  <!-- 背景圓角卡片 -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bgGrad)" filter="url(#shadow)" />
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="25.25" stroke="#FFFFFF" stroke-opacity="0.32" stroke-width="1.5" />
+
+  <!-- 裝飾微光泡泡 -->
+  <circle cx="26" cy="28" r="14" fill="#FFFFFF" fill-opacity="0.14" />
+  <circle cx="96" cy="26" r="9" fill="#FFFFFF" fill-opacity="0.18" />
+  <circle cx="24" cy="92" r="7" fill="#FFFFFF" fill-opacity="0.15" />
+
+  <!-- 主視覺：漂浮愛心氣球與星星互動徽章 -->
+  <g transform="translate(0, 2)">
+    <!-- 中心大愛心氣泡 -->
+    <circle cx="54" cy="64" r="30" fill="#FFFFFF" fill-opacity="0.2" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="2" />
+    <path d="M54 81C54 81 34 67.5 34 53.5C34 46.5 39.5 41 46 41C50 41 52.8 43.2 54 45.5C55.2 43.2 58 41 62 41C68.5 41 74 46.5 74 53.5C74 67.5 54 81 54 81Z" fill="url(#heartGrad)" />
+
+    <!-- 右上方升空小星星氣泡 -->
+    <g transform="translate(76, 18)">
+      <circle cx="18" cy="18" r="16" fill="#FFD60A" stroke="#FFFFFF" stroke-width="2.5" />
+      <path d="M18 7L21.1 13.3L28 14.3L23 19.2L24.2 26.1L18 22.8L11.8 26.1L13 19.2L8 14.3L14.9 13.3L18 7Z" fill="#D97706" />
+    </g>
+
+    <!-- 右下方笑臉/互動徽章 -->
+    <g transform="translate(72, 68)">
+      <circle cx="20" cy="20" r="18" fill="#FFFFFF" stroke="#FF2D55" stroke-width="2.5" />
+      <circle cx="14" cy="16" r="2.3" fill="#FF2D55" />
+      <circle cx="26" cy="16" r="2.3" fill="#FF2D55" />
+      <path d="M13 23C14.8 26.5 25.2 26.5 27 23" stroke="#FF2D55" stroke-width="2.8" stroke-linecap="round" />
+    </g>
+  </g>
+</svg>

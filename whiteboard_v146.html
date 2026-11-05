@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>tldraw 互動白板</title>
+  
+  <!-- tldraw CSS (tldraw 2.1.4 LTS 黃金穩定版) -->
+  <link rel="stylesheet" href="https://esm.sh/tldraw@2.1.4/tldraw.css">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+      background-color: #f8f9fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    /* 桌面白板平移時，覆寫 tldraw 元件的游標，提供明確的抓取手操作回饋。 */
+    #root.whiteboard-pan-ready,
+    #root.whiteboard-pan-ready * {
+      cursor: grab !important;
+    }
+    #root.whiteboard-panning,
+    #root.whiteboard-panning * {
+      cursor: grabbing !important;
+    }
+    /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
+    @media (max-width: 768px) {
+      /* 1. 6 工具按鈕主工具列：底部水平置中固定 */
+      .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
+        position: absolute !important;
+        bottom: 12px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        margin: 0 !important;
+        padding: 3px 6px !important;
+        box-sizing: border-box !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        width: max-content !important;
+        max-width: calc(100% - 16px) !important;
+        z-index: 1000 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+
+      /* 2. 工具按鈕統一輕量尺寸 (32px) */
+      .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
+        height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
+        width: 32px !important;
+        min-width: 32px !important;
+        max-width: 32px !important;
+        margin: 0 1px !important;
+        padding: 2px !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
+        border-radius: 8px !important;
+      }
+
+      /* 3. 按鈕 svg 圖示大小適中 */
+      .tlui-toolbar svg, [class*="tlui-toolbar"] svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+
+      /* 4. 點擊樣式按鈕後，彈出大選單面板懸浮置中於工具列正上方 */
+      .tlui-style-panel__content, 
+      [class*="style-panel__content"],
+      .tlui-popover__content, 
+      [class*="popover__content"] {
+        position: fixed !important;
+        bottom: 60px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: max-content !important;
+        max-width: 92vw !important;
+        height: auto !important;
+        z-index: 1002 !important;
+        display: block !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+        border-radius: 12px !important;
+      }
+    }
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      font-size: 16px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 122, 255, 0.1);
+      border-left-color: #007aff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <!-- Import Maps for ES Modules (tldraw 2.1.4 LTS 黃金穩定版 + React 18 鎖定) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.3.1",
+      "react-dom": "https://esm.sh/react-dom@18.3.1",
+      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+      "tldraw": "https://esm.sh/tldraw@2.1.4?deps=react@18.3.1,react-dom@18.3.1"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root">
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <div>正在載入 tldraw 互動白板...</div>
+    </div>
+  </div>
+
+  <script>
+    // 載入超時防禦救援機制
+    setTimeout(function() {
+      if (!window.editorInstanceRef) {
+        var root = document.getElementById('root');
+        if (root && root.querySelector('.loading-container')) {
+          root.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#666;font-size:15px;padding:20px;text-align:center;"><div style="font-size:32px;margin-bottom:12px;">💡</div><div style="font-weight:bold;margin-bottom:8px;">白板正在完成初始化...</div><div style="font-size:13px;color:#888;margin-bottom:16px;">如持續轉圈，請點擊下方按鈕刷新</div><button onclick="window.location.reload()" style="padding:8px 18px;background:#007aff;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,122,255,0.3);">重新載入白板</button></div>';
+        }
+      }
+    }, 8000);
+  </script>
+
+  <script type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { Tldraw } from 'tldraw';
+
+    let editorInstance = null;
+    let isApplyingRemote = false;
+    let pendingRemoteSnapshot = null;
+
+    window.whiteboardSnapshotDiagnostics = {
+      loadedCount: 0,
+      recoveredCount: 0,
+      rejectedCount: 0,
+      droppedRecordCount: 0,
+      validationFailures: 0
+    };
+
+    // 2.1.4 預設合規 Schema 備援，確保 migrateStoreSnapshot 100% 讀得到相容 schemaVersion
+    const DEFAULT_2_1_4_SCHEMA = {
+      schemaVersion: 1,
+      storeVersion: 4,
+      recordVersions: {
+        asset: { version: 1, subTypeVersion: 1 },
+        camera: { version: 1 },
+        document: { version: 2 },
+        instance: { version: 22 },
+        instance_page_state: { version: 5 },
+        page: { version: 1 },
+        shape: { version: 3, subTypeVersion: 1 },
+        instance_presence: { version: 5 },
+        pointer: { version: 1 }
+      }
+    };
+
+    // 僅允許持久化的畫布文件層級 record 進入跨裝置同步與快照載入（排除遠端暫態 session/instance/pointer 避免跨版本欄位衝突）
+    const ALLOWED_DOCUMENT_RECORD_TYPES = new Set(['document', 'page', 'shape', 'asset']);
+
+    function isPlainObject(val) {
+      return Boolean(val) && typeof val === 'object' && !Array.isArray(val);
+    }
+
+    function sanitizeRecord(record) {
+      if (!isPlainObject(record)) return null;
+      if (typeof record.id !== 'string' || !record.id.trim()) return null;
+      if (typeof record.typeName !== 'string' || !ALLOWED_DOCUMENT_RECORD_TYPES.has(record.typeName)) {
+        return null;
+      }
+      if (!record.id.startsWith(record.typeName + ':')) {
+        return null;
+      }
+
+      const cloned = { ...record };
+      if (!isPlainObject(cloned.meta)) {
+        cloned.meta = {};
+      }
+
+      if (cloned.typeName === 'document') {
+        if (cloned.id !== 'document:document') return null;
+        if (typeof cloned.gridSize !== 'number' || !Number.isFinite(cloned.gridSize)) {
+          cloned.gridSize = 10;
+        }
+        if (typeof cloned.name !== 'string') {
+          cloned.name = '';
+        }
+        return cloned;
+      }
+
+      if (cloned.typeName === 'page') {
+        if (typeof cloned.name !== 'string' || !cloned.name) {
+          cloned.name = 'Page 1';
+        }
+        if (typeof cloned.index !== 'string' || !cloned.index) {
+          cloned.index = 'a1';
+        }
+        return cloned;
+      }
+
+      if (cloned.typeName === 'asset') {
+        if (typeof cloned.type !== 'string' || !cloned.type) return null;
+        if (!isPlainObject(cloned.props)) return null;
+        if (cloned.type === 'image' || cloned.type === 'video') {
+          const w = Number(cloned.props.w);
+          const h = Number(cloned.props.h);
+          if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
+            return null;
+          }
+          if (typeof cloned.props.src !== 'string' && cloned.props.src !== null) {
+            return null;
+          }
+        }
+        return cloned;
+      }
+
+      if (cloned.typeName === 'shape') {
+        if (typeof cloned.type !== 'string' || !cloned.type) return null;
+        if (typeof cloned.parentId !== 'string' || !cloned.parentId) {
+          cloned.parentId = 'page:page';
+        }
+        if (typeof cloned.index !== 'string' || !cloned.index) {
+          cloned.index = 'a1';
+        }
+        if (!isPlainObject(cloned.props)) return null;
+
+        cloned.x = (typeof cloned.x === 'number' && Number.isFinite(cloned.x)) ? cloned.x : 0;
+        cloned.y = (typeof cloned.y === 'number' && Number.isFinite(cloned.y)) ? cloned.y : 0;
+        cloned.rotation = (typeof cloned.rotation === 'number' && Number.isFinite(cloned.rotation)) ? cloned.rotation : 0;
+        cloned.isLocked = Boolean(cloned.isLocked);
+        cloned.opacity = (typeof cloned.opacity === 'number' && Number.isFinite(cloned.opacity) && cloned.opacity >= 0 && cloned.opacity <= 1)
+          ? cloned.opacity
+          : 1;
+
+        const cleanProps = { ...cloned.props };
+        if (cloned.type === 'text' && cleanProps.font === 'draw') {
+          cleanProps.font = 'sans';
+        }
+        if (cloned.type === 'image') {
+          const w = Number(cleanProps.w);
+          const h = Number(cleanProps.h);
+          if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
+            return null;
+          }
+        }
+        cloned.props = cleanProps;
+        return cloned;
+      }
+
+      return null;
+    }
+
+    function normalizeSchema(rawSchema, fallbackSchema) {
+      if (!isPlainObject(rawSchema)) return fallbackSchema;
+      if (rawSchema.schemaVersion !== fallbackSchema.schemaVersion) return fallbackSchema;
+      if (typeof rawSchema.storeVersion !== 'number' || rawSchema.storeVersion > fallbackSchema.storeVersion || rawSchema.storeVersion < 1) {
+        return fallbackSchema;
+      }
+      if (!isPlainObject(rawSchema.recordVersions)) return fallbackSchema;
+
+      for (const [recType, verObj] of Object.entries(fallbackSchema.recordVersions || {})) {
+        const rawVer = rawSchema.recordVersions[recType];
+        if (!isPlainObject(rawVer) || typeof rawVer.version !== 'number') {
+          return fallbackSchema;
+        }
+        if (rawVer.version > verObj.version) {
+          return fallbackSchema;
+        }
+      }
+      return rawSchema;
+    }
+
+    // 快照全自動防禦、轉換與淨化過濾器 (Sanitizer) - 100% 歸一化為 2.1.4 Store-level 快照
+    function sanitizeSnapshot(snapshot) {
+      let parsed = snapshot;
+      if (typeof parsed === 'string') {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e) {
+          window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
+          console.warn('[Snapshot Sanitizer] Rejected invalid JSON string snapshot');
+          return null;
+        }
+      }
+      if (!isPlainObject(parsed)) {
+        window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
+        return null;
+      }
+
+      let rawStore = null;
+      let rawSchema = null;
+
+      // 情況 A：原生 2.1.4 Store-level 結構 { store: {...}, schema: {...} }
+      if (isPlainObject(parsed.store)) {
+        rawStore = parsed.store;
+        rawSchema = parsed.schema;
+      } 
+      // 情況 B：舊雙層包裝結構 { document: { store: {...}, schema: {...} } }
+      else if (isPlainObject(parsed.document) && isPlainObject(parsed.document.store)) {
+        rawStore = parsed.document.store;
+        rawSchema = parsed.document.schema || parsed.schema;
+      }
+
+      if (!isPlainObject(rawStore)) {
+        window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
+        return null;
+      }
+
+      // 嚴格淨化過濾 Store 裡面的各個 record
+      const cleanStore = {};
+      for (const key in rawStore) {
+        if (!Object.prototype.hasOwnProperty.call(rawStore, key)) continue;
+        const candidate = rawStore[key];
+        // 靜默忽略遠端暫態 session 記錄 (instance, pointer, camera, instance_presence, instance_page_state)
+        if (isPlainObject(candidate) && typeof candidate.typeName === 'string' && !ALLOWED_DOCUMENT_RECORD_TYPES.has(candidate.typeName)) {
+          continue;
+        }
+        const sanitized = sanitizeRecord(candidate);
+        if (sanitized) {
+          cleanStore[sanitized.id] = sanitized;
+        } else {
+          window.whiteboardSnapshotDiagnostics.droppedRecordCount += 1;
+          console.warn('[Snapshot Sanitizer] Skipped invalid record:', key, candidate);
+        }
+      }
+
+      const fallbackSchema = (editorInstance && editorInstance.store && editorInstance.store.schema) 
+        ? editorInstance.store.schema.serialize() 
+        : DEFAULT_2_1_4_SCHEMA;
+
+      return {
+        store: cleanStore,
+        schema: normalizeSchema(rawSchema, fallbackSchema)
+      };
+    }
+
+    window.sanitizeWhiteboardSnapshot = sanitizeSnapshot;
+
+    function applySnapshotSafely(rawSnapshot) {
+      if (!editorInstance || !editorInstance.store) {
+        pendingRemoteSnapshot = rawSnapshot;
+        return false;
+      }
+
+      const cleanSnapshot = sanitizeSnapshot(rawSnapshot);
+      if (!cleanSnapshot || !isPlainObject(cleanSnapshot.store)) {
+        console.warn('[Snapshot Guard] Rejected invalid or empty snapshot');
+        return false;
+      }
+
+      const fallbackSchema = (editorInstance.store.schema && typeof editorInstance.store.schema.serialize === 'function')
+        ? editorInstance.store.schema.serialize()
+        : DEFAULT_2_1_4_SCHEMA;
+
+      // 第一階段：使用淨化後的快照與相容 Schema 載入
+      try {
+        if (typeof editorInstance.store.loadSnapshot === 'function') {
+          editorInstance.store.loadSnapshot(cleanSnapshot);
+        } else if (typeof editorInstance.loadSnapshot === 'function') {
+          editorInstance.loadSnapshot(cleanSnapshot);
+        }
+        window.whiteboardSnapshotDiagnostics.loadedCount += 1;
+        return true;
+      } catch (stage1Err) {
+        console.warn('[Snapshot Guard] Stage 1 loadSnapshot failed, retrying with runtime schema:', stage1Err);
+      }
+
+      // 第二階段：強制替換為當前執行期 Schema 重試（避免跨版本 migration-error）
+      try {
+        const runtimeSnapshot = {
+          store: cleanSnapshot.store,
+          schema: fallbackSchema
+        };
+        if (typeof editorInstance.store.loadSnapshot === 'function') {
+          editorInstance.store.loadSnapshot(runtimeSnapshot);
+        } else if (typeof editorInstance.loadSnapshot === 'function') {
+          editorInstance.loadSnapshot(runtimeSnapshot);
+        }
+        window.whiteboardSnapshotDiagnostics.recoveredCount += 1;
+        return true;
+      } catch (stage2Err) {
+        console.warn('[Snapshot Guard] Stage 2 loadSnapshot failed, falling back to per-record isolation:', stage2Err);
+      }
+
+      // 第三階段：逐筆隔離寫入（即使單一圖形損壞，也能保留畫面上其餘所有正常圖形，絕不崩潰）
+      try {
+        const records = Object.values(cleanSnapshot.store);
+        const order = { document: 1, page: 2, asset: 3, shape: 4 };
+        records.sort((a, b) => (order[a.typeName] || 99) - (order[b.typeName] || 99));
+
+        const applyRecords = () => {
+          const existingShapeIds = Array.from(editorInstance.getCurrentPageShapeIds ? editorInstance.getCurrentPageShapeIds() : []);
+          const incomingShapeIds = new Set(records.filter(r => r.typeName === 'shape').map(r => r.id));
+          const toRemove = existingShapeIds.filter(id => !incomingShapeIds.has(id));
+          if (toRemove.length > 0 && typeof editorInstance.deleteShapes === 'function') {
+            try { editorInstance.deleteShapes(toRemove); } catch (e) {}
+          }
+
+          for (const rec of records) {
+            try {
+              editorInstance.store.put([rec]);
+            } catch (recErr) {
+              window.whiteboardSnapshotDiagnostics.droppedRecordCount += 1;
+              console.warn('[Snapshot Guard] Isolated and skipped corrupted record:', rec.id, recErr);
+            }
+          }
+        };
+
+        if (typeof editorInstance.store.mergeRemoteChanges === 'function') {
+          editorInstance.store.mergeRemoteChanges(applyRecords);
+        } else {
+          applyRecords();
+        }
+        window.whiteboardSnapshotDiagnostics.recoveredCount += 1;
+        return true;
+      } catch (stage3Err) {
+        window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
+        console.error('[Snapshot Guard] All recovery stages failed, preserved current whiteboard state:', stage3Err);
+        return false;
+      }
+    }
+
+    window.applyWhiteboardSnapshotSafely = applySnapshotSafely;
+
+    function App() {
+      const [canUndo, setCanUndo] = React.useState(false);
+      const [canRedo, setCanRedo] = React.useState(false);
+
+      const handleMount = (editor) => {
+        editorInstance = editor;
+        window.editorInstanceRef = editor;
+        console.log('tldraw initialized successfully!');
+        
+        // 初始狀態
+        setCanUndo(editor.getCanUndo());
+        setCanRedo(editor.getCanRedo());
+
+        // 核心 Safe Validation Failure 放行器（避免 redaction 讀取 undefined.typeName 爆破）
+        try {
+          if (editor.store && editor.store.schema) {
+            editor.store.schema.onValidationFailure = ({ error, phase, record, recordBefore }) => {
+              window.whiteboardSnapshotDiagnostics.validationFailures += 1;
+              console.warn('[tldraw Validation Safeguarded]:', {
+                error: error ? (error.message || error) : 'unknown',
+                phase,
+                recordId: record ? record.id : undefined,
+                recordTypeName: record ? record.typeName : undefined,
+                recordBeforeTypeName: recordBefore ? recordBefore.typeName : undefined
+              });
+              if (record && typeof record === 'object' && typeof record.id === 'string' && typeof record.typeName === 'string') {
+                return record;
+              }
+              if (recordBefore && typeof recordBefore === 'object' && typeof recordBefore.id === 'string' && typeof recordBefore.typeName === 'string') {
+                return recordBefore;
+              }
+              throw error;
+            };
+          }
+        } catch (e) {
+          console.warn('Failed to attach safe onValidationFailure:', e);
+        }
+
+        // 註冊 tldraw 內建正宗 ExternalContentHandler (貼上與拖放檔案)
+        try {
+          if (typeof editor.registerExternalContentHandler === 'function') {
+            editor.registerExternalContentHandler('files', async ({ files, point }) => {
+              for (const file of files) {
+                if (file.type && file.type.startsWith('image/')) {
+                  const reader = new FileReader();
+                  reader.onload = async (e) => {
+                    const dataUrl = e.target.result;
+                    if (!dataUrl) return;
+                    const img = new Image();
+                    img.onload = async () => {
+                      const w = img.width || 400;
+                      const h = img.height || 300;
+                      const assetId = `asset:${Math.random().toString(36).substring(2, 11)}`;
+                      const shapeId = `shape:${Math.random().toString(36).substring(2, 11)}`;
+                      const p = point || (editor.getViewportPageBounds ? editor.getViewportPageBounds().center : { x: 200, y: 200 });
+
+                      if (typeof editor.createAssets === 'function' && typeof editor.createShapes === 'function') {
+                        await editor.createAssets([{
+                          id: assetId,
+                          typeName: 'asset',
+                          type: 'image',
+                          props: {
+                            name: file.name || 'clipboard-image.png',
+                            src: dataUrl,
+                            w: w,
+                            h: h,
+                            mimeType: file.type || 'image/png',
+                            isAnimated: false
+                          },
+                          meta: {}
+                        }]);
+
+                        await editor.createShapes([{
+                          id: shapeId,
+                          type: 'image',
+                          x: p.x - w / 2,
+                          y: p.y - h / 2,
+                          props: {
+                            w: w,
+                            h: h,
+                            assetId: assetId
+                          }
+                        }]);
+
+                        if (typeof editor.setSelectedShapes === 'function') {
+                          editor.setSelectedShapes([shapeId]);
+                        }
+                      }
+                    };
+                    img.src = dataUrl;
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }
+            });
+          }
+        } catch (err) {
+          console.warn('registerExternalContentHandler registration warning:', err);
+        }
+
+        // 核心剪貼簿圖片貼上全自動接管 (Base64 Data URL Clipboard Guard)
+        const handleImagePaste = async (clipboardEvent) => {
+          try {
+            const clipboardData = clipboardEvent.clipboardData || window.clipboardData;
+            if (!clipboardData) return;
+
+            let imageFile = null;
+            if (clipboardData.files && clipboardData.files.length > 0) {
+              for (let i = 0; i < clipboardData.files.length; i++) {
+                if (clipboardData.files[i].type && clipboardData.files[i].type.startsWith('image/')) {
+                  imageFile = clipboardData.files[i];
+                  break;
+                }
+              }
+            }
+            if (!imageFile && clipboardData.items) {
+              for (let i = 0; i < clipboardData.items.length; i++) {
+                const item = clipboardData.items[i];
+                if (item.type && item.type.startsWith('image/')) {
+                  imageFile = item.getAsFile();
+                  break;
+                }
+              }
+            }
+
+            if (imageFile) {
+              clipboardEvent.preventDefault();
+              clipboardEvent.stopPropagation();
+
+              if (!editorInstance) return;
+
+              const reader = new FileReader();
+              reader.onload = async (evt) => {
+                const dataUrl = evt.target.result;
+                if (!dataUrl) return;
+
+                const img = new Image();
+                img.onload = async () => {
+                  try {
+                    const width = img.width || 400;
+                    const height = img.height || 300;
+                    const assetId = `asset:${Math.random().toString(36).substring(2, 11)}`;
+                    const shapeId = `shape:${Math.random().toString(36).substring(2, 11)}`;
+
+                    const viewportBounds = typeof editorInstance.getViewportPageBounds === 'function' ? editorInstance.getViewportPageBounds() : null;
+                    const centerPoint = viewportBounds ? viewportBounds.center : { x: 200, y: 200 };
+
+                    if (typeof editorInstance.createAssets === 'function' && typeof editorInstance.createShapes === 'function') {
+                      await editorInstance.createAssets([{
+                        id: assetId,
+                        typeName: 'asset',
+                        type: 'image',
+                        props: {
+                          name: imageFile.name || 'clipboard-image.png',
+                          src: dataUrl,
+                          w: width,
+                          h: height,
+                          mimeType: imageFile.type || 'image/png',
+                          isAnimated: false
+                        },
+                        meta: {}
+                      }]);
+
+                      await editorInstance.createShapes([{
+                        id: shapeId,
+                        type: 'image',
+                        x: centerPoint.x - width / 2,
+                        y: centerPoint.y - height / 2,
+                        props: {
+                          w: width,
+                          h: height,
+                          assetId: assetId
+                        }
+                      }]);
+
+                      if (typeof editorInstance.setSelectedShapes === 'function') {
+                        editorInstance.setSelectedShapes([shapeId]);
+                      }
+                    }
+                  } catch (err) {
+                    console.error('Pasted image injection failed:', err);
+                  }
+                };
+                img.src = dataUrl;
+              };
+              reader.readAsDataURL(imageFile);
+            }
+          } catch (err) {
+            console.warn('Paste event handler warning:', err);
+          }
+        };
+
+        window.addEventListener('paste', handleImagePaste, true);
+
+        // 預設將文字工具與未來的圖形字型設定為 'sans' (無襯線體，即選單中的第二個 Aa)
+        const applySansFontDefault = () => {
+          try {
+            if (window.tldraw) {
+              const propsToSet = [
+                window.tldraw.DefaultFontProp,
+                window.tldraw.FontProp,
+                window.tldraw.DefaultFontStyle
+              ];
+              propsToSet.forEach(prop => {
+                if (prop && typeof editor.setStyleForNextShapes === 'function') {
+                  try { editor.setStyleForNextShapes(prop, 'sans'); } catch(e){}
+                }
+              });
+              Object.keys(window.tldraw).forEach(key => {
+                if (key.toLowerCase().includes('font') && window.tldraw[key]) {
+                  try { editor.setStyleForNextShapes(window.tldraw[key], 'sans'); } catch(e){}
+                }
+              });
+            }
+          } catch (err) {
+            console.warn('Set default sans font failed:', err);
+          }
+        };
+
+        applySansFontDefault();
+
+        // 桌面導覽輸入保護：直接處理 Ctrl+滾輪、空白鍵拖曳與中鍵拖曳，並同步提供游標回饋。
+        const navigationInput = {
+          spaceHeld: false,
+          pan: null
+        };
+        window.whiteboardNavigationDiagnostics = { ctrlWheel: 0, spacePan: 0, middlePan: 0 };
+        const whiteboardRoot = document.getElementById('root');
+        const updateNavigationCursor = () => {
+          if (!whiteboardRoot) return;
+          whiteboardRoot.classList.toggle('whiteboard-panning', Boolean(navigationInput.pan));
+          whiteboardRoot.classList.toggle('whiteboard-pan-ready', navigationInput.spaceHeld && !navigationInput.pan);
+        };
+
+        const isTextEntryTarget = (target) => {
+          if (!(target instanceof Element)) return false;
+          return Boolean(target.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]'));
+        };
+
+        const isCanvasTarget = (target) => {
+          if (!(target instanceof Element)) return false;
+          return Boolean(target.closest('.tl-canvas, .tl-container'));
+        };
+
+        const stopCanvasEvent = (event) => {
+          if (event.cancelable) event.preventDefault();
+          event.stopImmediatePropagation();
+        };
+
+        window.addEventListener('wheel', (event) => {
+          if (!event.ctrlKey || !isCanvasTarget(event.target)) return;
+          stopCanvasEvent(event);
+          window.whiteboardNavigationDiagnostics.ctrlWheel += 1;
+          const screenPoint = { x: event.clientX, y: event.clientY };
+          const noAnimation = { animation: { duration: 0 } };
+          if (event.deltaY < 0) {
+            editor.zoomIn(screenPoint, noAnimation);
+          } else if (event.deltaY > 0) {
+            editor.zoomOut(screenPoint, noAnimation);
+          }
+        }, { capture: true, passive: false });
+
+        window.addEventListener('keydown', (event) => {
+          if (event.code !== 'Space' || isTextEntryTarget(event.target)) return;
+          navigationInput.spaceHeld = true;
+          updateNavigationCursor();
+        }, true);
+
+        window.addEventListener('keyup', (event) => {
+          if (event.code === 'Space') {
+            navigationInput.spaceHeld = false;
+            updateNavigationCursor();
+          }
+        }, true);
+
+        window.addEventListener('pointerdown', (event) => {
+          const isSpacePan = navigationInput.spaceHeld && event.button === 0;
+          const isMiddlePan = event.button === 1;
+          if (!isCanvasTarget(event.target) || (!isSpacePan && !isMiddlePan)) return;
+          stopCanvasEvent(event);
+          navigationInput.pan = {
+            pointerId: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            mode: isMiddlePan ? 'middle' : 'space'
+          };
+          updateNavigationCursor();
+        }, true);
+
+        window.addEventListener('pointermove', (event) => {
+          const pan = navigationInput.pan;
+          if (!pan || event.pointerId !== pan.pointerId) return;
+          stopCanvasEvent(event);
+          const dx = event.clientX - pan.x;
+          const dy = event.clientY - pan.y;
+          if (dx === 0 && dy === 0) return;
+          const camera = editor.getCamera();
+          editor.setCamera({
+            x: camera.x - dx / camera.z,
+            y: camera.y - dy / camera.z,
+            z: camera.z
+          }, { animation: { duration: 0 } });
+          window.whiteboardNavigationDiagnostics[pan.mode === 'middle' ? 'middlePan' : 'spacePan'] += 1;
+          pan.x = event.clientX;
+          pan.y = event.clientY;
+        }, true);
+
+        const endNavigationPan = (event) => {
+          if (navigationInput.pan && event.pointerId === navigationInput.pan.pointerId) {
+            navigationInput.pan = null;
+            updateNavigationCursor();
+          }
+        };
+        window.addEventListener('pointerup', endNavigationPan, true);
+        window.addEventListener('pointercancel', endNavigationPan, true);
+        window.addEventListener('blur', () => {
+          navigationInput.spaceHeld = false;
+          navigationInput.pan = null;
+          updateNavigationCursor();
+        });
+
+        // 核心防線：攔截所有新建 shape & asset 補充必要欄位 (必填：未修改之 record 必須原樣 return 回傳，防止 tldraw 接收 undefined 爆發 validation 崩潰)
+        try {
+          if (editor.sideEffects && typeof editor.sideEffects.registerBeforeCreateHandler === 'function') {
+            editor.sideEffects.registerBeforeCreateHandler('shape', (shape) => {
+              if (shape && shape.type === 'text' && shape.props && shape.props.font === 'draw') {
+                return {
+                  ...shape,
+                  props: {
+                    ...shape.props,
+                    font: 'sans'
+                  }
+                };
+              }
+              return shape;
+            });
+            editor.sideEffects.registerBeforeCreateHandler('asset', (asset) => {
+              if (asset && !asset.typeName) {
+                return {
+                  ...asset,
+                  typeName: 'asset'
+                };
+              }
+              return asset;
+            });
+          }
+        } catch (e) {
+          console.warn('registerBeforeCreateHandler font hook failed:', e);
+        }
+
+        // 每次切換工具至文字時，自動確保預設字型為 sans (第二個 Aa)
+        try {
+          editor.store.listen(() => {
+            if (editor.getCurrentToolId() === 'text') {
+              applySansFontDefault();
+            }
+          }, { scope: 'session' });
+        } catch (e) {}
+
+        // 監聽使用者在白板上的畫筆/文字/圖片/物件變動 (scope: 'document')
+        let debounceTimer = null;
+        editor.store.listen((entry) => {
+          // 動態同步 Undo/Redo 狀態
+          setCanUndo(editor.getCanUndo());
+          setCanRedo(editor.getCanRedo());
+
+          if (!isApplyingRemote) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+              try {
+                const rawSnapshot = editor.store ? editor.store.getSnapshot() : null;
+                const snapshot = rawSnapshot ? (sanitizeSnapshot(rawSnapshot) || rawSnapshot) : null;
+                if (snapshot && window.parent && window.parent !== window) {
+                  window.parent.postMessage({
+                    type: 'TLDRAW_LOCAL_CHANGE',
+                    snapshot: snapshot
+                  }, '*');
+                }
+              } catch (err) {
+                console.error('Failed to capture local tldraw change:', err);
+              }
+            }, 250);
+          }
+        }, { scope: 'document' });
+
+        // 若在編輯器掛載完成前已收到遠端快照，立即補套用
+        if (pendingRemoteSnapshot) {
+          const queuedSnapshot = pendingRemoteSnapshot;
+          pendingRemoteSnapshot = null;
+          try {
+            isApplyingRemote = true;
+            applySnapshotSafely(queuedSnapshot);
+          } finally {
+            setTimeout(() => { isApplyingRemote = false; }, 300);
+          }
+        }
+
+        // 通知父視窗已準備就緒
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'TLDRAW_READY' }, '*');
+        }
+      };
+
+      // 使用穩定且不因時序誤判的 userAgent 偵測，徹底將行動端與電腦端隔離，還原電腦端右側樣式面板
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      // 核心 UI 組件配置：傳入 Toast: () => null 徹底拔除並禁用引發 react-toast.mjs 崩潰之原廠 ToastProvider
+      const tldrawComponents = {
+        Toast: () => null,
+        ...(isMobile ? {
+          MainMenu: null,
+          PageMenu: null,
+          NavigationPanel: null,
+          HelpMenu: null,
+          QuickActions: null // 隱藏底部原廠 Undo/Redo，防止遮擋重疊
+        } : {})
+      };
+
+      // 右上角全平台獨立懸浮控制器與版本號標記
+      const customControls = React.createElement('div', {
+        style: {
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          zIndex: 9999,
+          display: 'flex',
+          gap: '6px',
+          alignItems: 'center',
+          pointerEvents: 'auto'
+        }
+      }, [
+        isMobile ? React.createElement('button', {
+          key: 'undo',
+          onClick: () => { if (editorInstance) editorInstance.undo(); },
+          disabled: !canUndo,
+          style: {
+            padding: '6px 10px',
+            fontSize: '13px',
+            background: 'rgba(255, 255, 255, 0.92)',
+            border: '1px solid rgba(0,0,0,0.15)',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            cursor: 'pointer',
+            opacity: canUndo ? 1 : 0.4,
+            pointerEvents: canUndo ? 'auto' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 'bold',
+            color: '#333'
+          }
+        }, '↩️ 復原') : null,
+        isMobile ? React.createElement('button', {
+          key: 'redo',
+          onClick: () => { if (editorInstance) editorInstance.redo(); },
+          disabled: !canRedo,
+          style: {
+            padding: '6px 10px',
+            fontSize: '13px',
+            background: 'rgba(255, 255, 255, 0.92)',
+            border: '1px solid rgba(0,0,0,0.15)',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            cursor: 'pointer',
+            opacity: canRedo ? 1 : 0.4,
+            pointerEvents: canRedo ? 'auto' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 'bold',
+            color: '#333'
+          }
+        }, '↪️ 重做') : null,
+        React.createElement('span', {
+          key: 'ver',
+          style: {
+            fontSize: '10px',
+            color: '#555',
+            background: 'rgba(255, 255, 255, 0.95)',
+            padding: '3px 7px',
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.15)',
+            fontWeight: 'bold',
+            userSelect: 'none',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+          }
+        }, 'v1.6.4')
+      ].filter(Boolean));
+
+      const tldrawProps = {
+        key: 'tldraw',
+        onMount: handleMount,
+        components: tldrawComponents,
+        options: {
+          // 明確固定桌面白板的導覽行為，避免日後套件預設值變更導致快捷鍵失效。
+          spacebarPanning: true,
+          camera: {
+            isLocked: false,
+            wheelBehavior: 'zoom',
+            panSpeed: 1,
+            zoomSpeed: 1
+          }
+        },
+        forceMobile: isMobile // 行動端回歸 100% 原生 Mobile UI Layout，確保 Hitbox 點擊 100% 準確觸發
+      };
+
+      return React.createElement(React.Fragment, null, [
+        React.createElement(Tldraw, tldrawProps),
+        customControls
+      ]);
+    }
+
+    // 監聽來自父視窗的 postMessage 通訊
+    window.addEventListener('message', async (event) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+
+      switch (data.type) {
+        case 'GET_TLDRAW_SNAPSHOT':
+          if (editorInstance && editorInstance.store) {
+            try {
+              const rawSnapshot = typeof editorInstance.store.getSnapshot === 'function' 
+                ? editorInstance.store.getSnapshot() 
+                : (editorInstance.getSnapshot ? editorInstance.getSnapshot() : null);
+              const snapshot = rawSnapshot ? (sanitizeSnapshot(rawSnapshot) || rawSnapshot) : null;
+              window.parent.postMessage({
+                type: 'TLDRAW_SNAPSHOT_RESPONSE',
+                requestId: data.requestId,
+                snapshot: snapshot
+              }, '*');
+            } catch (err) {
+              console.error('Failed to get tldraw snapshot:', err);
+              window.parent.postMessage({
+                type: 'TLDRAW_SNAPSHOT_RESPONSE',
+                requestId: data.requestId,
+                error: err.message
+              }, '*');
+            }
+          }
+          break;
+
+        case 'LOAD_TLDRAW_SNAPSHOT':
+          if (!data.snapshot) break;
+          if (!editorInstance || !editorInstance.store) {
+            pendingRemoteSnapshot = data.snapshot;
+            break;
+          }
+          try {
+            isApplyingRemote = true;
+            const loaded = applySnapshotSafely(data.snapshot);
+            if (loaded) {
+              console.log('tldraw remote snapshot sanitized and loaded successfully');
+            } else {
+              console.warn('Received invalid snapshot format, skipped loading to prevent crash');
+            }
+          } catch (err) {
+            console.error('Failed to load tldraw snapshot safely:', err);
+          } finally {
+            setTimeout(() => { isApplyingRemote = false; }, 300);
+          }
+          break;
+
+        case 'CLEAR_TLDRAW':
+          if (editorInstance) {
+            try {
+              editorInstance.selectAll();
+              const selectedIds = editorInstance.getSelectedShapeIds();
+              if (selectedIds && selectedIds.length > 0) {
+                editorInstance.deleteShapes(selectedIds);
+              }
+            } catch (err) {
+              console.error('Failed to clear tldraw:', err);
+            }
+          }
+          break;
+      }
+    });
+
+    // 渲染頁面
+    const rootElement = document.getElementById('root');
+    const root = createRoot(rootElement);
+    root.render(React.createElement(App));
+
+  </script>
+</body>
+</html>
