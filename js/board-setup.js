@@ -54,17 +54,29 @@
       </div>
       <p role="status" data-status></p>
     </form>
-    <section data-result hidden>
-      <label>師生共用連結<input readonly data-url></label>
-      <a data-open class="presentation-tool-btn">開啟修正版白板</a>
-      <button type="button" data-copy class="presentation-tool-btn">複製連結</button>
-      <div data-qr></div>
-      <div class="board-short-result">
-        <label>短網址<input readonly data-short-url placeholder="正在產生短網址…"></label>
-        <button type="button" data-copy-short class="presentation-tool-btn" disabled>複製短網址</button>
-        <p data-short-status role="status"></p>
-        <div data-short-qr></div>
+    <section class="board-link-result" data-result hidden>
+      <div class="board-qr-grid">
+        <div class="board-qr-card">
+          <div class="board-qr-title">🌐 原始長連結 QR Code</div>
+          <div class="board-qr-image" data-qr></div>
+        </div>
+        <div class="board-qr-card board-qr-card-accent">
+          <div class="board-qr-title">⚡ 專屬短網址 QR Code</div>
+          <div class="board-qr-image" data-short-qr></div>
+        </div>
       </div>
+      <label class="board-link-label">🌐 原始長連結</label>
+      <div class="board-link-row">
+        <input readonly data-url aria-label="原始長連結">
+        <button type="button" data-copy class="presentation-tool-btn">📋 複製長連結</button>
+      </div>
+      <label class="board-link-label board-link-label-accent">⚡ 專屬短網址（推薦手機輸入或掃描）</label>
+      <div class="board-link-row">
+        <input readonly data-short-url aria-label="專屬短網址" placeholder="正在產生短網址…">
+        <button type="button" data-copy-short class="presentation-tool-btn active" disabled>📋 複製短網址</button>
+      </div>
+      <p data-short-status role="status"></p>
+      <a data-open class="presentation-tool-btn">開啟修正版白板</a>
     </section>`;
   const form = host.querySelector('form');
   const { mode, config, database } = form.elements;
@@ -80,7 +92,7 @@
   function drawQr(container, text) {
     container.replaceChildren();
     try {
-      new QRCode(container, { text, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L });
+      new QRCode(container, { text, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.L });
     } catch {
       container.textContent = '無法顯示 QR Code，請使用連結。';
     }
