@@ -106,3 +106,9 @@
   font-size: 14px;
   resize: vertical;
 }
+
+.board-setup a.presentation-tool-btn { text-decoration: none; }
+.board-short-result { margin-top: 20px; }
+.board-short-result [data-short-status] { color: var(--text-secondary); }
+.board-short-result [data-short-qr] { margin-top: 12px; }
+.board-short-result [data-short-qr] img { max-width: 100%; height: auto; }

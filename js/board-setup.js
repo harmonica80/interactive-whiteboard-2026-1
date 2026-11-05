@@ -59,11 +59,47 @@
       <a data-open class="presentation-tool-btn">開啟修正版白板</a>
       <button type="button" data-copy class="presentation-tool-btn">複製連結</button>
       <div data-qr></div>
+      <div class="board-short-result">
+        <label>短網址<input readonly data-short-url placeholder="正在產生短網址…"></label>
+        <button type="button" data-copy-short class="presentation-tool-btn" disabled>複製短網址</button>
+        <p data-short-status role="status"></p>
+        <div data-short-qr></div>
+      </div>
     </section>`;
   const form = host.querySelector('form');
   const { mode, config, database } = form.elements;
   const result = host.querySelector('[data-result]');
   const status = host.querySelector('[data-status]');
+  const shortInput = host.querySelector('[data-short-url]');
+  const shortButton = host.querySelector('[data-copy-short]');
+  const shortStatus = host.querySelector('[data-short-status]');
+  const shortQr = host.querySelector('[data-short-qr]');
+  const shortCache = new Map();
+  let generation = 0;
+
+  function drawQr(container, text) {
+    container.replaceChildren();
+    try {
+      new QRCode(container, { text, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L });
+    } catch {
+      container.textContent = '無法顯示 QR Code，請使用連結。';
+    }
+  }
+
+  async function createShortUrl(url) {
+    if (shortCache.has(url)) return shortCache.get(url);
+    const response = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(url));
+    if (!response.ok) throw new Error('無法建立短網址');
+    const data = await response.json();
+    const shortUrl = new URL(data.shorturl);
+    if (shortUrl.protocol !== 'https:' || shortUrl.hostname !== 'is.gd') throw new Error('短網址格式有誤');
+    const lookup = await fetch('https://is.gd/forward.php?format=json&shorturl=' + encodeURIComponent(shortUrl.href));
+    if (!lookup.ok) throw new Error('無法核對短網址');
+    const resolved = await lookup.json();
+    if (!resolved.url || new URL(resolved.url).href !== new URL(url).href) throw new Error('短網址的目標不一致');
+    shortCache.set(url, shortUrl.href);
+    return shortUrl.href;
+  }
   function refresh() {
     const secure = mode.value === 'secure';
     host.querySelector('[data-config]').hidden = !secure;
@@ -78,13 +114,18 @@
     host.querySelector('[data-rules]').value = JSON.stringify({
       rules: { '$node': { '.read': access, '.write': access } }
     }, null, 2);
+    generation += 1;
     status.textContent = '';
+    shortStatus.textContent = '';
+    shortInput.value = '';
+    shortButton.disabled = true;
+    shortQr.replaceChildren();
     result.hidden = true;
   }
   form.addEventListener('input', refresh);
   mode.addEventListener('change', refresh);
   refresh();
-  form.addEventListener('submit', event => {
+  form.addEventListener('submit', async event => {
     event.preventDefault();
     try {
       const url = BoardConnection.makeLink(mode.value, database.value, config.value);
@@ -92,11 +133,23 @@
       host.querySelector('[data-open]').href = url;
       result.hidden = false;
       status.textContent = '已產生連結。請開啟白板驗證連線。';
-      const qr = host.querySelector('[data-qr]');
-      qr.replaceChildren();
+      drawQr(host.querySelector('[data-qr]'), url);
+      const requestId = ++generation;
+      shortInput.value = '';
+      shortButton.disabled = true;
+      shortQr.replaceChildren();
+      shortStatus.textContent = '正在透過 is.gd 產生短網址…';
       try {
-        new QRCode(qr, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L });
-      } catch { qr.textContent = '無法顯示 QR Code，請使用上方連結。'; }
+        const shortUrl = await createShortUrl(url);
+        if (requestId !== generation) return;
+        shortInput.value = shortUrl;
+        shortButton.disabled = false;
+        shortStatus.textContent = '';
+        drawQr(shortQr, shortUrl);
+      } catch (error) {
+        if (requestId !== generation) return;
+        shortStatus.textContent = '短網址產生或驗證失敗，請使用上方完整連結。';
+      }
     } catch (error) { result.hidden = true; status.textContent = error.message; }
   });
   host.querySelector('[data-copy-rules]').addEventListener('click', async () => {
@@ -105,6 +158,15 @@
       status.textContent = '已複製資料庫規則。';
     } catch {
       status.textContent = '複製失敗，請手動選取上方規則。';
+    }
+  });
+  shortButton.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(shortInput.value);
+      shortStatus.textContent = '已複製短網址。';
+    } catch {
+      shortInput.select();
+      shortStatus.textContent = '已選取短網址，請使用裝置的複製功能。';
     }
   });
   host.querySelector('[data-copy]').addEventListener('click', async () => {
