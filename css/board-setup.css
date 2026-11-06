@@ -142,3 +142,7 @@
 
 .board-collapse-action { display: flex; justify-content: flex-end; margin-top: 16px; }
 .board-collapse-btn { font-size: 16px; }
+
+/* 建置步驟說明與連線方式文字使用相同字級。 */
+.board-step-disclosure { font-size: 16px; }
+.board-step-disclosure .step-content, .board-step-disclosure :is(p, li, label, figcaption) { font-size: 16px; }

@@ -18,7 +18,7 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
   </script>
-  <link rel="stylesheet" href="css/board-setup.css?v=c7">
+  <link rel="stylesheet" href="css/board-setup.css?v=c8">
 </head>
 <body>
   <dialog id="boardConnectionStatus" aria-label="修正版連線狀態" oncancel="event.preventDefault()">
@@ -1347,7 +1347,7 @@
           <!-- 步驟 1 -->
           <div class="step-card" style="border-left: 6px solid var(--accent-color); padding: 24px; margin-bottom: 28px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-color);">
             <details class="board-step-disclosure"><summary>步驟 1　建立免費的 Firebase 即時資料庫專案</summary>
-            <ol style="font-size: 14px; margin: 0; padding-left: 22px; color: var(--text-primary);">
+            <ol style="font-size: 16px; margin: 0; padding-left: 22px; color: var(--text-primary);">
               <li style="margin-bottom: 24px; line-height: 1.8;">前往 <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--accent-color); font-weight: bold;">Firebase 主控台 🔗</a>，登入您的 Google 帳號。</li>
               <li style="margin-bottom: 24px; line-height: 1.8;">點選「<strong>+ 新增專案</strong>」，輸入班級名稱（例如：<code>my-class-whiteboard</code>），一路點選「繼續」完成建立：
                 <div class="step-img-box"><img src="images/guide/step01.webp" alt="步驟1-1" class="step-img"></div>
@@ -1376,10 +1376,10 @@
 <!-- 步驟 3 -->
           <div class="step-card" style="border-left: 6px solid #34c759; padding: 24px; margin-bottom: 28px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-color);">
             <div class="step-title" style="font-size: 18px; font-weight: bold; margin-bottom: 18px; display: flex; align-items: center; gap: 12px;">
-              <span class="step-num" style="background: #34c759; color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">A</span>
+              <span class="step-num" style="background: #34c759; color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px;">A</span>
               <span>複製您的資料庫 URL 網址</span>
             </div>
-            <ol style="font-size: 14px; margin: 0; padding-left: 22px; color: var(--text-primary);">
+            <ol style="font-size: 16px; margin: 0; padding-left: 22px; color: var(--text-primary);">
               <li style="margin-bottom: 16px; line-height: 1.8;">切換回 <span style="color:#34c759; font-weight:bold;">資料 (Data)</span> 頁籤。</li>
               <li style="margin-bottom: 16px; line-height: 1.8;">在頁面頂部會看到一串以 <code>https://</code> 開頭的資料庫網址，點選該網址右側的「<strong>複製</strong>」按鈕：
                 <div class="step-img-box"><img src="images/guide/step11.webp" alt="步驟3-2 複製資料庫網址" class="step-img"></div>
@@ -1394,18 +1394,18 @@
 <!-- 步驟 5：登入管理後台與設定專屬密碼 -->
           <div class="step-card" style="border-left: 6px solid #4f46e5; padding: 24px; margin-bottom: 28px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
             <details class="board-step-disclosure"><summary>步驟 3　登入管理後台並設定「教師專屬安全密碼」</summary>
-            <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.6; padding-left: 42px;">
+            <p style="font-size: 16px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.6; padding-left: 42px;">
               為維護班級測驗與學生資料安全，白板採用新一代 SHA-256 加密防護體系。完成建置後，請依循以下 3 階段完成專屬身分綁定：
             </p>
 
             <!-- 圖檔導引流程圖 -->
             <div style="margin-left: 42px; margin-bottom: 20px;" class="step-img-box">
-              <img src="images/guide/step12_security_guide.webp" alt="步驟5 教師專屬安全設定流程" class="step-img" style="max-width: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
+              <img src="images/guide/step12_security_guide.webp?v=2" alt="步驟5 教師專屬安全設定流程" class="step-img" style="max-width: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
             </div>
 
-            <ol style="font-size: 14px; margin: 0 0 16px 0; padding-left: 64px; color: var(--text-primary); line-height: 1.8;">
+            <ol style="font-size: 16px; margin: 0 0 16px 0; padding-left: 64px; color: var(--text-primary); line-height: 1.8;">
               <li style="margin-bottom: 12px;">
-                <strong>首次進入管理後台</strong>：點選白板畫面右上角的「<span style="color: var(--accent-color); font-weight: bold;">⚙️ 管理後台</span>」按鈕。首次登入時可使用初始預設密碼 <code>1234</code> 進入（享有自首次啟用起算一週／7 天寬限期）；登入後請及早設定專屬密碼與安全自救問題。
+                <strong>首次進入管理後台</strong>：點選白板畫面右下角的「<span style="color: var(--accent-color); font-weight: bold;">💡 燈泡</span>」，再選擇「<span style="color: var(--accent-color); font-weight: bold;">管理後台</span>」按鈕。首次登入時可使用初始預設密碼 <code>1234</code> 進入（享有自首次啟用起算一週／7 天寬限期）；登入後請及早設定專屬密碼與安全自救問題。
               </li>
               <li style="margin-bottom: 12px;">
                 <strong>前往 F 項目設定專屬密碼</strong>：登入後，請於「班級管理」選單點選「<span style="color: #4f46e5; font-weight: bold;">F. 教師身分與密碼安全設定</span>」。在此自訂您的專屬管理密碼（至少 4 碼）。<strong>一旦設定完成，舊預設密碼即刻失效</strong>，避免他人任意進入。
@@ -1418,10 +1418,10 @@
               </li>
             </ol>
 
-            <div style="margin-left: 42px; background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3); border-radius: 10px; padding: 14px 18px; font-size: 14px; color: var(--text-primary); line-height: 1.6;">
-              <strong style="color: #16a34a; font-size: 14px; display: block; margin-bottom: 6px;">💡 密碼自救與自主架設安全保障（各自獨立，自給自足）：</strong>
+            <div style="margin-left: 42px; background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3); border-radius: 10px; padding: 14px 18px; font-size: 16px; color: var(--text-primary); line-height: 1.6;">
+              <strong style="color: #16a34a; font-size: 16px; display: block; margin-bottom: 6px;">💡 密碼自救與自主架設安全保障（各自獨立，自給自足）：</strong>
               <div style="margin-bottom: 6px;">本白板採「完全獨立與去中心化」架構，您的白板資料與 Firebase 完全由您自主掌控，系統無任何全域萬能鑰匙或後門。若遺忘密碼時的自救途徑如下：</div>
-              <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.65;">
+              <ul style="margin: 0; padding-left: 20px; font-size: 16px; color: var(--text-secondary); line-height: 1.65;">
                 <li><strong>第一線自救（安全問題）</strong>：只要您有在後台設定「安全問題」，在登入畫面點選「❓ 忘記密碼？」並回答問題，即可即時驗證並重設密碼（答案經 SHA-256 加密儲存，無洩漏風險）。</li>
                 <li><strong>終極自救（Firebase 控制台）</strong>：若連安全問題都忘了，由於您是資料庫的擁有者，您只需登入自己的 Firebase 控制台，在 <code>teachers/</code> 節點下刪除密碼欄位（或直接刪除該教師節點），重新整理白板網頁即可直接重新設定密碼！</li>
               </ul>
