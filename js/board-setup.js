@@ -10,7 +10,7 @@
       </select></label>
       <div class="board-mode-summary">
         <p><strong>簡易模式</strong>　只需資料庫網址。採用公開規則時，知道網址的人可能讀寫資料。</p>
-        <p><strong>安全模式</strong>　加入 Firebase Web App 設定，並啟用匿名登入；已登入者可讀寫資料。</p>
+        <p><strong>安全模式</strong>　加入 Firebase Web App 設定並啟用匿名登入；任何取得設定的人都可能登入並讀寫，規則不區分老師與學生。</p>
       </div>
       <label>Realtime Database 網址<span class="board-url-hint">💡 請貼上剛才複製的資料庫 URL 網址</span><input required type="url" name="database" placeholder="https://…firebasedatabase.app"></label>
       <details class="board-guide">
@@ -129,7 +129,7 @@
     host.querySelector('[data-guide-secure-rule]').hidden = !secure;
     config.required = secure;
     host.querySelector('[data-help]').textContent = secure
-      ? '請在自己的專案啟用 Authentication 的匿名登入。規則允許該專案的已登入使用者讀寫，老師和學生共用。請貼上網頁應用程式的公開設定。'
+      ? '請在自己的專案啟用 Authentication 的匿名登入並貼上網頁應用程式的公開設定。以下規則允許該專案的已登入者讀寫資料；任何取得專案設定的人都可能匿名登入，規則無法區分老師與學生。'
       : '請自行設定資料庫規則。若開放公開讀寫，知道網址的人就可能讀取、修改或刪除資料。';
     const access = secure ? 'auth != null' : true;
     host.querySelector('[data-rules]').value = JSON.stringify({

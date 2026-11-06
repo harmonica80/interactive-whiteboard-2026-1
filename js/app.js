@@ -2317,7 +2317,7 @@ class App {
           type: 'UPDATE_ADMIN_STATUS',
           isAdmin: !!this.isAdmin,
           userName: this.getCurrentUserName() || (this.isAdmin ? '老師' : '同學')
-        }, '*');
+        }, window.location.origin === 'null' ? '*' : window.location.origin);
       }
     }
     

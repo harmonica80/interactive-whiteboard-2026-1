@@ -43,7 +43,8 @@
 
   // 監聽來自母頁面的身分與權限更新
   window.addEventListener('message', (e) => {
-    if (!e.data) return;
+    // 只接受同源父頁面的狀態通知；實際資料權限仍由資料庫規則控制。
+    if (window.parent === window || e.source !== window.parent || e.origin !== window.location.origin || !e.data) return;
     if (e.data.type === 'UPDATE_ADMIN_STATUS') {
       isTeacherOverride = !!e.data.isAdmin;
       if (e.data.userName) {
