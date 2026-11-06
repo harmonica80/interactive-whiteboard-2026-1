@@ -27,7 +27,7 @@
             <figure><figcaption>1. 點選左側「設定」，再進入「專案設定」的「一般」。</figcaption><img src="images/guide/board-setup-6.webp" alt="在設定選單中開啟專案設定一般頁面" loading="lazy"></figure>
             <figure><figcaption>2. 往下找到「您的應用程式」。若尚未新增網頁應用程式，點選網頁圖示 &lt;/&gt;；若已有，選擇現有的網頁應用程式。</figcaption><img src="images/guide/board-setup-7.webp" alt="在您的應用程式選擇新增網頁應用程式" loading="lazy"></figure>
             <figure><figcaption>3. 輸入方便辨識的應用程式名稱，點選「註冊應用程式」。</figcaption><img src="images/guide/board-setup-8.webp" alt="輸入應用程式名稱並註冊應用程式" loading="lazy"></figure>
-            <figure><figcaption>4. 複製完整的 <code>const firebaseConfig = { … };</code>，貼到下方「Firebase Web App 設定」。設定中若沒有 databaseURL，請另外在下方填入資料庫網址。</figcaption><img src="images/guide/board-setup-config-updated.webp" alt="複製 firebaseConfig 設定物件" loading="lazy"></figure>
+            <figure><figcaption>4. 複製完整的 <code>const firebaseConfig = { … };</code>，貼到下方「Firebase Web App 設定」。設定中若沒有 databaseURL，請另外在下方填入資料庫網址。</figcaption><img src="images/guide/board-setup-config-v2.webp" alt="複製 firebaseConfig 設定物件" loading="lazy"></figure>
           </section>
           <section data-guide-simple-rule>
             <h3>發布資料庫規則</h3>
