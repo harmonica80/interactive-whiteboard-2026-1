@@ -2773,6 +2773,8 @@
         compressWhiteboardImage(blob).then((compressedUrl) => {
           if (compressedUrl) {
             insertImageObject(compressedUrl, center.x - 150, center.y - 100);
+          } else {
+            flashToast('❌ 圖片轉換失敗，請使用支援的圖片格式。');
           }
         });
         break;
@@ -2819,11 +2821,10 @@
         img.onload = () => {
           let w = img.naturalWidth || img.width;
           let h = img.naturalHeight || img.height;
-          const maxDim = 1600; // 限制最大邊長為 1600px，兼顧放大清晰度並壓縮數位相機大圖 90% 以上
-          if (w > maxDim || h > maxDim) {
-            const ratio = Math.min(maxDim / w, maxDim / h);
-            w = Math.round(w * ratio);
-            h = Math.round(h * ratio);
+          const maxWidth = 600;
+          if (w > maxWidth) {
+            h = Math.max(1, Math.round(h * maxWidth / w));
+            w = maxWidth;
           }
           const canvas = document.createElement('canvas');
           canvas.width = w;
@@ -2833,9 +2834,9 @@
 
           // 全面改用 WebP 格式（原生支援透明度且體積縮減 70%~85%，約 50KB~150KB）
           const finalUrl = canvas.toDataURL('image/webp', 0.82);
-          resolve(finalUrl);
+          resolve(finalUrl.startsWith('data:image/webp') ? finalUrl : null);
         };
-        img.onerror = () => resolve(rawUrl);
+        img.onerror = () => resolve(null);
         img.src = rawUrl;
       };
       reader.onerror = () => resolve(null);
@@ -3010,7 +3011,7 @@
 
     const pagesToInsert = Array.from(selectedPdfPages).sort((a, b) => a - b);
     closePdfModal();
-    flashToast(`正在以高清畫質插入 ${pagesToInsert.length} 頁 PDF...`);
+    flashToast(`正在插入 ${pagesToInsert.length} 頁 PDF...`);
 
     // 計算視角中心或整齊起點
     const rect = els.canvasViewport.getBoundingClientRect();
@@ -3023,7 +3024,8 @@
     for (let idx = 0; idx < pagesToInsert.length; idx++) {
       const pageNum = pagesToInsert[idx];
       const page = await currentPdfDoc.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 1.5 }); // 高畫質
+      const originalViewport = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: Math.min(1.5, 600 / originalViewport.width) }); // 寬度最多 600 像素
 
       const canvas = document.createElement('canvas');
       canvas.width = viewport.width;
@@ -3064,7 +3066,9 @@
     const center = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
     compressWhiteboardImage(file).then((compressedUrl) => {
       if (compressedUrl) {
-        insertImageObject(compressedUrl, center.x - 160, center.y - 110, 320, 220, file.name);
+        insertImageObject(compressedUrl, center.x - 160, center.y - 110, 320, undefined, file.name);
+      } else {
+        flashToast('❌ 圖片轉換失敗，請使用支援的圖片格式。');
       }
     });
     els.imageFileInput.value = '';
