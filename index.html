@@ -18,7 +18,7 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
   </script>
-  <link rel="stylesheet" href="css/board-setup.css?v=c8">
+  <link rel="stylesheet" href="css/board-setup.css?v=c9">
 </head>
 <body>
   <dialog id="boardConnectionStatus" aria-label="修正版連線狀態" oncancel="event.preventDefault()">
@@ -1414,7 +1414,7 @@
                 <strong>填寫安全提示與自救問題</strong>：強烈建議設定「密碼提示」與「安全自救問題」（例如：第一所任教學校）。若日後遺忘密碼，不需外部 Email，點選登入畫面的「❓ 忘記密碼？」即可回答題目秒自救重設！
               </li>
               <li style="margin-bottom: 8px;">
-                <strong>一組密碼，所有班級白板通用</strong>：同位老師所建立或綁定的多個班級白板，均自動共用您所設定的專屬密碼，免除記誦多組密碼的負擔。
+                <strong>一組密碼，所有班級白板通用</strong>：同一位老師所建立的多個班級白板，均自動共用您所設定的專屬密碼，免除記憶多組密碼的負擔。
               </li>
             </ol>
 
@@ -1425,6 +1425,7 @@
                 <li><strong>第一線自救（安全問題）</strong>：只要您有在後台設定「安全問題」，在登入畫面點選「❓ 忘記密碼？」並回答問題，即可即時驗證並重設密碼（答案經 SHA-256 加密儲存，無洩漏風險）。</li>
                 <li><strong>終極自救（Firebase 控制台）</strong>：若連安全問題都忘了，由於您是資料庫的擁有者，您只需登入自己的 Firebase 控制台，在 <code>teachers/</code> 節點下刪除密碼欄位（或直接刪除該教師節點），重新整理白板網頁即可直接重新設定密碼！</li>
               </ul>
+              <figure class="board-recovery-illustration"><img src="images/guide/board-teacher-node-recovery.webp" alt="Firebase 資料庫的 teachers 節點下，選擇並刪除該教師節點的示意圖" loading="lazy"></figure>
             </div>
           <div class="board-collapse-action"><button type="button" class="presentation-tool-btn board-collapse-btn" aria-label="收合步驟 3">▲ 收合</button></div>
             </details>
@@ -1439,7 +1440,7 @@
             <ol style="font-size: 14px;">
               <li>下載本白板專案的完整原始碼：<a href="https://github.com/harmonica80/interactive-whiteboard-2026/archive/refs/heads/main.zip" target="_blank" style="color: var(--accent-color); font-weight: bold;">⬇️ 點此下載原始碼 (.zip)</a>（或至 <a href="https://github.com/harmonica80/interactive-whiteboard-2026" target="_blank" style="color: var(--accent-color);">GitHub 原始碼頁面</a> 查看）。</li>
               <li>開啟教師建置指南，貼上新專案的資料庫網址與 Web App 設定，產生修正版連結。</li>
-              <li>儲存檔案後，將整個資料庫目錄拖曳至 <a href="https://app.netlify.com/drop" target="_blank" style="color: var(--accent-color);">Netlify Drop</a> 完成免費網站架設，即可擁有專屬網址。</li>
+              <li>儲存檔案後，將整個資料夾拖曳至 <a href="https://app.netlify.com/drop" target="_blank" style="color: var(--accent-color);">Netlify Drop</a> 完成免費網站架設，即可擁有專屬網址。</li>
             </ol>
           </div>
         </div>

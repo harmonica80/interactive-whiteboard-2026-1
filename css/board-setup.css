@@ -146,3 +146,6 @@
 /* 建置步驟說明與連線方式文字使用相同字級。 */
 .board-step-disclosure { font-size: 16px; }
 .board-step-disclosure .step-content, .board-step-disclosure :is(p, li, label, figcaption) { font-size: 16px; }
+
+.board-recovery-illustration { margin: 14px 0 0; }
+.board-recovery-illustration img { display: block; max-width: 100%; height: auto; border: 1px solid var(--border-color); border-radius: 8px; }

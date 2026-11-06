@@ -179,7 +179,7 @@
       margin-right: auto;
     }
   </style>
-  <link rel="stylesheet" href="css/board-setup.css?v=c8">
+  <link rel="stylesheet" href="css/board-setup.css?v=c9">
 </head>
 <body>
   <div class="guide-container">
@@ -266,7 +266,7 @@
           <strong>填寫安全提示與自救問題</strong>：強烈建議設定「密碼提示」與「安全自救問題」（例如：第一所任教學校）。若日後遺忘密碼，不需外部 Email，點選登入畫面的「❓ 忘記密碼？」即可回答題目秒自救重設！
         </li>
         <li style="margin-bottom: 8px;">
-          <strong>一組密碼，所有班級白板通用</strong>：同位老師所建立或綁定的多個班級白板，均自動共用您所設定的專屬密碼，免除記誦多組密碼的負擔。
+          <strong>一組密碼，所有班級白板通用</strong>：同一位老師所建立的多個班級白板，均自動共用您所設定的專屬密碼，免除記憶多組密碼的負擔。
         </li>
       </ol>
 
@@ -277,6 +277,7 @@
           <li><strong>第一線自救（安全問題）</strong>：只要您有在後台設定「安全問題」，在登入畫面點選「❓ 忘記密碼？」並回答問題，即可即時驗證並重設密碼（答案經 SHA-256 加密儲存，無洩漏風險）。</li>
           <li><strong>終極自救（Firebase 控制台）</strong>：若連安全問題都忘了，由於您是資料庫的擁有者，您只需登入自己的 Firebase 控制台，在 <code>teachers/</code> 節點下刪除密碼欄位（或直接刪除該教師節點），重新整理白板網頁即可直接重新設定密碼！</li>
         </ul>
+              <figure class="board-recovery-illustration"><img src="images/guide/board-teacher-node-recovery.webp" alt="Firebase 資料庫的 teachers 節點下，選擇並刪除該教師節點的示意圖" loading="lazy"></figure>
       </div>
     <div class="board-collapse-action"><button type="button" class="presentation-tool-btn board-collapse-btn" aria-label="收合步驟 3">▲ 收合</button></div>
             </details>
