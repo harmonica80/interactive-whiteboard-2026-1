@@ -1174,17 +1174,28 @@
     const linkedText = formatTextWithLinks(obj.text || '');
     el.innerHTML = `
       ${badgeHtml}
-      <div class="sticky-content" contenteditable="${canModifyObject(obj) ? 'true' : 'false'}" spellcheck="false">${linkedText}</div>
+      <div class="sticky-content" contenteditable="false" spellcheck="false">${linkedText}</div>
     `;
 
     // 綁定編輯完成即時同步
     const contentEl = el.querySelector('.sticky-content');
+    contentEl.ondblclick = (event) => {
+      const current = state.objects[obj.id];
+      if (state.currentTool !== 'select' || !current || !canModifyObject(current) || event.target.closest('a')) return;
+      event.stopPropagation();
+      contentEl.contentEditable = 'true';
+      contentEl.focus();
+    };
     contentEl.onblur = () => {
+      if (contentEl.contentEditable !== 'true') return;
+      contentEl.contentEditable = 'false';
+      const current = state.objects[obj.id];
       const newText = contentEl.innerText.trim();
-      if (newText !== obj.text) {
-        obj.text = newText;
-        pushObjectUpdate(obj);
+      if (current && canModifyObject(current) && newText !== current.text) {
+        current.text = newText;
+        pushObjectUpdate(current);
       }
+      contentEl.innerHTML = formatTextWithLinks(current ? current.text || '' : obj.text || '');
     };
   }
 
@@ -1545,7 +1556,7 @@
       return;
     }
 
-    if (e.target.tagName === 'A' || e.target.classList.contains('sticky-content')) return;
+    if (e.target.closest('a') || e.target.closest('.sticky-content[contenteditable="true"]')) return;
     if (state.currentTool !== 'select') return;
 
     hideSvgHoverBox();
