@@ -9,7 +9,6 @@
         <option value="simple">簡易模式（只貼資料庫網址）</option>
       </select></label>
       <div class="board-mode-summary">
-        <div class="board-hint-heading">連線方式說明</div>
         <p><strong>簡易模式</strong>　只需資料庫網址。採用公開規則時，知道網址的人可能讀寫資料。</p>
         <p><strong>安全模式</strong>　加入 Firebase Web App 設定，並啟用匿名登入；已登入者可讀寫資料。</p>
       </div>
@@ -20,20 +19,20 @@
           <section data-guide-secure hidden>
             <h3>啟用匿名登入</h3>
             <p>在建立好 Realtime Database 的同一個 Firebase 專案中，開啟 Authentication。</p>
-            <figure><img src="images/guide/board-setup-2.png" alt="在安全性選單中選擇 Authentication" loading="lazy"><figcaption>在左側選單點選「安全性」，再選擇「Authentication」。</figcaption></figure>
-            <figure><img src="images/guide/board-setup-3.png" alt="Authentication 首次設定的開始使用按鈕" loading="lazy"><figcaption>第一次設定時，點選「開始使用」。若已設定過，請到「登入方式」頁籤。</figcaption></figure>
-            <figure><img src="images/guide/board-setup-4.png" alt="在登入資訊提供者選擇匿名" loading="lazy"><figcaption>在登入資訊提供者中選擇「匿名」。</figcaption></figure>
-            <figure><img src="images/guide/board-setup-5.png" alt="啟用匿名登入並儲存" loading="lazy"><figcaption>開啟「啟用」，再點選「儲存」。</figcaption></figure>
+            <figure><figcaption>1. 在左側選單點選「安全性」，再選擇「Authentication」。</figcaption><img src="images/guide/board-setup-2.webp" alt="在安全性選單中選擇 Authentication" loading="lazy"></figure>
+            <figure><figcaption>2. 第一次設定時，點選「開始使用」。若已設定過，請到「登入方式」頁籤。</figcaption><img src="images/guide/board-setup-3.webp" alt="Authentication 首次設定的開始使用按鈕" loading="lazy"></figure>
+            <figure><figcaption>3. 在登入資訊提供者中選擇「匿名」。</figcaption><img src="images/guide/board-setup-4.webp" alt="在登入資訊提供者選擇匿名" loading="lazy"></figure>
+            <figure><figcaption>4. 開啟「啟用」，再點選「儲存」。</figcaption><img src="images/guide/board-setup-5.webp" alt="啟用匿名登入並儲存" loading="lazy"></figure>
             <h3>取得 Firebase Web App 設定</h3>
-            <figure><img src="images/guide/board-setup-6.png" alt="在設定選單中開啟專案設定一般頁面" loading="lazy"><figcaption>點選左側「設定」，再進入「專案設定」的「一般」。</figcaption></figure>
-            <figure><img src="images/guide/board-setup-7.png" alt="在您的應用程式選擇新增網頁應用程式" loading="lazy"><figcaption>往下找到「您的應用程式」。若尚未新增網頁應用程式，點選網頁圖示 &lt;/&gt;；若已有，選擇現有的網頁應用程式。</figcaption></figure>
-            <figure><img src="images/guide/board-setup-8.png" alt="輸入應用程式名稱並註冊應用程式" loading="lazy"><figcaption>輸入方便辨識的應用程式名稱，點選「註冊應用程式」。</figcaption></figure>
-            <figure><img src="images/guide/board-setup-config-updated.png" alt="複製 firebaseConfig 設定物件" loading="lazy"><figcaption>複製完整的 <code>const firebaseConfig = { … };</code>，貼到下方「Firebase Web App 設定」。設定中若沒有 databaseURL，請另外在下方填入資料庫網址。</figcaption></figure>
+            <figure><figcaption>1. 點選左側「設定」，再進入「專案設定」的「一般」。</figcaption><img src="images/guide/board-setup-6.webp" alt="在設定選單中開啟專案設定一般頁面" loading="lazy"></figure>
+            <figure><figcaption>2. 往下找到「您的應用程式」。若尚未新增網頁應用程式，點選網頁圖示 &lt;/&gt;；若已有，選擇現有的網頁應用程式。</figcaption><img src="images/guide/board-setup-7.webp" alt="在您的應用程式選擇新增網頁應用程式" loading="lazy"></figure>
+            <figure><figcaption>3. 輸入方便辨識的應用程式名稱，點選「註冊應用程式」。</figcaption><img src="images/guide/board-setup-8.webp" alt="輸入應用程式名稱並註冊應用程式" loading="lazy"></figure>
+            <figure><figcaption>4. 複製完整的 <code>const firebaseConfig = { … };</code>，貼到下方「Firebase Web App 設定」。設定中若沒有 databaseURL，請另外在下方填入資料庫網址。</figcaption><img src="images/guide/board-setup-config-updated.webp" alt="複製 firebaseConfig 設定物件" loading="lazy"></figure>
           </section>
           <section data-guide-simple-rule>
             <h3>發布資料庫規則</h3>
             <p>在 Firebase 選擇 Realtime Database 的「規則」頁籤。先按下方的「複製資料庫規則」，再貼到規則編輯區並點選「發布」。</p>
-            <figure><img src="images/guide/board-setup-1.png" alt="Realtime Database 規則頁面，將簡易模式規則貼入編輯區再按發布" loading="lazy"><figcaption>使用下方簡易模式產生的規則。</figcaption></figure>
+            <figure><figcaption>1. 使用下方簡易模式產生的規則。</figcaption><img src="images/guide/board-setup-1.webp" alt="Realtime Database 規則頁面，將簡易模式規則貼入編輯區再按發布" loading="lazy"></figure>
           </section>
         </div>
       </details>
@@ -44,8 +43,8 @@
       <p>請將以下規則貼到 Firebase 的 Realtime Database「規則」頁籤並發布。規則會套用至資料庫的各個頂層項目。</p>
       <details data-guide-secure-rule class="board-guide" hidden><summary>查看發布資料庫規則的操作畫面</summary><div class="board-guide-content">
         <h3>發布資料庫規則</h3>
-        <p>在 Firebase 選擇 Realtime Database 的「規則」頁籤。按上方「複製資料庫規則」，貼到規則編輯區後，再點選「發布」。</p>
-        <figure><img src="images/guide/board-setup-secure-rules.png" alt="Realtime Database 規則頁面，貼上匿名登入規則後按發布" loading="lazy"><figcaption>請使用上方安全模式產生的規則。</figcaption></figure>
+        <p>在 Firebase 選擇 Realtime Database 的「規則」頁籤。按下方「複製資料庫規則」，貼到規則編輯區後，再點選「發布」。</p>
+        <figure><figcaption>1. 請使用下方安全模式產生的規則。</figcaption><img src="images/guide/board-setup-secure-rules.webp" alt="Realtime Database 規則頁面，貼上匿名登入規則後按發布" loading="lazy"></figure>
       </div></details>
       <label>資料庫規則<textarea data-rules rows="8" readonly aria-label="資料庫規則"></textarea></label>
       <div class="board-rule-action"><button type="button" data-copy-rules class="presentation-tool-btn">複製資料庫規則</button></div>
@@ -78,6 +77,16 @@
       <p data-short-status role="status"></p>
       <a data-open class="presentation-tool-btn">開啟修正版白板</a>
     </section>`;
+  document.querySelectorAll('.board-step-disclosure').forEach((step) => {
+    const button = step.querySelector('.board-collapse-btn');
+    if (!button) return;
+    button.addEventListener('click', () => {
+      step.open = false;
+      const summary = step.querySelector('summary');
+      summary.focus({ preventScroll: true });
+      summary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
   const form = host.querySelector('form');
   const { mode, config, database } = form.elements;
   const result = host.querySelector('[data-result]');

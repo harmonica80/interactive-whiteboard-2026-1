@@ -18,7 +18,7 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
   </script>
-  <link rel="stylesheet" href="css/board-setup.css?v=c6">
+  <link rel="stylesheet" href="css/board-setup.css?v=c7">
 </head>
 <body>
   <dialog id="boardConnectionStatus" aria-label="修正版連線狀態" oncancel="event.preventDefault()">
@@ -1364,9 +1364,10 @@
               <li style="margin-bottom: 24px; line-height: 1.8;">資料庫位置建議選擇 <span style="color:#ff3b30; font-weight:bold;">新加坡 (asia-southeast1)</span>，點選「下一步」：
                 <div class="step-img-box"><img src="images/guide/step07.webp" alt="步驟1-7 選擇位置" class="step-img"></div>
               </li>
-              <li>在新專案建立資料庫，先採用鎖定模式，再設定課堂需要的規則。<div class="step-img-box"><img class="step-img" src="images/guide/board-locked-mode.png" alt="Firebase 建立資料庫時選擇預設為鎖定模式" loading="lazy"></div></li>
+              <li>在新專案建立資料庫，先採用鎖定模式，再設定課堂需要的規則。<div class="step-img-box"><img class="step-img" src="images/guide/board-locked-mode.webp" alt="Firebase 建立資料庫時選擇預設為鎖定模式" loading="lazy"></div></li>
             </ol>
-          </details>
+          <div class="board-collapse-action"><button type="button" class="presentation-tool-btn board-collapse-btn" aria-label="收合步驟 1">▲ 收合</button></div>
+            </details>
 </div>
 
                     <section class="board-setup">
@@ -1387,6 +1388,7 @@
           </div>
 
           <section class="board-setup" id="setup" data-board-setup></section>
+            <div class="board-collapse-action"><button type="button" class="presentation-tool-btn board-collapse-btn" aria-label="收合步驟 2">▲ 收合</button></div>
             </details>
           </section>
 <!-- 步驟 5：登入管理後台與設定專屬密碼 -->
@@ -1398,7 +1400,7 @@
 
             <!-- 圖檔導引流程圖 -->
             <div style="margin-left: 42px; margin-bottom: 20px;" class="step-img-box">
-              <img src="images/guide/step12_security_guide.svg" alt="步驟5 教師專屬安全設定流程" class="step-img" style="max-width: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
+              <img src="images/guide/step12_security_guide.webp" alt="步驟5 教師專屬安全設定流程" class="step-img" style="max-width: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
             </div>
 
             <ol style="font-size: 14px; margin: 0 0 16px 0; padding-left: 64px; color: var(--text-primary); line-height: 1.8;">
@@ -1424,7 +1426,8 @@
                 <li><strong>終極自救（Firebase 控制台）</strong>：若連安全問題都忘了，由於您是資料庫的擁有者，您只需登入自己的 Firebase 控制台，在 <code>teachers/</code> 節點下刪除密碼欄位（或直接刪除該教師節點），重新整理白板網頁即可直接重新設定密碼！</li>
               </ul>
             </div>
-          </details>
+          <div class="board-collapse-action"><button type="button" class="presentation-tool-btn board-collapse-btn" aria-label="收合步驟 3">▲ 收合</button></div>
+            </details>
 </div>
 
           <!-- 自行架設說明 -->
@@ -9749,6 +9752,6 @@ Python</pre>
       </div>
     </div>
   </div>
-  <script src="js/board-setup.js?v=c9"></script>
+  <script src="js/board-setup.js?v=c10"></script>
 </body>
 </html>
