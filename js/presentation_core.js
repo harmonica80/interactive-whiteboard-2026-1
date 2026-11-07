@@ -2842,6 +2842,40 @@
       this.notify('匯入成功', `已將 ${sortedPages.length} 頁 PDF 成功設為簡報頁面！`);
     }
 
+    async ensureBackupZipLibrary() {
+      if (window.JSZip) return window.JSZip;
+      if (!this.backupZipLibraryPromise) {
+        this.backupZipLibraryPromise = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+          script.onload = () => window.JSZip ? resolve(window.JSZip) : reject(new Error('ZIP 元件無法使用'));
+          script.onerror = () => reject(new Error('無法載入 ZIP 元件，請檢查網路連線'));
+          document.head.appendChild(script);
+        }).catch(error => { this.backupZipLibraryPromise = null; throw error; });
+      }
+      return this.backupZipLibraryPromise;
+    }
+
+    async exportZipBackup() {
+      if (!this.slides.length) { this.notify('提示', '目前簡報無任何內容可匯出！'); return; }
+      try {
+        const JSZip = await this.ensureBackupZipLibrary();
+        const zip = new JSZip();
+        zip.file('presentation_data.json', JSON.stringify({ version: '1.0', exportedAt: new Date().toISOString(), slides: this.slides }));
+        const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `同步簡報備份_${Date.now()}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.closeImportExportModal();
+        this.notify('匯出成功', '簡報 ZIP 壓縮備份已下載完成！');
+      } catch (error) { this.notify('匯出失敗', error.message || '無法建立 ZIP 備份'); }
+    }
+
     // 匯出 JSON 備份
     exportJsonBackup() {
       if (this.slides.length === 0) {
@@ -2870,35 +2904,38 @@
       this.notify('匯出成功', '簡報 JSON 備份檔案已下載完成！');
     }
 
-    // 從 JSON 匯入
+    // 從 JSON 或 ZIP 匯入
     triggerJsonImport() {
       this.trackFullscreenBeforeFile();
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = 'application/json';
-      input.onchange = (e) => {
+      input.accept = '.json,.zip,application/json,application/zip';
+      input.onchange = async (event) => {
         this.tryRestoreFullscreen();
-        const file = e.target.files[0];
+        const file = event.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const data = JSON.parse(event.target.result);
-            if (data && Array.isArray(data.slides)) {
-              this.slides = data.slides;
-              this.currentSlideIndex = 0;
-              this.render();
-              if (this.isPresenting) this.broadcastLiveState(true);
-              this.closeImportExportModal();
-              this.notify('匯入成功', `成功匯入 ${this.slides.length} 頁簡報！`);
-            } else {
-              throw new Error('格式不正確');
-            }
-          } catch (err) {
-            this.notify('匯入失敗', '無效的 JSON 簡報檔案！');
+        try {
+          let json;
+          if (/\.zip$/i.test(file.name)) {
+            const JSZip = await this.ensureBackupZipLibrary();
+            const zip = await JSZip.loadAsync(await file.arrayBuffer());
+            const entry = zip.file('presentation_data.json');
+            if (!entry) throw new Error('壓縮檔中找不到簡報資料');
+            json = await entry.async('string');
+          } else {
+            json = await file.text();
           }
-        };
-        reader.readAsText(file);
+          const data = JSON.parse(json);
+          if (!data || !Array.isArray(data.slides)) throw new Error('簡報資料格式不正確');
+          this.slides = data.slides;
+          this.currentSlideIndex = 0;
+          this.render();
+          if (this.isPresenting) this.broadcastLiveState(true);
+          this.closeImportExportModal();
+          this.notify('匯入成功', `成功匯入 ${this.slides.length} 頁簡報！`);
+        } catch (error) {
+          this.notify('匯入失敗', error.message || '無法讀取簡報備份檔案');
+        }
       };
       input.click();
     }

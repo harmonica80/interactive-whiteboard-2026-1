@@ -196,6 +196,7 @@
     btnExportPdf: document.getElementById('btnExportPdf'),
     btnExportPng: document.getElementById('btnExportPng'),
     btnExportZip: document.getElementById('btnExportZip'),
+    btnExportFullZip: document.getElementById('btnExportFullZip'),
     btnExportJson: document.getElementById('btnExportJson'),
     btnImportJson: document.getElementById('btnImportJson'),
     jsonFileInput: document.getElementById('jsonFileInput'),
@@ -1505,9 +1506,10 @@
       } else if (action.type === 'update') {
         const list = isUndo ? action.before : action.after;
         list.forEach(obj => {
+          const previous = state.objects[obj.id];
           state.objects[obj.id] = JSON.parse(JSON.stringify(obj));
           renderObject(obj);
-          pushObjectUpdate(obj);
+          pushObjectUpdate(obj, previous);
         });
       }
       if (typeof updateSelectionActionBar === 'function') updateSelectionActionBar();
@@ -1658,7 +1660,7 @@
           if (state.objects[id]) {
             beforeList.push(snapshots[id]);
             afterList.push(JSON.parse(JSON.stringify(state.objects[id])));
-            pushObjectUpdate(state.objects[id]);
+            pushObjectUpdate(state.objects[id], snapshots[id]);
           }
         });
         if (beforeList.length > 0) {
@@ -1742,7 +1744,7 @@
         const beforeSnap = JSON.parse(JSON.stringify(obj));
         obj.rotation = 0;
         renderObject(obj);
-        pushObjectUpdate(obj);
+        pushObjectUpdate(obj, beforeSnap);
         pushHistoryAction({ type: 'update', before: [beforeSnap], after: [JSON.parse(JSON.stringify(obj))] });
         updateSelectionActionBar();
         updateTransformOverlay();
@@ -1770,7 +1772,7 @@
         obj.height = Math.round(fullH);
         obj.crop = { top: 0, right: 0, bottom: 0, left: 0 };
         renderObject(obj);
-        pushObjectUpdate(obj);
+        pushObjectUpdate(obj, beforeSnap);
         pushHistoryAction({ type: 'update', before: [beforeSnap], after: [JSON.parse(JSON.stringify(obj))] });
         updateSelectionActionBar();
         updateTransformOverlay();
@@ -2041,7 +2043,7 @@
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       if (hasModified) {
-        pushObjectUpdate(obj);
+        pushObjectUpdate(obj, initialObj);
         pushHistoryAction({ type: 'update', before: [initialObj], after: [JSON.parse(JSON.stringify(obj))] });
         updateSelectionVisuals();
         updateSelectionActionBar();
@@ -2284,7 +2286,7 @@
 
       const allChildren = Array.from(parent.children);
       obj.order = allChildren.indexOf(el);
-      pushObjectUpdate(obj);
+      pushObjectUpdate(obj, beforeList.find(item => item.id === obj.id));
     });
 
     const afterList = objs.map(o => JSON.parse(JSON.stringify(o)));
@@ -2323,7 +2325,7 @@
       else if (alignType === 'bottom') targetY = maxY - b.height;
 
       setObjPos(b.obj, targetX, targetY);
-      pushObjectUpdate(b.obj);
+      pushObjectUpdate(b.obj, beforeList.find(item => item.id === b.obj.id));
     });
 
     const afterList = boxes.map(b => JSON.parse(JSON.stringify(b.obj)));
@@ -2359,7 +2361,7 @@
       let curX = first.x + first.width + gap;
       for (let i = 1; i < boxes.length - 1; i++) {
         setObjPos(boxes[i].obj, curX, boxes[i].y);
-        pushObjectUpdate(boxes[i].obj);
+        pushObjectUpdate(boxes[i].obj, beforeList.find(item => item.id === boxes[i].obj.id));
         curX += boxes[i].width + gap;
       }
       flashToast('已完成水平均分間距');
@@ -2375,7 +2377,7 @@
       let curY = first.y + first.height + gap;
       for (let i = 1; i < boxes.length - 1; i++) {
         setObjPos(boxes[i].obj, boxes[i].x, curY);
-        pushObjectUpdate(boxes[i].obj);
+        pushObjectUpdate(boxes[i].obj, beforeList.find(item => item.id === boxes[i].obj.id));
         curY += boxes[i].height + gap;
       }
       flashToast('已完成垂直均分間距');
@@ -2636,6 +2638,9 @@
     const d = state.activeDrawing;
 
     if (d.type === 'pen') {
+      const lastPoint = d.points[d.points.length - 1];
+      const minDistance = 0.75 / (state.view.zoom || 1);
+      if (lastPoint && Math.hypot(pos.x - lastPoint.x, pos.y - lastPoint.y) < minDistance) return;
       d.points.push(pos);
       d.d += ` L ${pos.x.toFixed(1)} ${pos.y.toFixed(1)}`;
       renderSvgElement(d);
@@ -2661,7 +2666,7 @@
   // 空白鍵平移畫布全域狀態 (Item 4)
   let isSpacePressed = false;
 
-  window.addEventListener('pointerup', () => {
+  window.addEventListener('pointerup', (event) => {
     if (state.isErasing) {
       state.isErasing = false;
     }
@@ -2676,6 +2681,15 @@
     if (state.activeDrawing) {
       const finishedObj = state.activeDrawing;
       state.activeDrawing = null;
+      if (finishedObj.type === 'pen' && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+        const finalPoint = screenToWorld(event.clientX, event.clientY);
+        const lastPoint = finishedObj.points[finishedObj.points.length - 1];
+        if (!lastPoint || Math.hypot(finalPoint.x - lastPoint.x, finalPoint.y - lastPoint.y) > 0.01) {
+          finishedObj.points.push(finalPoint);
+          finishedObj.d += ` L ${finalPoint.x.toFixed(1)} ${finalPoint.y.toFixed(1)}`;
+          renderSvgElement(finishedObj);
+        }
+      }
       // 寫入 Firebase 同步
       pushObjectUpdate(finishedObj);
       pushHistoryAction({ type: 'create', objects: [JSON.parse(JSON.stringify(finishedObj))] });
@@ -3080,11 +3094,23 @@
   };
 
   // ===== 資料同步推播 =====
-  function pushObjectUpdate(obj) {
+  function pushObjectUpdate(obj, before) {
     if (!objectsRef) return;
-    objectsRef.child(obj.id).set(obj).catch(err => {
-      console.error('Firebase object sync error:', err);
+    const ref = objectsRef.child(obj.id);
+    if (!before) {
+      ref.set(obj).catch(err => console.error('Firebase object sync error:', err));
+      return;
+    }
+    const changes = {};
+    const keys = new Set([...Object.keys(before), ...Object.keys(obj)]);
+    keys.forEach(key => {
+      if (before[key] !== obj[key] && JSON.stringify(before[key]) !== JSON.stringify(obj[key])) {
+        changes[key] = obj[key] === undefined ? null : obj[key];
+      }
     });
+    if (Object.keys(changes).length) {
+      ref.update(changes).catch(err => console.error('Firebase object sync error:', err));
+    }
   }
 
   function deleteObject(id) {
@@ -3646,6 +3672,7 @@
   if (els.btnExportPdf) els.btnExportPdf.onclick = exportCanvasToPdf;
   if (els.btnExportPng) els.btnExportPng.onclick = exportCurrentPageToPng;
   if (els.btnExportZip) els.btnExportZip.onclick = exportCanvasToZip;
+  if (els.btnExportFullZip) els.btnExportFullZip.onclick = exportFullWhiteboardToZip;
   if (els.btnExportJson) els.btnExportJson.onclick = exportCanvasToJson;
 
   // ===== 白板雲端歷程檔案庫事件 =====
@@ -3740,6 +3767,24 @@
         const data = JSON.parse(jsonStr);
         if (!data || !data.pages) throw new Error('無效的白板備份資料');
 
+        if (data.scope === 'full-whiteboard') {
+          if (!data.canvases || typeof data.canvases !== 'object' || Array.isArray(data.canvases) || !Object.keys(data.canvases).length || typeof data.pages !== 'object' || Array.isArray(data.pages)) throw new Error('完整白板備份格式不正確');
+          els.jsonFileInput.value = '';
+          showWhiteboardConfirm('📁 匯入完整白板', '這會取代目前白板的所有畫布與頁面。確定要繼續嗎？', async () => {
+            try {
+              if (!roomRef) throw new Error('資料庫未連線');
+              await roomRef.update({ canvases: data.canvases, pages: data.pages });
+              state.canvases = data.canvases;
+              const targetCanvas = state.canvases[data.activeCanvasId] ? data.activeCanvasId : Object.keys(state.canvases)[0];
+              const pageIds = state.canvases[targetCanvas].pages || ['page_1'];
+              const targetPage = pageIds.includes(data.activePageId) ? data.activePageId : pageIds[0];
+              switchCanvasAndPage(targetCanvas, targetPage, true);
+              if (els.exportModal) els.exportModal.classList.remove('open');
+              flashToast('✅ 完整白板備份已匯入！');
+            } catch (error) { flashToast('❌ 匯入失敗：' + error.message); }
+          });
+          return;
+        }
         const canvasName = (data.canvas && data.canvas.name) || '備份畫布';
         showWhiteboardConfirm('📁 匯入備份', `確定要匯入備份「${canvasName}」嗎？這將會更新目前畫布內容。`, () => {
           if (roomRef) {
@@ -3862,13 +3907,45 @@
 
     zip.file('whiteboard_data.json', JSON.stringify(backupData, null, 2));
 
-    const content = await zip.generateAsync({ type: 'blob' });
+    const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
     const a = document.createElement('a');
     a.download = `${curCanvas.name}_備份.zip`;
     a.href = URL.createObjectURL(content);
     a.click();
     flashToast('✅ ZIP 壓縮備份檔已匯出！');
     if (els.exportModal) els.exportModal.classList.remove('open');
+  }
+
+  // 完整白板備份：讀取所有畫布與頁面，讀取失敗時不產生不完整備份。
+  async function exportFullWhiteboardToZip() {
+    if (!window.JSZip || !roomRef) { flashToast('⚠️ ZIP 元件或資料庫尚未就緒'); return; }
+    try {
+      flashToast('正在打包完整白板...');
+      const canvases = state.canvases;
+      const pages = {};
+      for (const [canvasId, canvas] of Object.entries(canvases)) {
+        for (const pageId of (canvas.pages || ['page_1'])) {
+          const key = `${canvasId}_${pageId}`;
+          const snap = await roomRef.child('pages').child(key).once('value');
+          pages[key] = snap.val() || { objects: {} };
+          if (canvasId === state.activeCanvasId && pageId === state.activePageId) {
+            pages[key] = { ...pages[key], objects: state.objects };
+          }
+        }
+      }
+      const data = { app: '即時互動白板', version: '1.0', scope: 'full-whiteboard', exportTime: new Date().toISOString(), activeCanvasId: state.activeCanvasId, activePageId: state.activePageId, canvases, pages };
+      const zip = new window.JSZip();
+      zip.file('whiteboard_data.json', JSON.stringify(data));
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '完整白板_備份.zip';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      flashToast('✅ 完整白板 ZIP 備份已匯出！');
+      if (els.exportModal) els.exportModal.classList.remove('open');
+    } catch (error) { flashToast('❌ 匯出失敗：' + error.message); }
   }
 
   // 4. 匯出 JSON 備份檔
