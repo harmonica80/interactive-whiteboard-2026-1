@@ -153,6 +153,8 @@
     pdfTotalPages: document.getElementById('pdfTotalPages'),
     pdfSelectAll: document.getElementById('pdfSelectAll'),
     pdfResolution: document.getElementById('pdfResolution'),
+    pdfCustomWidth: document.getElementById('pdfCustomWidth'),
+    pdfCustomWidthWrap: document.getElementById('pdfCustomWidthWrap'),
     // Student Lock Modal (Item 8)
     studentLockModal: document.getElementById('studentLockModal'),
     lockStudentTargetName: document.getElementById('lockStudentTargetName'),
@@ -2943,6 +2945,9 @@
     els.pdfTotalPages.textContent = numPages;
     els.pdfThumbnailGrid.innerHTML = '';
     els.pdfResolution.value = '600';
+    els.pdfCustomWidth.value = '600';
+    els.pdfCustomWidthWrap.hidden = true;
+    els.pdfResolution.onchange = () => { els.pdfCustomWidthWrap.hidden = els.pdfResolution.value !== 'custom'; };
     selectedPdfPages.clear();
 
     // 預設全選
@@ -3023,11 +3028,16 @@
       flashToast('⚠️ 請至少勾選一頁要插入的 PDF！');
       return;
     }
+    const resolutionOptions = [500, 600, 800, 1000, 1200, 1920];
+    const isCustom = els.pdfResolution.value === 'custom';
+    const requestedWidth = Number(isCustom ? els.pdfCustomWidth.value : els.pdfResolution.value);
+    if (!Number.isInteger(requestedWidth) || (isCustom ? requestedWidth < 100 || requestedWidth > 4096 : !resolutionOptions.includes(requestedWidth))) {
+      flashToast('⚠️ 圖片寬度請輸入 100～4096 的整數像素。');
+      return;
+    }
     tryRestoreFullscreen();
 
-    const resolutionOptions = [500, 600, 800, 1000, 1200, 1920];
-    const requestedWidth = Number(els.pdfResolution.value);
-    const imageWidth = resolutionOptions.includes(requestedWidth) ? requestedWidth : 600;
+    const imageWidth = requestedWidth;
     const pagesToInsert = Array.from(selectedPdfPages).sort((a, b) => a - b);
     closePdfModal();
     flashToast(`正在插入 ${pagesToInsert.length} 頁 PDF...`);

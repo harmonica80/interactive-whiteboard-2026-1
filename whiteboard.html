@@ -1268,8 +1268,9 @@
       flex-wrap: wrap;
     }
 
-    .pdf-resolution-label { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-primary); }
-    .pdf-resolution-label select { padding: 6px 8px; font: inherit; color: var(--text-primary); background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; }
+    .pdf-resolution-label { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 14px; color: var(--text-primary); }
+    .pdf-resolution-label[hidden] { display: none; }
+    .pdf-resolution-label :is(select, input) { max-width: 140px; padding: 6px 8px; font: inherit; color: var(--text-primary); background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; }
 
     .checkbox-label {
       display: inline-flex;
@@ -2149,7 +2150,12 @@
               <option value="1000">1000 像素</option>
               <option value="1200">1200 像素</option>
               <option value="1920">1920 像素</option>
+              <option value="custom">自訂</option>
             </select>
+          </label>
+          <label class="pdf-resolution-label" id="pdfCustomWidthWrap" hidden>自訂寬度
+            <input id="pdfCustomWidth" type="number" min="100" max="4096" step="1" value="600" inputmode="numeric" aria-describedby="pdfCustomWidthHint">
+            <span id="pdfCustomWidthHint">像素（100～4096）</span>
           </label>
         </div>
         <div class="pdf-thumbnail-grid" id="pdfThumbnailGrid">
@@ -2360,6 +2366,6 @@
 
   </div>
 
-  <script type="application/x-board-script" data-src="js/whiteboard_core.js?v=c7"></script>
+  <script type="application/x-board-script" data-src="js/whiteboard_core.js?v=c8"></script>
 </body>
 </html>
