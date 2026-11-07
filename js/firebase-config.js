@@ -909,6 +909,18 @@ window.ClassRoomManager = {
       throw new Error(`找不到欲複製的項目（ID: ${itemId}）！`);
     }
 
+    let archivePayload = null;
+    if (moduleType === 'whiteboardArchive' || moduleType === 'presentationMaterial') {
+      if (itemData.format !== 'zip-json-v1') throw new Error('此歷程不是目前支援的新格式');
+      const dataPath = moduleType === 'whiteboardArchive' ? 'whiteboard_archive_data' : 'presentation_material_data';
+      const payloadSnap = await rawRef(srcPath(`${dataPath}/${itemId}`)).once('value');
+      archivePayload = payloadSnap.val();
+      if (typeof archivePayload !== 'string' || !archivePayload) throw new Error('來源歷程內容不存在，無法複製');
+      const decoded = await BoardArchiveStore.unpack(archivePayload);
+      if (!decoded || (moduleType === 'whiteboardArchive' ? (!decoded.canvases || !decoded.pages) : !Array.isArray(decoded.slides))) throw new Error('來源歷程內容不完整，無法複製');
+      if (moduleType === 'presentationMaterial') { delete decoded.submissions; archivePayload = await BoardArchiveStore.pack(decoded); }
+    }
+
     // 若有資料夾，取得來源資料夾名稱
     if (itemData.folderId && folderTypePath) {
       const fSnap = await rawRef(srcPath(`${folderTypePath}/${itemData.folderId}`)).once('value');
@@ -1034,7 +1046,8 @@ window.ClassRoomManager = {
           id: newId,
           createdAt: Date.now()
         };
-        await rawRef(tgtPath(tCode, `whiteboard_archives/${newId}`)).set(newArchiveItem);
+        newArchiveItem.contentBytes = archivePayload.length;
+        await rawRef(tCode ? `classes/${tCode}` : '/').update({ [`whiteboard_archives/${newId}`]: newArchiveItem, [`whiteboard_archive_data/${newId}`]: archivePayload });
       } else if (moduleType === 'presentationMaterial') {
         const newMaterialItem = {
           ...itemData,
@@ -1042,7 +1055,8 @@ window.ClassRoomManager = {
           createdAt: Date.now()
         };
         delete newMaterialItem.submissions;
-        await rawRef(tgtPath(tCode, `presentation_materials/${newId}`)).set(newMaterialItem);
+        newMaterialItem.contentBytes = archivePayload.length;
+        await rawRef(tCode ? `classes/${tCode}` : '/').update({ [`presentation_materials/${newId}`]: newMaterialItem, [`presentation_material_data/${newId}`]: archivePayload });
       }
 
       copiedTargets.push(tCode);

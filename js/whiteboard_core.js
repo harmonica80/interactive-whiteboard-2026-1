@@ -4184,10 +4184,10 @@
           pages: allPagesData
         };
 
-        const ref = getArchivesRef();
-        if (!ref) throw new Error('雲端歷程資料庫未就緒');
-        await ref.child(archiveId).set(archiveData);
-        archiveBank[archiveId] = archiveData;
+        if (!getArchivesRef()) throw new Error('雲端歷程資料庫未就緒');
+        const { canvases, pages, ...metadata } = archiveData;
+        const summary = await BoardArchiveStore.save(db.ref(), 'whiteboard_archives', 'whiteboard_archive_data', archiveId, metadata, { canvases, pages });
+        archiveBank[archiveId] = summary;
         if (window.parent) window.parent.whiteboardArchives = archiveBank;
         renderWhiteboardArchiveList();
         flashToast('✅ 白板歷程檔案已成功儲存至雲端！');
@@ -4232,20 +4232,20 @@
     flashToast('正在載入白板歷程檔案...');
 
     try {
-      const canvasesData = archive.canvases || { main: { id: 'main', name: archive.title || '主白板', pages: ['page_1'] } };
-      const pagesData = archive.pages || {};
+      if (archive.format !== 'zip-json-v1') throw new Error('此歷程不是目前支援的新格式');
+      const content = await BoardArchiveStore.load(db.ref(), 'whiteboard_archive_data', archiveId);
+      if (!content || !content.canvases || !content.pages || !Object.keys(content.canvases).length) throw new Error('歷程內容不完整，未載入白板');
+      const canvasesData = content.canvases;
+      const pagesData = content.pages;
 
-      // 1. 寫入 pages 與 canvases 到 Firebase
-      await roomRef.child('pages').set(pagesData);
-      await roomRef.child('canvases').set(canvasesData);
-
-      // 2. 模式設定 (唯讀 vs 共編)
+      // 一次提交頁面、畫布與模式，避免部分寫入失敗造成內容不一致。
       const isReadOnly = mode === 'readonly';
-      const settingsUpdate = {
-        studentCanEdit: !isReadOnly,
-        canMoveOthers: !isReadOnly
-      };
-      await roomRef.child('settings').update(settingsUpdate);
+      await roomRef.update({
+        pages: pagesData,
+        canvases: canvasesData,
+        'settings/studentCanEdit': !isReadOnly,
+        'settings/canMoveOthers': !isReadOnly
+      });
       state.settings.studentCanEdit = !isReadOnly;
       state.settings.canMoveOthers = !isReadOnly;
       applySettingsUI();
@@ -4267,19 +4267,28 @@
   }
 
   // 下載白板歷程 JSON
-  function downloadWhiteboardArchiveJSON(archiveId) {
+  async function downloadWhiteboardArchiveJSON(archiveId) {
     const archive = archiveBank[archiveId];
     if (!archive) return;
+    let content;
+    try {
+      if (archive.format !== 'zip-json-v1') throw new Error('此歷程不是目前支援的新格式');
+      content = await BoardArchiveStore.load(db.ref(), 'whiteboard_archive_data', archiveId);
+      if (!content || !content.canvases || !content.pages) throw new Error('歷程內容不完整');
+    } catch (error) { flashToast('❌ 下載失敗：' + error.message); return; }
     const backupData = {
       app: '即時互動白板',
       version: '3.10.12',
+      scope: 'full-whiteboard',
+      activeCanvasId: archive.activeCanvasId,
+      activePageId: archive.activePageId,
       title: archive.title,
       exportTime: new Date(archive.createdAt || Date.now()).toISOString(),
       canvasCount: archive.canvasCount,
       pageCount: archive.pageCount,
       objectCount: archive.objectCount,
-      canvases: archive.canvases,
-      pages: archive.pages
+      canvases: content.canvases,
+      pages: content.pages
     };
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -4296,7 +4305,7 @@
     showWhiteboardConfirm('🗑️ 刪除白板歷程', `確定要刪除「${archive.title || '此歷程檔案'}」嗎？刪除後無法復原。`, () => {
       const ref = getArchivesRef();
       if (ref) {
-        ref.child(archiveId).remove().then(() => {
+        BoardArchiveStore.remove(db.ref(), 'whiteboard_archives', 'whiteboard_archive_data', archiveId).then(() => {
           delete archiveBank[archiveId];
           if (window.parent) window.parent.whiteboardArchives = archiveBank;
           renderWhiteboardArchiveList();

@@ -3186,7 +3186,8 @@
 
         if (typeof db === 'undefined') throw new Error('資料庫未連線');
 
-        await db.ref(`presentation_materials/${materialId}`).set(materialData);
+        const { slides, annotations, ...metadata } = materialData;
+        const summary = await BoardArchiveStore.save(db.ref(), 'presentation_materials', 'presentation_material_data', materialId, metadata, { slides, annotations });
 
         // 記錄當前載入的教材資訊
         this.currentLoadedMaterialId = materialId;
@@ -3194,7 +3195,7 @@
 
         this.notify('🎉 儲存成功', isUpdate ? `已成功覆蓋更新簡報教材「${finalTitle}」！` : `簡報教材「${finalTitle}」已成功儲存為全新雲端教材！`);
         if (!this.materialsBank) this.materialsBank = {};
-        this.materialsBank[materialId] = materialData;
+        this.materialsBank[materialId] = summary;
         this.renderCloudBankList();
       } catch (err) {
         console.error('saveCurrentPresentationToCloud error:', err);
@@ -3321,9 +3322,12 @@
       this.markAsHost();
 
       try {
-        // 1. 深度複製 slides 與 annotations
-        this.slides = JSON.parse(JSON.stringify(material.slides || []));
-        this.annotations = JSON.parse(JSON.stringify(material.annotations || {}));
+        // 1. 僅在載入時下載壓縮教材並檢查內容
+        if (material.format !== 'zip-json-v1') throw new Error('此教材不是目前支援的新格式');
+        const content = await BoardArchiveStore.load(db.ref(), 'presentation_material_data', materialId);
+        if (!content || !Array.isArray(content.slides)) throw new Error('教材內容不完整');
+        this.slides = JSON.parse(JSON.stringify(content.slides));
+        this.annotations = JSON.parse(JSON.stringify(content.annotations || {}));
         this.currentSlideIndex = 0;
         this.currentLoadedMaterialId = materialId;
         this.currentLoadedMaterialTitle = material.title || '';
@@ -3359,17 +3363,23 @@
     }
 
     // 下載教材備份 JSON
-    downloadMaterialJson(materialId) {
+    async downloadMaterialJson(materialId) {
       const material = this.materialsBank && this.materialsBank[materialId];
       if (!material) return;
+      let content;
+      try {
+        if (material.format !== 'zip-json-v1') throw new Error('此教材不是目前支援的新格式');
+        content = await BoardArchiveStore.load(db.ref(), 'presentation_material_data', materialId);
+        if (!content || !Array.isArray(content.slides)) throw new Error('教材內容不完整');
+      } catch (error) { this.notify('下載失敗', error.message); return; }
       const backupData = {
         version: '1.0',
         title: material.title,
         exportedAt: new Date().toISOString(),
         slideCount: material.slideCount,
         questionCount: material.questionCount,
-        slides: material.slides,
-        annotations: material.annotations
+        slides: content.slides,
+        annotations: content.annotations
       };
       const jsonStr = JSON.stringify(backupData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -3392,7 +3402,7 @@
       const doDelete = async () => {
         try {
           if (typeof db !== 'undefined') {
-            await db.ref(`presentation_materials/${materialId}`).remove();
+            await BoardArchiveStore.remove(db.ref(), 'presentation_materials', 'presentation_material_data', materialId);
           }
           if (this.materialsBank) {
             delete this.materialsBank[materialId];

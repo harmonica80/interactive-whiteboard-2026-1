@@ -7114,8 +7114,8 @@ class App {
         db.ref('whiteboard_v2').once('value').catch(() => null)
       ]);
 
-      const wbBytes = wbSnap ? this.estimateJsonBytes(wbSnap.val()) : 0;
-      const presMatBytes = presMatSnap ? this.estimateJsonBytes(presMatSnap.val()) : 0;
+      const wbBytes = wbSnap ? this.estimateJsonBytes(wbSnap.val()) + Object.values(wbSnap.val() || {}).reduce((n, item) => n + (Number(item?.contentBytes) || 0), 0) : 0;
+      const presMatBytes = presMatSnap ? this.estimateJsonBytes(presMatSnap.val()) + Object.values(presMatSnap.val() || {}).reduce((n, item) => n + (Number(item?.contentBytes) || 0), 0) : 0;
       const presLiveBytes = presLiveSnap ? this.estimateJsonBytes(presLiveSnap.val()) : 0;
       const attBytes = attSnap ? this.estimateJsonBytes(attSnap.val()) : 0;
       
@@ -7138,9 +7138,18 @@ class App {
       const rootQuizBytes = rootQuizSnap ? this.estimateJsonBytes(rootQuizSnap.val()) : 0;
       const wbV2Bytes = wbV2Snap ? this.estimateJsonBytes(wbV2Snap.val()) : 0;
 
-      const totalScannedBytes = wbBytes + presMatBytes + presLiveBytes + attBytes +
-                                classesBytes + rootQBytes + rootImgBytes + rootVidBytes +
-                                rootSharesBytes + rootQuizBytes + wbV2Bytes;
+      // 班級資料已包含於 classesBytes；另讀取公開課堂的模組以避免重複或遺漏。
+      let rootModuleBytes = wbBytes + presMatBytes + presLiveBytes + attBytes + wbV2Bytes;
+      if (window.currentClassCode && typeof rawRef === 'function') {
+        const roots = await Promise.all(['whiteboard_archives', 'presentation_materials', 'presentation', 'attachments', 'whiteboard_v2'].map(path => rawRef(path).once('value').catch(() => null)));
+        rootModuleBytes = roots.reduce((sum, snap, index) => {
+          const value = snap && snap.val();
+          const contentBytes = index < 2 ? Object.values(value || {}).reduce((n, item) => n + (Number(item?.contentBytes) || 0), 0) : 0;
+          return sum + (value ? this.estimateJsonBytes(value) + contentBytes : 0);
+        }, 0);
+      }
+      const totalScannedBytes = rootModuleBytes + classesBytes + rootQBytes + rootImgBytes + rootVidBytes +
+                                rootSharesBytes + rootQuizBytes;
 
       const classKey = window.currentClassCode ? `class_${window.currentClassCode}` : 'one_off_root';
       const curClassBase = this.estimateJsonBytes(this.questions) +
@@ -7395,11 +7404,11 @@ class App {
 
       // 1. 白板歷程
       const wbKeys = Object.keys(wbArchives);
-      const wbBytes = this.estimateJsonBytes(wbArchives);
+      const wbBytes = this.estimateJsonBytes(wbArchives) + Object.values(wbArchives).reduce((n, item) => n + (Number(item?.contentBytes) || 0), 0);
 
       // 2. 簡報教材庫
       const presMatKeys = Object.keys(presMaterials);
-      const presMatBytes = this.estimateJsonBytes(presMaterials);
+      const presMatBytes = this.estimateJsonBytes(presMaterials) + Object.values(presMaterials).reduce((n, item) => n + (Number(item?.contentBytes) || 0), 0);
 
       // 3. 進行中簡報廣播殘留
       let presLiveSlidesCount = 0;
@@ -7684,7 +7693,7 @@ class App {
     if (keys.length === 0) return '<div style="font-size: 14px; color: var(--text-muted); text-align: center;">無檔案</div>';
     return keys.map(k => {
       const item = wbArchives[k] || {};
-      const itemBytes = this.estimateJsonBytes(item);
+      const itemBytes = this.estimateJsonBytes(item) + (Number(item.contentBytes) || 0);
       const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleString('zh-TW') : '未知時間';
       const safeTitle = (item.title || '白板歷程筆記').replace(/"/g, '&quot;');
       return `
@@ -7706,7 +7715,7 @@ class App {
     if (keys.length === 0) return '<div style="font-size: 14px; color: var(--text-muted); text-align: center;">無教材</div>';
     return keys.map(k => {
       const item = presMaterials[k] || {};
-      const itemBytes = this.estimateJsonBytes(item);
+      const itemBytes = this.estimateJsonBytes(item) + (Number(item.contentBytes) || 0);
       const sCount = item.slideCount || (item.slides ? item.slides.length : 0);
       const dateStr = item.updatedAt || item.createdAt ? new Date(item.updatedAt || item.createdAt).toLocaleString('zh-TW') : '未知時間';
       const safeTitle = (item.title || '簡報教材').replace(/"/g, '&quot;');
@@ -7731,7 +7740,7 @@ class App {
       `確定要刪除白板歷程筆記「${title}」嗎？刪除後無法復原。`,
       async () => {
         try {
-          await db.ref(`whiteboard_archives/${archiveId}`).remove();
+          await BoardArchiveStore.remove(db.ref(), 'whiteboard_archives', 'whiteboard_archive_data', archiveId);
           if (window.whiteboardArchives) delete window.whiteboardArchives[archiveId];
           this.showNotification('🗑️ 已刪除', `已成功刪除白板歷程筆記「${title}」！`);
           this.scanCloudStorageUsage(false);
@@ -7750,7 +7759,7 @@ class App {
       '確定要清空雲端資料庫中所有的白板歷程筆記嗎？此操作無法復原，建議確認已於白板介面匯出備份 JSON。',
       async () => {
         try {
-          await db.ref('whiteboard_archives').remove();
+          await BoardArchiveStore.removeAll(db.ref(), 'whiteboard_archives', 'whiteboard_archive_data');
           if (window.whiteboardArchives) {
             Object.keys(window.whiteboardArchives).forEach(k => delete window.whiteboardArchives[k]);
           }
@@ -7771,7 +7780,7 @@ class App {
       `確定要刪除簡報教材「${title}」嗎？刪除後無法復原。`,
       async () => {
         try {
-          await db.ref(`presentation_materials/${materialId}`).remove();
+          await BoardArchiveStore.remove(db.ref(), 'presentation_materials', 'presentation_material_data', materialId);
           if (window.presentationManager && window.presentationManager.materialsBank) {
             delete window.presentationManager.materialsBank[materialId];
             window.presentationManager.renderCloudBankList();
@@ -7793,7 +7802,7 @@ class App {
       '確定要清空雲端資料庫中所有的簡報教材檔案嗎？此操作無法復原，建議確認已於簡報介面匯出備份 JSON。',
       async () => {
         try {
-          await db.ref('presentation_materials').remove();
+          await BoardArchiveStore.removeAll(db.ref(), 'presentation_materials', 'presentation_material_data');
           if (window.presentationManager && window.presentationManager.materialsBank) {
             window.presentationManager.materialsBank = {};
             window.presentationManager.renderCloudBankList();

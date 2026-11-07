@@ -1,7 +1,6 @@
 {
   "rules": {
-    /* ⚠️ 只有真正透過我們白板網頁連線、持有合法 Session Token 的師生才能讀寫。
-       任何人在網址列直接敲 https://.../xxx.json 或寫爬蟲，一律 Permission Denied！ */
+    /* 匿名登入只確認 Firebase 身分；此範例不區分師生，取得專案設定的人也可能登入。 */
 
     /* 1. 教室與課堂管理專區 */
     "registered_classes": {
@@ -42,6 +41,10 @@
       ".read": "auth != null",
       ".write": "auth != null"
     },
+    "whiteboard_archive_data": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
 
     /* 6. 同步簡報線上廣播與雲端教材庫 */
     "presentation": {
@@ -52,6 +55,10 @@
       ".read": "auth != null",
       ".write": "auth != null"
     },
+    "presentation_material_data": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
 
     /* 7. 系統空間配額與流量監測統計 */
     "system": {
@@ -59,7 +66,7 @@
       ".write": "auth != null"
     },
 
-    /* 8. 教師身分與密碼雜湊防護 (僅允許讀寫各自資料，禁止整批 dump) */
+    /* 8. 教師資料（此範例僅要求登入，並未依身分區分權限） */
     "teachers": {
       "$teacherId": {
         ".read": "auth != null",
