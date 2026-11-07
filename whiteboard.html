@@ -1258,7 +1258,11 @@
       display: flex;
       align-items: center;
       gap: 16px;
+      flex-wrap: wrap;
     }
+
+    .pdf-resolution-label { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-primary); }
+    .pdf-resolution-label select { padding: 6px 8px; font: inherit; color: var(--text-primary); background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; }
 
     .checkbox-label {
       display: inline-flex;
@@ -2126,6 +2130,16 @@
             <span>全選</span>
           </label>
           <span class="badge-count" id="pdfSelectedBadge">已選 0 頁</span>
+          <label class="pdf-resolution-label" for="pdfResolution">圖片寬度
+            <select id="pdfResolution">
+              <option value="500">500 像素</option>
+              <option value="600" selected>600 像素</option>
+              <option value="800">800 像素</option>
+              <option value="1000">1000 像素</option>
+              <option value="1200">1200 像素</option>
+              <option value="1920">1920 像素</option>
+            </select>
+          </label>
         </div>
         <div class="pdf-thumbnail-grid" id="pdfThumbnailGrid">
           <!-- 動態載入縮圖卡片 -->
@@ -2331,6 +2345,6 @@
 
   </div>
 
-  <script type="application/x-board-script" data-src="js/whiteboard_core.js?v=c4"></script>
+  <script type="application/x-board-script" data-src="js/whiteboard_core.js?v=c5"></script>
 </body>
 </html>

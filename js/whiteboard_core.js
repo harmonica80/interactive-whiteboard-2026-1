@@ -152,6 +152,7 @@
     btnConfirmInsertPdf: document.getElementById('btnConfirmInsertPdf'),
     pdfTotalPages: document.getElementById('pdfTotalPages'),
     pdfSelectAll: document.getElementById('pdfSelectAll'),
+    pdfResolution: document.getElementById('pdfResolution'),
     // Student Lock Modal (Item 8)
     studentLockModal: document.getElementById('studentLockModal'),
     lockStudentTargetName: document.getElementById('lockStudentTargetName'),
@@ -2927,6 +2928,7 @@
     const numPages = currentPdfDoc.numPages;
     els.pdfTotalPages.textContent = numPages;
     els.pdfThumbnailGrid.innerHTML = '';
+    els.pdfResolution.value = '600';
     selectedPdfPages.clear();
 
     // 預設全選
@@ -3009,6 +3011,9 @@
     }
     tryRestoreFullscreen();
 
+    const resolutionOptions = [500, 600, 800, 1000, 1200, 1920];
+    const requestedWidth = Number(els.pdfResolution.value);
+    const imageWidth = resolutionOptions.includes(requestedWidth) ? requestedWidth : 600;
     const pagesToInsert = Array.from(selectedPdfPages).sort((a, b) => a - b);
     closePdfModal();
     flashToast(`正在插入 ${pagesToInsert.length} 頁 PDF...`);
@@ -3025,11 +3030,11 @@
       const pageNum = pagesToInsert[idx];
       const page = await currentPdfDoc.getPage(pageNum);
       const originalViewport = page.getViewport({ scale: 1 });
-      const viewport = page.getViewport({ scale: Math.min(1.5, 600 / originalViewport.width) }); // 寬度最多 600 像素
+      const viewport = page.getViewport({ scale: imageWidth / originalViewport.width }); // 保持頁面比例並使用選定寬度
 
       const canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+      canvas.width = imageWidth;
+      canvas.height = Math.max(1, Math.round(viewport.height));
       const ctx = canvas.getContext('2d');
       await page.render({ canvasContext: ctx, viewport }).promise;
 
