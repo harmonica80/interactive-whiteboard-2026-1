@@ -89,6 +89,7 @@
     // 標記本機為簡報主持端 (老師端生命週期持久化)
     markAsHost() {
       this.localIsHost = true;
+      if (this.draft) this.draft.ensureLoaded();
       try {
         window.boardStorage.session.setItem('wb_presentation_host', 'true');
       } catch (e) {}
@@ -138,10 +139,12 @@
     // 綁定 UI 與 Firebase
     bindUI() {
       this.cacheElements();
+      this.draft = new window.PresentationDraftController(this);
       this.bindEvents();
       this.initFirebase();
       this.updatePermissionsUI();
       this.render();
+      this.draft.ensureLoaded();
     }
 
     // 快取所有相關 DOM 元素
@@ -818,6 +821,7 @@
             if (!this.annotations[slide.id]) this.annotations[slide.id] = [];
             this.annotations[slide.id].push(this.currentStroke);
             this.broadcastAnnotations(slide.id);
+            if (this.draft) this.draft.schedule();
           }
           this.currentStroke = null;
         }
@@ -1311,6 +1315,7 @@
       if (!slide) return;
       this.showConfirm('🧹', '清除本頁標記', '確定要清除此頁的所有手繪標記嗎？', () => {
         delete this.annotations[slide.id];
+        if (this.draft) this.draft.schedule();
         this.redrawAnnotations();
         if (this.isPresenting && typeof db !== 'undefined') {
           db.ref(`presentation/annotations/${slide.id}`).remove().catch(() => {});
@@ -1450,6 +1455,7 @@
           this.stopSyncPresentation();
         }
 
+        if (this.draft) this.draft.markReset();
         this.slides = [];
         this.currentSlideIndex = 0;
         this.annotations = {};
@@ -1614,6 +1620,7 @@
     render() {
       const { els } = this;
       if (!els.panel) return;
+      if (this.draft) this.draft.schedule();
 
       const total = this.slides.length;
       const current = total > 0 ? this.currentSlideIndex + 1 : 0;
@@ -2737,6 +2744,15 @@
       if (!modal || !container || !this.currentPdfDoc) return;
 
       container.innerHTML = '';
+      const resolution = document.getElementById('presentationPdfResolution');
+      const customWrap = document.getElementById('presentationPdfCustomWrap');
+      const customWidth = document.getElementById('presentationPdfCustomWidth');
+      if (resolution && customWrap && customWidth) {
+        resolution.value = '1000';
+        customWidth.value = '1000';
+        customWrap.hidden = true;
+        resolution.onchange = () => { customWrap.hidden = resolution.value !== 'custom'; };
+      }
       this.openModal(modal);
       const numPages = this.currentPdfDoc.numPages;
 
@@ -2800,6 +2816,13 @@
         this.notify('提示', '請至少勾選一頁 PDF！');
         return;
       }
+      const resolution = document.getElementById('presentationPdfResolution');
+      const customWidth = document.getElementById('presentationPdfCustomWidth');
+      const requestedWidth = Number(resolution?.value === 'custom' ? customWidth?.value : resolution?.value);
+      if (!Number.isInteger(requestedWidth) || requestedWidth < 100 || requestedWidth > 4096) {
+        this.notify('解析度不正確', '圖片寬度請輸入 100～4096 的整數像素。');
+        return;
+      }
       this.tryRestoreFullscreen();
 
       const sortedPages = Array.from(this.selectedPdfPages).sort((a, b) => a - b);
@@ -2808,13 +2831,11 @@
       for (const pageNum of sortedPages) {
         const page = await this.currentPdfDoc.getPage(pageNum);
         const unscaledViewport = page.getViewport({ scale: 1.0 });
-        // 限制最大邊長為 1280px，既保有投影機與平板極佳清晰度，又縮小 80% 記憶體與網路傳輸負擔
-        const maxDim = 1280;
-        const targetScale = Math.min(1.35, maxDim / Math.max(unscaledViewport.width, unscaledViewport.height));
-        const viewport = page.getViewport({ scale: Math.max(0.75, targetScale) });
+        // 使用所選圖片寬度，頁面高度依 PDF 原始比例計算。
+        const viewport = page.getViewport({ scale: requestedWidth / unscaledViewport.width });
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = viewport.width;
-        tempCanvas.height = viewport.height;
+        tempCanvas.width = requestedWidth;
+        tempCanvas.height = Math.max(1, Math.round(viewport.height));
         await page.render({ canvasContext: tempCanvas.getContext('2d'), viewport }).promise;
 
         // 使用 0.75 品質 WebP，相較原 JPEG 畫質更清晰但體積大幅縮減 40% 以上

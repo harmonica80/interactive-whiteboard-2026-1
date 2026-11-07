@@ -1278,11 +1278,15 @@
 }
 
 /* 全螢幕作用中的按鈕醒目樣式 */
-.presentation-tool-btn.is-fullscreen-active {
-  background: var(--accent-color, #2563eb) !important;
-  color: #ffffff !important;
-  border-color: transparent !important;
+#btnSlideFullscreen.is-fullscreen-active {
+  background: var(--bg-card) !important;
+  color: var(--success-color) !important;
+  border: 2px solid var(--success-color) !important;
 }
+.presentation-pdf-toolbar { padding: 10px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-color); background: var(--bg-input); }
+.presentation-pdf-resolution { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--text-primary); font-size: 14px; }
+.presentation-pdf-resolution[hidden] { display: none; }
+.presentation-pdf-resolution :is(select, input) { max-width: 140px; padding: 6px 8px; font: inherit; color: var(--text-primary); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; }
 
 /* 更多色塊選項樣式 (圖 2: 5~6 個選項支援) */
 .presentation-color-opt-btn.opt-purple { background: #8b5cf6; }
@@ -1694,3 +1698,5 @@
   border-color: var(--accent-color);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
+
+#presentationDraftStatus { color: var(--text-secondary); font-size: 14px; line-height: 1.4; }

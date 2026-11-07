@@ -2310,6 +2310,10 @@ class App {
       this.detachVideoSyncListener();
     }
 
+    if (targetId === 'panel-presentation' && window.presentationManager?.draft) {
+      window.presentationManager.draft.ensureLoaded();
+    }
+
     if (targetId === 'panel-whiteboard') {
       const iframe = document.getElementById('whiteboardFrame');
       if (iframe && iframe.contentWindow) {

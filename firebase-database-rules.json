@@ -51,6 +51,7 @@
       ".read": "auth != null",
       ".write": "auth != null"
     },
+    "presentation_draft": { ".read": "auth != null", ".write": "auth != null" },
     "presentation_materials": {
       ".read": "auth != null",
       ".write": "auth != null"
