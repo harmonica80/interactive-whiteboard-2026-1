@@ -101,18 +101,44 @@ window.ClassRoomManager = {
     window.boardStorage.local.setItem('user_role', role === 'teacher' ? 'teacher' : 'student');
   },
 
-  // 檢查班級是否已由老師登記開課
+  // 班級不存在會觸發切換，必須以伺服器回應為準，不能採用本機快取的空資料。
   async checkClassExists(code) {
     if (!code) return false;
     const sanitized = this.sanitizeClassCode(code);
     if (!sanitized) return false;
-    try {
-      const snap = await rawRef(`registered_classes/${sanitized}`).once('value');
-      return snap.exists() && snap.val() !== null;
-    } catch (e) {
-      console.warn('檢查班級失敗:', e);
-      throw e;
+    const target = window.boardTarget;
+    const base = target?.config?.databaseURL;
+    if (!base) throw new Error('資料庫連線設定尚未就緒');
+
+    let lastError;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), 6000);
+      try {
+        const url = new URL(`${base.replace(/\/+$/, '')}/registered_classes/${encodeURIComponent(sanitized)}.json`);
+        if (target.mode === 'secure') {
+          const user = window.firebaseAuth?.currentUser;
+          if (!user) throw new Error('Firebase 登入尚未完成');
+          const token = await Promise.race([
+            user.getIdToken(attempt > 0),
+            new Promise((_, reject) => abort.signal.addEventListener('abort', () => reject(new Error('Firebase 驗證逾時')), { once: true }))
+          ]);
+          url.searchParams.set('auth', token);
+        }
+        // Firebase REST 回傳伺服器結果；token 僅用於此請求，不寫入畫面或日誌。
+        const response = await fetch(url.toString(), { signal: abort.signal, cache: 'no-store', referrerPolicy: 'no-referrer' });
+        if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? '資料庫權限不足或登入已失效' : `班級查詢失敗（HTTP ${response.status}）`);
+        const value = await response.json();
+        return value !== null;
+      } catch (error) {
+        lastError = error;
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+      } finally {
+        clearTimeout(timer);
+      }
     }
+    console.warn('班級查詢失敗，保留原班級代碼');
+    throw new Error(lastError?.name === 'AbortError' ? '班級查詢逾時' : (lastError?.message || '無法連線至資料庫'));
   },
 
   // 老師登記新班級 (開課)
