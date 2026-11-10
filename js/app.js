@@ -18798,7 +18798,7 @@ class App {
     if (code) {
       // 驗證代碼是否確實存在於註冊清單中 (防手滑或無效 URL 參數)
       let exists = true;
-      if (window.ClassRoomManager && typeof window.ClassRoomManager.checkClassExists === 'function') {
+      if (window.boardVerifiedClassCode !== code && window.ClassRoomManager && typeof window.ClassRoomManager.checkClassExists === 'function') {
         try {
           exists = await window.ClassRoomManager.checkClassExists(code);
         } catch (error) {
