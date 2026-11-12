@@ -78,6 +78,14 @@
   async function save(id,question,answer){if(!allowed())return;question=question.trim();answer=safeHtml(answer).trim();if(!question||!answer){alert('請輸入問題與答案。');return;}if(answer.length>1800000){alert('答案與圖片過大，請減少圖片或縮小圖檔後重試。');return;}const item=items.find(x=>x.id===id);if(!item)return;const value={question,answer,format:'html',order:item.order};if(await commit({['items/'+id]:value})){Object.assign(item,value);render();}}
   async function move(index,delta){if(!allowed())return;const other=index+delta;if(other<0||other>=items.length)return;const a=items[index],b=items[other], ao=a.order,bo=b.order;if(await commit({['items/'+a.id+'/order']:bo,['items/'+b.id+'/order']:ao})){a.order=bo;b.order=ao;items.sort((x,y)=>x.order-y.order);render();}}
   async function remove(id){if(!allowed())return;const item=items.find(x=>x.id===id);if(!item||!confirm(`刪除「${item.question}」？`))return;if(await commit({['items/'+id]:null})){items=items.filter(x=>x.id!==id);render();}}
+  document.addEventListener('board-ready', () => {
+    const dialog=document.getElementById('systemFaqViewer');
+    dialog.addEventListener('click',event=>{
+      if(event.target!==dialog)return;
+      const rect=dialog.getBoundingClientRect();
+      if(event.clientX<rect.left || event.clientX>rect.right || event.clientY<rect.top || event.clientY>rect.bottom)dialog.close();
+    });
+  });
   window.systemFaq={
     async load(){if(!allowed())return;loaded=false;context=window.currentClassCode||'';status('正在讀取…');try{const snap=await ref().once('value');if(!allowed() || context!==(window.currentClassCode||''))return;const data=snap.val()||{};initialized=data.initialized===true;items=initialized?Object.entries(data.items||{}).map(([id,v])=>({id,question:String(v.question||''),answer:String(v.answer||''),format:v.format==='html'?'html':'text',order:Number(v.order)||0})).sort((a,b)=>a.order-b.order):defaults.map(v=>({...v}));loaded=true;status(initialized?'已讀取目前課堂的常見問題。':'以下為建議內容，首次變更時儲存至目前課堂。');render();}catch(e){status('讀取失敗，請檢查網路與資料庫權限，重新進入此頁再試。');document.getElementById('systemFaqList')?.replaceChildren();}},
     async openViewer(){
