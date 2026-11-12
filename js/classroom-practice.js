@@ -28,7 +28,7 @@
     read(key).forEach((entry, i) => select.add(new Option(`${entry.name}（${display(entry.seconds)}）`, String(i))));
   }
   const timer = {
-    open() { if (!allowed()) return; syncPresets(); $('practiceTimerModal').showModal(); update(); },
+    open() { if (!allowed()) return; syncPresets(); const dialog=$('practiceTimerModal'); if (!dialog.open) dialog.showModal(); update(); },
     start() {
       if (!allowed()) return; const m = Number($('practiceTimerMinutes').value), s = Number($('practiceTimerSeconds').value);
       if (!Number.isInteger(m) || !Number.isInteger(s) || m < 0 || m > 180 || s < 0 || s > 59 || m * 60 + s === 0) { alert('請輸入有效時間：0 至 180 分鐘、0 至 59 秒，且總時間大於 0。'); return; }
@@ -46,11 +46,11 @@
       if (!allowed()) return;
       if (!window.documentPictureInPicture) { alert('此瀏覽器不支援獨立置頂視窗；請使用 Chrome 或 Edge，或使用頁面上的浮動計時器。'); return; }
       try {
-        pip = await window.documentPictureInPicture.requestWindow({width: 320, height: 190});
+        pip = await window.documentPictureInPicture.requestWindow({width: 320, height: 240});
         const d = pip.document; d.title = '課堂計時器'; const style = d.createElement('style');
-        const c = getComputedStyle(document.documentElement); for (const name of ['--bg-card','--text-primary','--accent-color']) d.documentElement.style.setProperty(name, c.getPropertyValue(name));
-        style.textContent = 'body{margin:0;display:grid;place-items:center;height:100vh;background:var(--bg-card);color:var(--text-primary);font-family:system-ui;text-align:center}strong{font-size:58px;font-variant-numeric:tabular-nums;color:var(--accent-color)}p{font-size:16px;margin:4px}'; d.head.appendChild(style);
-        const box=d.createElement('div'), label=d.createElement('p'), value=d.createElement('strong'); label.textContent='⏱️ 課堂計時器'; value.id='pipTime'; box.append(label,value); d.body.appendChild(box); update();
+        const c = getComputedStyle(document.documentElement); for (const name of ['--bg-card','--bg-input','--text-primary','--accent-color','--border-color']) d.documentElement.style.setProperty(name, c.getPropertyValue(name));
+        style.textContent = 'body{margin:0;display:grid;place-items:center;height:100vh;background:var(--bg-card);color:var(--text-primary);font-family:system-ui;text-align:center}strong{font-size:58px;font-variant-numeric:tabular-nums;color:var(--accent-color)}p{font-size:16px;margin:4px}button{display:block;margin:8px auto 0;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-input);color:var(--text-primary);font:600 14px system-ui;cursor:pointer}'; d.head.appendChild(style);
+        const box=d.createElement('div'), label=d.createElement('p'), value=d.createElement('strong'), settings=d.createElement('button'); label.textContent='⏱️ 課堂計時器'; value.id='pipTime'; settings.type='button'; settings.textContent='開啟計時器設定'; settings.addEventListener('click',()=>{ if (!allowed()) return; window.focus(); timer.open(); }); box.append(label,value,settings); d.body.appendChild(box); update();
       } catch (_) { alert('無法開啟置頂視窗，請確認瀏覽器允許畫中畫視窗。'); }
     }
   };
@@ -61,5 +61,9 @@
     remove() { if (!allowed()) return; const val=$('savedReactionSelect').value, list=read(reactionKey); if(val==='' || !list[Number(val)])return; if(!confirm(`刪除自訂情境「${list[Number(val)].name}」？`))return; list.splice(Number(val),1); if(write(reactionKey,list))this.refresh(); }
   };
   window.classroomPracticeTimer=timer; window.savedReactionScenarios=reactions;
-  document.addEventListener('board-ready', () => { syncPresets(); reactions.refresh(); });
+  document.addEventListener('board-ready', () => {
+    syncPresets(); reactions.refresh();
+    const dialog=$('practiceTimerModal');
+    dialog.addEventListener('click',event=>{ if(event.target!==dialog)return; const rect=dialog.getBoundingClientRect(); if(event.clientX<rect.left || event.clientX>rect.right || event.clientY<rect.top || event.clientY>rect.bottom) dialog.close(); });
+  });
 })();
