@@ -1,4 +1,4 @@
-.practice-timer-dialog { box-sizing:border-box; width:min(600px, calc(100% - 32px)); max-height:90vh; overflow:auto; padding:24px; border:1px solid var(--border-color); border-radius:16px; background:var(--bg-card); color:var(--text-primary); box-shadow:var(--shadow); font-size:16px; }
+.practice-timer-dialog { position:fixed; inset:0; margin:auto; box-sizing:border-box; width:min(600px, calc(100% - 32px)); max-height:90vh; overflow:auto; padding:24px; border:1px solid var(--border-color); border-radius:16px; background:var(--bg-card); color:var(--text-primary); box-shadow:var(--shadow); font-size:16px; }
 .practice-timer-dialog::backdrop { background:color-mix(in srgb, var(--bg-primary) 60%, transparent); }
 .practice-timer-dialog h2,.practice-timer-dialog h3,.practice-reaction-presets h4 { color:var(--text-primary); }
 .practice-timer-dialog p,.practice-reaction-presets p { color:var(--text-secondary); font-size:14px; }

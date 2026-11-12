@@ -27,6 +27,7 @@
     try { const bitmap=await createImageBitmap(file);const scale=Math.min(1,800/bitmap.width,1600/bitmap.height);const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));const ctx=canvas.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();const data=canvas.toDataURL('image/webp',0.8);if(!data.startsWith('data:image/webp;')||data.length>1500000){alert('圖片過大或瀏覽器不支援 WebP，請縮小圖片後重試。');return;}const img=document.createElement('img');img.src=data;img.alt='FAQ 圖片';editor.appendChild(img);editor.focus();}catch(e){alert('無法讀取圖片，請改用其他圖檔。');}
   }
   let items=[], loaded=false, initialized=false, busy=false, context='';
+  const expanded=new Set();
   const allowed=()=>Boolean(window.app && window.app.isAdmin);
   const ref=()=>window.app.db.ref('settings/systemFaq');
   const status=text=>{const el=document.getElementById('systemFaqStatus');if(el)el.textContent=text;};
@@ -35,18 +36,27 @@
     const list=document.getElementById('systemFaqList');if(!list)return;list.replaceChildren();
     if(!items.length){const p=document.createElement('p');p.className='system-faq-help';p.textContent='目前沒有常見問題，可按下方按鈕新增。';list.appendChild(p);return;}
     items.forEach((item,i)=>{
-      const card=document.createElement('div');card.className='system-faq-card';
+      const card=document.createElement('details');card.className='system-faq-card';card.open=expanded.has(item.id);
+      const summary=document.createElement('summary');summary.className='system-faq-card-title';summary.textContent=item.question || '未命名問題';
+      card.addEventListener('toggle',()=>{if(card.open)expanded.add(item.id);else expanded.delete(item.id);});
+      const body=document.createElement('div');body.className='system-faq-card-body';
       const qLabel=document.createElement('label');qLabel.textContent=`問題 ${i+1}`;
       const q=document.createElement('input');q.className='question-input';q.maxLength=200;q.value=item.question;q.setAttribute('aria-label',`問題 ${i+1}`);
       const aLabel=document.createElement('label');aLabel.textContent='答案';
-      const toolbar=document.createElement('div');toolbar.className='system-faq-actions';
+      q.addEventListener('input',()=>{summary.textContent=q.value.trim() || '未命名問題';});
+      const wrapper=document.createElement('div');wrapper.className='quiz-editor-wrapper system-faq-editor-wrapper';
+      const toolbar=document.createElement('div');toolbar.className='quiz-editor-toolbar';
+      const row=document.createElement('div');row.className='quiz-editor-toolbar-row';
+      const subrow=document.createElement('div');subrow.className='quiz-editor-toolbar-row quiz-editor-toolbar-row-sub';
       const a=document.createElement('div');a.className='system-faq-editor';a.contentEditable='true';a.setAttribute('role','textbox');a.setAttribute('aria-multiline','true');a.setAttribute('aria-label',`問題 ${i+1} 的答案`);a.innerHTML=answerHtml(item);
-      for(const [label,command] of [['粗體','bold'],['斜體','italic'],['底線','underline'],['項目清單','insertUnorderedList'],['編號清單','insertOrderedList']]) {const b=button(label,()=>{a.focus();document.execCommand(command,false,null);});b.addEventListener('mousedown',e=>e.preventDefault());toolbar.appendChild(b);}
-      const file=document.createElement('input');file.type='file';file.accept='image/*';file.hidden=true;file.addEventListener('change',()=>{insertImage(file.files[0],a);file.value='';});toolbar.append(button('🖼️ 上傳圖片',()=>file.click()),file);
+      for(const [label,command] of [['B 粗體','bold'],['I 斜體','italic'],['U 底線','underline'],['• 清單','insertUnorderedList'],['1. 清單','insertOrderedList']]) {const b=button(label,()=>{a.focus();document.execCommand(command,false,null);});b.className='quiz-editor-btn';b.addEventListener('mousedown',e=>e.preventDefault());row.appendChild(b);}
+      const file=document.createElement('input');file.type='file';file.accept='image/*';file.hidden=true;file.addEventListener('change',()=>{insertImage(file.files[0],a);file.value='';});const upload=button('🖼️ 圖片',()=>file.click());upload.className='quiz-editor-btn quiz-btn-media';subrow.append(upload,file);
+      for(const [label,command] of [['↩️ 復原','undo'],['↪️ 重做','redo'],['🧹 清除格式','removeFormat']]) {const b=button(label,()=>{a.focus();document.execCommand(command,false,null);});b.className='quiz-editor-btn';b.addEventListener('mousedown',e=>e.preventDefault());subrow.appendChild(b);}
+      toolbar.append(row,subrow);wrapper.append(toolbar,a);
       a.addEventListener('paste',e=>{e.preventDefault();const text=e.clipboardData.getData('text/plain');document.execCommand('insertText',false,text);});
       const actions=document.createElement('div');actions.className='system-faq-actions';
       actions.append(button('💾 儲存',()=>save(item.id,q.value,a.innerHTML)),button('↑ 上移',()=>move(i,-1),i===0),button('↓ 下移',()=>move(i,1),i===items.length-1),button('🗑️ 刪除',()=>remove(item.id)));
-      card.append(qLabel,q,aLabel,toolbar,a,actions);list.appendChild(card);
+      body.append(qLabel,q,aLabel,wrapper,actions);card.append(summary,body);list.appendChild(card);
     });
   }
   async function commit(changes) {
@@ -79,6 +89,6 @@
         entries.forEach(item=>{const details=document.createElement('details'),summary=document.createElement('summary'),answer=document.createElement('div');summary.textContent=item.question;answer.className='system-faq-answer';answer.innerHTML=answerHtml(item);details.append(summary,answer);details.addEventListener('toggle',()=>{if(details.open)list.querySelectorAll('details').forEach(other=>{if(other!==details)other.open=false;});});list.appendChild(details);});
       }catch(e){message.textContent='讀取失敗，請檢查網路或資料庫讀取權限後重試。';}
     },
-    async add(){if(!allowed()||!loaded)return;const id=ref().child('items').push().key;const item={id,question:'新問題',answer:'請輸入答案',order:items.length?Math.max(...items.map(x=>x.order))+1:0};if(await commit({['items/'+id]:{question:item.question,answer:item.answer,order:item.order,...(item.format ? {format:item.format} : {})}})){items.push(item);render();}}
+    async add(){if(!allowed()||!loaded)return;const id=ref().child('items').push().key;const item={id,question:'新問題',answer:'請輸入答案',order:items.length?Math.max(...items.map(x=>x.order))+1:0};if(await commit({['items/'+id]:{question:item.question,answer:item.answer,order:item.order,...(item.format ? {format:item.format} : {})}})){items.push(item);expanded.add(item.id);render();}}
   };
 })();
