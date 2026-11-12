@@ -19,6 +19,7 @@
     }
   </script>
   <link rel="stylesheet" href="css/board-setup.css?v=c10">
+  <link rel="stylesheet" href="css/classroom-practice.css?v=c1">
 </head>
 <body>
   <dialog id="boardConnectionStatus" aria-labelledby="boardLoadingTitle" oncancel="event.preventDefault()">
@@ -1795,12 +1796,18 @@
                 <div class="admin-cat-title">
                   <span>⚡</span>
                   <span>教學互動管理</span>
-                  <span class="admin-cat-badge">5 個功能</span>
+                  <span class="admin-cat-badge">6 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
               <div class="admin-cat-body">
                 <div class="admin-features-grid">
+                  <div class="admin-feature-card" role="button" tabindex="0" onclick="window.classroomPracticeTimer.open()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.classroomPracticeTimer.open()}">
+                    <div class="admin-feature-icon-box" aria-hidden="true" style="font-size:40px">⏱️</div>
+                    <div class="admin-feature-card-title">課堂計時器</div>
+                    <div class="admin-feature-card-desc">自訂練習時間、儲存常用設定、最後 10 秒倒數提示音，並可開啟獨立置頂視窗。</div>
+                    <div class="admin-feature-btn-pill">開啟計時器 ➔</div>
+                  </div>
                   <!-- A. 搶答 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('gameBuzz')">
                     <div class="admin-feature-icon-box">
@@ -3401,6 +3408,12 @@
                   </div>
                 </div>
                 <div id="reactionCustomItemsList" class="reaction-custom-items-list"></div>
+                <div class="practice-reaction-presets">
+                  <h4>💾 儲存多組自訂情境</h4>
+                  <p>常用情境儲存在此瀏覽器；選取後按「套用至全班」。相同名稱會更新原有情境。</p>
+                  <div class="practice-actions"><input id="savedReactionName" class="question-input" maxlength="40" placeholder="情境名稱" aria-label="情境名稱"><button type="button" class="presentation-tool-btn" onclick="window.savedReactionScenarios.save()">儲存目前編輯內容</button></div>
+                  <div class="practice-actions"><select id="savedReactionSelect" class="question-input" aria-label="已儲存的自訂情境"></select><button type="button" class="presentation-tool-btn active" onclick="window.savedReactionScenarios.apply()">套用至全班</button><button type="button" class="presentation-tool-btn" onclick="window.savedReactionScenarios.remove()">刪除</button></div>
+                </div>
               </div>
 
               <!-- 底部操作按鈕列 -->
@@ -6683,6 +6696,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
   <script type="application/x-board-script" data-src="js/app.js?v=c11"></script>
+  <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/song_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
@@ -6971,6 +6985,18 @@ Python</pre>
     </div>
   </div>
 
+  <dialog id="practiceTimerModal" class="practice-timer-dialog" aria-labelledby="practiceTimerTitle">
+    <h2 id="practiceTimerTitle">⏱️ 課堂計時器</h2>
+    <p>自訂練習時間，最後 10 秒會發出倒數提示音。此計時器由教師瀏覽器執行，不會同步至學生。</p>
+    <div class="practice-actions"><label>分鐘 <input id="practiceTimerMinutes" type="number" min="0" max="180" value="5" class="question-input"></label><label>秒 <input id="practiceTimerSeconds" type="number" min="0" max="59" value="0" class="question-input"></label></div>
+    <div id="practiceTimerDisplay" class="practice-timer-display" aria-live="off">00:00</div><p id="practiceTimerState" role="status">尚未開始</p>
+    <div class="practice-actions"><button class="presentation-tool-btn active" onclick="window.classroomPracticeTimer.start()">開始</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.pause()">暫停</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.resume()">繼續</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.reset()">重設</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.popout()">開啟獨立置頂視窗</button></div>
+    <h3>常用時間</h3><p>常用設定儲存在此瀏覽器，相同名稱會更新原有設定。</p>
+    <div class="practice-actions"><input id="practiceTimerName" class="question-input" maxlength="40" placeholder="例如：小組討論" aria-label="常用時間名稱"><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.save()">儲存常用時間</button></div>
+    <div class="practice-actions"><select id="practiceTimerPresets" class="question-input" aria-label="常用時間" onchange="window.classroomPracticeTimer.select()"></select><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.remove()">刪除</button></div>
+    <div class="practice-actions"><button class="presentation-tool-btn" onclick="document.getElementById('practiceTimerModal').close()">關閉設定</button></div>
+  </dialog>
+  <div id="practiceTimerFloating" class="practice-timer-floating" hidden><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.open()" aria-label="開啟課堂計時器設定">⏱️ <span id="practiceTimerFloatingTime">00:00</span></button></div>
   <!-- 懸浮倒數計時器 -->
   <div id="floatingTimer" class="floating-timer" style="display: none;">
     <!-- 計時器主體 (展開狀態) -->
