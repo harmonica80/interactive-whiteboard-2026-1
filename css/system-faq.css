@@ -5,3 +5,12 @@
 .system-faq-card textarea { resize:vertical; }
 .system-faq-actions { display:flex; flex-wrap:wrap; gap:8px; }
 .system-faq-actions button { font-size:14px; }
+.system-faq-editor { box-sizing:border-box; min-height:120px; padding:10px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-input); color:var(--text-primary); font-size:14px; overflow-wrap:anywhere; }
+.system-faq-editor img,.system-faq-answer img { max-width:100%; height:auto; display:block; margin:8px 0; }
+.system-faq-viewer { box-sizing:border-box; width:min(760px,calc(100% - 32px)); max-height:85vh; overflow:auto; padding:24px; color:var(--text-primary); background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; box-shadow:var(--shadow); font-size:16px; }
+.system-faq-viewer::backdrop { background:color-mix(in srgb,var(--bg-primary) 65%,transparent); }
+.system-faq-viewer-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.system-faq-viewer h2 { color:var(--text-primary); font-size:20px; }
+.system-faq-viewer details { border:1px solid var(--border-color); border-radius:10px; margin:10px 0; background:var(--bg-input); }
+.system-faq-viewer summary { padding:14px; cursor:pointer; font-weight:700; }
+.system-faq-answer { padding:0 14px 14px; overflow-wrap:anywhere; line-height:1.6; }

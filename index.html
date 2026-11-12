@@ -20,7 +20,7 @@
   </script>
   <link rel="stylesheet" href="css/board-setup.css?v=c10">
   <link rel="stylesheet" href="css/classroom-practice.css?v=c1">
-  <link rel="stylesheet" href="css/system-faq.css?v=c1">
+  <link rel="stylesheet" href="css/system-faq.css?v=c2">
 </head>
 <body>
   <dialog id="boardConnectionStatus" aria-labelledby="boardLoadingTitle" oncancel="event.preventDefault()">
@@ -1740,31 +1740,6 @@
               </div>
             </div>
 
-            <div class="admin-cat-block cat-collapsed" id="adminCatBlockSystem">
-              <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlockSystem')"><div class="admin-cat-title"><span>⚙️</span><span>系統設定</span><span class="admin-cat-badge">3 個功能</span></div><div class="admin-cat-toggle-arrow">▼</div></div>
-              <div class="admin-cat-body"><div class="admin-features-grid">
-                  <!-- A. 功能模組啟用設定 -->
-                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('whiteboardFeatures')">
-                    <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
-                      🎛️
-                    </div>
-                    <div class="admin-feature-card-title">A. 功能模組啟用設定</div>
-                    <div class="admin-feature-card-desc">自訂各教學功能模組啟用狀態（提問、圖片、影片、測驗、抽人、文字雲、白板、同步簡報、專注力等），未啟用之功能前台選單與後台總覽皆自動隱藏。</div>
-                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
-                  </div>
-                  <!-- B. 懸浮按鈕顯示位置設定 -->
-                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('floatingButtonPosition')">
-                    <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
-                      🧭
-                    </div>
-                    <div class="admin-feature-card-title">B. 懸浮按鈕顯示位置設定</div>
-                    <div class="admin-feature-card-desc">自訂預設在右下角的懸浮按鈕顯示於左側或右側，並可自由選擇僅老師或全班一起同步調整。</div>
-                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
-                  </div>
-                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('systemFaq')"><div class="admin-feature-icon-box" style="font-size:40px">❔</div><div class="admin-feature-card-title">C. 常見問題 FAQ</div><div class="admin-feature-card-desc">查看、編輯常見問題並調整顯示順序。</div><div class="admin-feature-btn-pill">進入全頁功能 ➔</div></div>
-              </div></div>
-            </div>
-
             <!-- 測驗出題管理 (預設折疊) -->
             <div class="admin-cat-block cat-collapsed" id="adminCatBlock2">
               <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlock2')">
@@ -1950,6 +1925,31 @@
                 </div>
               </div>
             </div>
+            <div class="admin-cat-block cat-collapsed" id="adminCatBlockSystem">
+              <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlockSystem')"><div class="admin-cat-title"><span>⚙️</span><span>系統設定</span><span class="admin-cat-badge">3 個功能</span></div><div class="admin-cat-toggle-arrow">▼</div></div>
+              <div class="admin-cat-body"><div class="admin-features-grid">
+                  <!-- A. 功能模組啟用設定 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('whiteboardFeatures')">
+                    <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
+                      🎛️
+                    </div>
+                    <div class="admin-feature-card-title">A. 功能模組啟用設定</div>
+                    <div class="admin-feature-card-desc">自訂各教學功能模組啟用狀態（提問、圖片、影片、測驗、抽人、文字雲、白板、同步簡報、專注力等），未啟用之功能前台選單與後台總覽皆自動隱藏。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+                  <!-- B. 懸浮按鈕顯示位置設定 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('floatingButtonPosition')">
+                    <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
+                      🧭
+                    </div>
+                    <div class="admin-feature-card-title">B. 懸浮按鈕顯示位置設定</div>
+                    <div class="admin-feature-card-desc">自訂預設在右下角的懸浮按鈕顯示於左側或右側，並可自由選擇僅老師或全班一起同步調整。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('systemFaq')"><div class="admin-feature-icon-box" style="font-size:40px">❔</div><div class="admin-feature-card-title">C. 常見問題 FAQ</div><div class="admin-feature-card-desc">查看、編輯常見問題並調整顯示順序。</div><div class="admin-feature-btn-pill">進入全頁功能 ➔</div></div>
+              </div></div>
+            </div>
+
           </div> <!-- #adminDashboardView 結束 -->
 
           <!-- 獨立全頁工作區 (點選任一功能後顯示全頁模式) -->
@@ -6714,7 +6714,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
   <script type="application/x-board-script" data-src="js/app.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c1"></script>
-  <script type="application/x-board-script" data-src="js/system-faq.js?v=c1"></script>
+  <script type="application/x-board-script" data-src="js/system-faq.js?v=c2"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/song_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
@@ -7015,6 +7015,10 @@ Python</pre>
     <div class="practice-actions"><button class="presentation-tool-btn" onclick="document.getElementById('practiceTimerModal').close()">關閉設定</button></div>
   </dialog>
   <div id="practiceTimerFloating" class="practice-timer-floating" hidden><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.open()" aria-label="開啟課堂計時器設定">⏱️ <span id="practiceTimerFloatingTime">00:00</span></button></div>
+  <dialog id="systemFaqViewer" class="system-faq-viewer" aria-labelledby="systemFaqViewerTitle">
+    <div class="system-faq-viewer-header"><h2 id="systemFaqViewerTitle">❔ 常見問題 FAQ</h2><button type="button" class="presentation-tool-btn" onclick="document.getElementById('systemFaqViewer').close()" aria-label="關閉常見問題">✕</button></div>
+    <p id="systemFaqViewerStatus" class="system-faq-help" role="status">正在讀取…</p><div id="systemFaqViewerList"></div>
+  </dialog>
   <!-- 懸浮倒數計時器 -->
   <div id="floatingTimer" class="floating-timer" style="display: none;">
     <!-- 計時器主體 (展開狀態) -->
@@ -8984,6 +8988,7 @@ Python</pre>
           <span class="fab-item-icon">🤫</span>
           <span class="fab-item-text">給老師的悄悄話</span>
         </button>
+        <button type="button" class="fab-quick-menu-item" onclick="window.systemFaq.openViewer(); window.app && window.app.toggleQuickInfoMenu(false)"><span class="fab-item-icon">❔</span><span class="fab-item-text">常見問題 FAQ</span></button>
         <button type="button" class="fab-quick-menu-item" onclick="window.app && window.app.openChangelogModal(); window.app && window.app.toggleQuickInfoMenu(false)">
           <span class="fab-item-icon">📄</span>
           <span class="fab-item-text">版本更新歷程</span>
