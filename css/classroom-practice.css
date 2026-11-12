@@ -18,3 +18,6 @@
 .practice-timer-heading-icon { font-size:28px; }
 .practice-timer-heading h2 { margin:6px 0; font-size:20px; }
 .practice-timer-heading p { line-height:1.5; }
+
+.practice-timer-time-inputs { justify-content:center; gap:12px; }
+.practice-timer-time-inputs label { display:inline-flex; align-items:center; gap:6px; color:var(--text-primary); font-size:14px; }
