@@ -6011,8 +6011,8 @@ class App {
       },
       whiteboardFeatures: {
         id: 'adminWhiteboardFeaturesSection',
-        title: 'G. 功能模組啟用設定',
-        category: '班級管理',
+        title: 'A. 功能模組啟用設定',
+        category: '系統設定',
         icon: 'images/admin_icons/system_reset.svg'
       },
       classStudents: {
@@ -6041,10 +6041,11 @@ class App {
       },
       floatingButtonPosition: {
         id: 'adminFloatingButtonPositionSection',
-        title: 'L. 懸浮按鈕顯示位置設定',
-        category: '班級管理',
+        title: 'B. 懸浮按鈕顯示位置設定',
+        category: '系統設定',
         icon: 'images/admin_icons/class_reg.svg'
       },
+      systemFaq: { id: 'adminSystemFaqSection', title: 'C. 常見問題 FAQ', category: '系統設定', icon: 'images/admin_icons/system_reset.svg' },
       classReaction: {
         id: 'adminReactionSettingsSection',
         title: 'D. 即時互動回饋設定',
@@ -6147,12 +6148,13 @@ class App {
       classSound: 'adminCatBlock1',
       systemReset: 'adminCatBlock1',
       classSecurity: 'adminCatBlock1',
-      whiteboardFeatures: 'adminCatBlock1',
+      whiteboardFeatures: 'adminCatBlockSystem',
       classStudents: 'adminCatBlock1',
       classPoints: 'adminCatBlock1',
       classAttendance: 'adminCatBlock1',
       classGroups: 'adminCatBlock1',
-      floatingButtonPosition: 'adminCatBlock1',
+      floatingButtonPosition: 'adminCatBlockSystem',
+      systemFaq: 'adminCatBlockSystem',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
@@ -6235,6 +6237,8 @@ class App {
       this.attachVideoSyncListener();
       this.switchVidAdminSubTab('items');
     }
+
+    if (featureKey === 'systemFaq' && window.systemFaq) window.systemFaq.load();
 
     if (featureKey === 'whiteboardFeatures') {
       this.renderWhiteboardFeaturesAdminUI();

@@ -20,6 +20,7 @@
   </script>
   <link rel="stylesheet" href="css/board-setup.css?v=c10">
   <link rel="stylesheet" href="css/classroom-practice.css?v=c1">
+  <link rel="stylesheet" href="css/system-faq.css?v=c1">
 </head>
 <body>
   <dialog id="boardConnectionStatus" aria-labelledby="boardLoadingTitle" oncancel="event.preventDefault()">
@@ -1626,7 +1627,7 @@
                 <div class="admin-cat-title">
                   <span>🏫</span>
                   <span>班級管理</span>
-                  <span class="admin-cat-badge">12 個功能</span>
+                  <span class="admin-cat-badge">10 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -1692,15 +1693,7 @@
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- G. 功能模組啟用設定 -->
-                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('whiteboardFeatures')">
-                    <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
-                      🎛️
-                    </div>
-                    <div class="admin-feature-card-title">G. 功能模組啟用設定</div>
-                    <div class="admin-feature-card-desc">自訂各教學功能模組啟用狀態（提問、圖片、影片、測驗、抽人、文字雲、白板、同步簡報、專注力等），未啟用之功能前台選單與後台總覽皆自動隱藏。</div>
-                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
-                  </div>
+
 
                   <!-- H. 學生名冊與參與歷程管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classStudents')">
@@ -1742,17 +1735,34 @@
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- L. 懸浮按鈕顯示位置設定 -->
+
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-cat-block cat-collapsed" id="adminCatBlockSystem">
+              <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlockSystem')"><div class="admin-cat-title"><span>⚙️</span><span>系統設定</span><span class="admin-cat-badge">3 個功能</span></div><div class="admin-cat-toggle-arrow">▼</div></div>
+              <div class="admin-cat-body"><div class="admin-features-grid">
+                  <!-- A. 功能模組啟用設定 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('whiteboardFeatures')">
+                    <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
+                      🎛️
+                    </div>
+                    <div class="admin-feature-card-title">A. 功能模組啟用設定</div>
+                    <div class="admin-feature-card-desc">自訂各教學功能模組啟用狀態（提問、圖片、影片、測驗、抽人、文字雲、白板、同步簡報、專注力等），未啟用之功能前台選單與後台總覽皆自動隱藏。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+                  <!-- B. 懸浮按鈕顯示位置設定 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('floatingButtonPosition')">
                     <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
                       🧭
                     </div>
-                    <div class="admin-feature-card-title">L. 懸浮按鈕顯示位置設定</div>
+                    <div class="admin-feature-card-title">B. 懸浮按鈕顯示位置設定</div>
                     <div class="admin-feature-card-desc">自訂預設在右下角的懸浮按鈕顯示於左側或右側，並可自由選擇僅老師或全班一起同步調整。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
-                </div>
-              </div>
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('systemFaq')"><div class="admin-feature-icon-box" style="font-size:40px">❔</div><div class="admin-feature-card-title">C. 常見問題 FAQ</div><div class="admin-feature-card-desc">查看、編輯常見問題並調整顯示順序。</div><div class="admin-feature-btn-pill">進入全頁功能 ➔</div></div>
+              </div></div>
             </div>
 
             <!-- 測驗出題管理 (預設折疊) -->
@@ -1964,12 +1974,15 @@
                     <option value="classSound">D. 測驗與互動音效設定</option>
                     <option value="systemReset">E. 系統重設與備份管理</option>
                     <option value="classSecurity">F. 教師身分與密碼安全設定</option>
-                    <option value="whiteboardFeatures">G. 功能模組啟用設定</option>
                     <option value="classStudents">H. 學生名冊與參與歷程管理</option>
                     <option value="classPoints">I. 學生個人積分管理</option>
                     <option value="classAttendance">J. 線上點名與出缺勤管理</option>
                     <option value="classGroups">K. 學生分組與小組積分管理</option>
-                    <option value="floatingButtonPosition">L. 懸浮按鈕顯示位置設定</option>
+                  </optgroup>
+                  <optgroup label="系統設定">
+                    <option value="whiteboardFeatures">A. 功能模組啟用設定</option>
+                    <option value="floatingButtonPosition">B. 懸浮按鈕顯示位置設定</option>
+                    <option value="systemFaq">C. 常見問題 FAQ</option>
                   </optgroup>
                   <optgroup label="測驗出題管理">
                     <option value="quizChoice">A. 選擇題測驗</option>
@@ -1997,6 +2010,10 @@
 
             <!-- 所有功能區塊容器 (各功能保留既有 ID，全頁模式下單一顯示且展開) -->
             <div id="adminFeaturesContainer">
+          <div class="admin-section admin-section-collapsible collapsed" id="adminSystemFaqSection">
+            <div class="admin-section-header"><h3>❔ C. 常見問題 FAQ</h3><span class="collapse-icon">▼</span></div>
+            <div class="admin-section-body"><p class="system-faq-help">列出白板使用時的常見問題。管理者可編輯、新增、刪除並調整順序；內容儲存在目前課堂的資料庫。</p><p id="systemFaqStatus" role="status" class="system-faq-help">正在讀取…</p><div id="systemFaqList"></div><button type="button" class="presentation-tool-btn active" onclick="window.systemFaq.add()">➕ 新增問題</button></div>
+          </div>
           <!-- 班級開課管理與切換班級 (可折疊區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminClassSection">
             <div class="admin-section-header">
@@ -2752,7 +2769,7 @@
           <!-- G. 功能模組啟用設定 -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminWhiteboardFeaturesSection">
             <div class="admin-section-header">
-              <h3>🎛️ G. 功能模組啟用設定</h3>
+              <h3>🎛️ A. 功能模組啟用設定</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3195,7 +3212,7 @@
           <!-- L. 懸浮按鈕顯示位置設定 (可折疊全頁區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminFloatingButtonPositionSection">
             <div class="admin-section-header">
-              <h3>🧭 L. 懸浮按鈕顯示位置設定</h3>
+              <h3>🧭 B. 懸浮按鈕顯示位置設定</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -6695,8 +6712,9 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c11"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c1"></script>
+  <script type="application/x-board-script" data-src="js/system-faq.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/song_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>

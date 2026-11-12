@@ -1,0 +1,7 @@
+.system-faq-help { color:var(--text-secondary); font-size:14px; line-height:1.6; }
+.system-faq-card { display:grid; gap:8px; margin:14px 0; padding:16px; border:1px solid var(--border-color); border-radius:12px; background:var(--bg-card); color:var(--text-primary); }
+.system-faq-card label { font-size:14px; font-weight:700; }
+.system-faq-card input,.system-faq-card textarea { box-sizing:border-box; width:100%; font-size:14px; color:var(--text-primary); background:var(--bg-input); border:1px solid var(--border-color); }
+.system-faq-card textarea { resize:vertical; }
+.system-faq-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.system-faq-actions button { font-size:14px; }
