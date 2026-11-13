@@ -19,7 +19,7 @@
     }
   </script>
   <link rel="stylesheet" href="css/board-setup.css?v=c10">
-  <link rel="stylesheet" href="css/classroom-practice.css?v=c4">
+  <link rel="stylesheet" href="css/classroom-practice.css?v=c5">
   <link rel="stylesheet" href="css/system-faq.css?v=c3">
 </head>
 <body>
@@ -2033,6 +2033,8 @@
                 <div style="flex: 2; min-width: 180px;">
                   <input type="text" id="adminNewClassName" class="question-input" placeholder="班級名稱/備註 (例: 三年一班數學, 選填)" style="margin: 0; width: 100%; font-size: 14px;" maxlength="50">
                 </div>
+                <label class="class-real-name-setting"><input type="checkbox" id="adminNewClassRealName"> 要求輸入真實姓名</label>
+                <p class="class-real-name-note">真實姓名會儲存於班級資料庫；目前連線模式無法保證僅教師可讀取，啟用前請確認資料庫規則與使用情境。</p>
                 <button type="button" class="presentation-tool-btn active" onclick="window.app.adminCreateNewClass()" style="white-space: nowrap; padding: 0 16px; height: 38px; border-radius: 10px; font-weight: bold; font-size: 14px;">
                   ➕ 登記並開課
                 </button>
@@ -5210,6 +5212,7 @@
               🎲 隨機挑選
             </button>
           </div>
+          <div id="studentRealNameRow" hidden><label for="studentRealNameInput">真實姓名（必填）</label><input type="text" id="studentRealNameInput" class="question-input" autocomplete="name" maxlength="40" placeholder="請輸入真實姓名"><p class="class-real-name-note">真實姓名會儲存在此班級的資料庫，存取範圍由資料庫規則決定。</p></div>
           <div id="studentNameModalError" style="display: none; margin-top: 6px; color: #ff3b30; font-size: 14px; font-weight: bold;"></div>
           <!-- 重複名稱提醒與確認本人登入 / 建議序號名稱區塊 -->
           <div id="studentNameDuplicateAlert" style="display: none; margin-top: 10px; padding: 12px 14px; border-radius: 12px; background: rgba(255,149,0,0.08); border: 1.5px solid rgba(255,149,0,0.35); text-align: left;">
@@ -6702,7 +6705,7 @@ Python</pre>
   
   <script src="js/board-connection.js?v=c3"></script>
   <script src="js/archive-store.js?v=c1"></script>
-  <script src="js/firebase-config.js?v=c4"></script>
+  <script src="js/firebase-config.js?v=c5"></script>
   <script defer src="js/board-start.js?v=c7"></script>
   <script type="application/x-board-script" data-src="js/teacher_auth_manager.js?v=c3"></script>
   <script type="application/x-board-script" data-src="js/character_pool.js?v=c1"></script>
@@ -6712,8 +6715,8 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c12"></script>
-  <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c2"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c14"></script>
+  <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c3"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/song_quiz.js?v=c1"></script>
@@ -7008,6 +7011,7 @@ Python</pre>
     <div class="practice-timer-heading"><div class="practice-timer-heading-icon" aria-hidden="true">⏱️</div><h2 id="practiceTimerTitle">課堂計時器</h2>
     <p>自訂練習時間，最後 10 秒會發出倒數提示音。此計時器由教師瀏覽器執行，不會同步至學生。</p></div>
     <div class="practice-actions practice-timer-time-inputs"><label><input id="practiceTimerMinutes" type="number" min="0" max="180" value="5" class="question-input"> 分鐘</label><label><input id="practiceTimerSeconds" type="number" min="0" max="59" value="0" class="question-input"> 秒</label></div>
+    <div class="practice-timer-animation"><label for="practiceTimerAnimation">計時動畫：</label><select id="practiceTimerAnimation" class="question-input" onchange="window.classroomPracticeTimer.setAnimation(this.value)"><option value="none">不顯示</option><option value="hourglass">沙漏流沙</option><option value="clock">指針快轉時鐘</option><option value="candle">蠟燭燃燒融化</option></select><img id="practiceTimerAnimationImage" alt="計時動畫" hidden></div>
     <div id="practiceTimerDisplay" class="practice-timer-display" aria-live="off">00:00</div><p id="practiceTimerState" role="status">尚未開始</p>
     <div class="practice-actions"><button class="presentation-tool-btn active" onclick="window.classroomPracticeTimer.start()">開始</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.pause()">暫停</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.resume()">繼續</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.reset()">重設</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.popout()">開啟獨立置頂視窗</button></div>
     <h3>常用時間</h3><p>常用設定儲存在此瀏覽器，相同名稱會更新原有設定。</p>
@@ -7972,6 +7976,7 @@ Python</pre>
         <input type="text" id="adminEditClassName" class="question-input" maxlength="50" placeholder="例如：三年一班數學 (選填)" style="width: 100%; box-sizing: border-box; margin: 0; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;">
       </div>
 
+      <label class="class-real-name-setting"><input type="checkbox" id="adminEditClassRealName"> 要求同學輸入真實姓名</label><p class="class-real-name-note">目前資料庫連線模式無法保證真實姓名僅教師可讀取。</p>
       <!-- 錯誤提示區塊 -->
       <div id="adminEditClassError" style="display: none; background: rgba(255, 59, 48, 0.1); border: 1px solid rgba(255, 59, 48, 0.35); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; color: #ff3b30; line-height: 1.5;"></div>
 

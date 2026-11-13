@@ -863,6 +863,9 @@ class App {
     if (!modal || !input) return;
 
     const currentName = this.getCurrentUserName();
+    const realRow=document.getElementById('studentRealNameRow'), realInput=document.getElementById('studentRealNameInput');
+    if(realRow)realRow.hidden=!this.classRequiresRealName || this.isAdmin;
+    if(realInput)realInput.value=window.boardStorage.local.getItem('real_name:'+window.currentClassCode) || '';
     input.value = currentName || '';
     input.style.borderColor = '';
     if (err) {
@@ -1153,6 +1156,7 @@ class App {
   }
 
   closeStudentNameModal() {
+    if (this.classRequiresRealName && !this.isAdmin && window.currentClassCode && !window.boardStorage.local.getItem('real_name:'+window.currentClassCode)) { const err=document.getElementById('studentNameModalError'); if(err){err.textContent='請先填寫真實姓名並完成設定。';err.style.display='block';} return; }
     this.hideAvatarHoverPreview();
     const modal = document.getElementById('studentNameModal');
     if (modal) modal.classList.remove('active');
@@ -1409,6 +1413,8 @@ class App {
     // 若找到原帳號 UID 則採用，否則建立穩定關聯 UID
     const targetUid = existingStudent?.uid || this.getUserId();
 
+    if (!(await this.saveRequiredRealName(targetUid))) return;
+
     // 1. 同步更換本地身分 UID (使多裝置或重新進入繼承原有提問/作品所有權)
     window.boardStorage.local.setItem('user_id', targetUid);
     window.boardStorage.local.setItem('app_user_id', targetUid);
@@ -1444,6 +1450,15 @@ class App {
     }, 450);
   }
 
+  async saveRequiredRealName(uid) {
+    if(!this.classRequiresRealName || this.isAdmin || !window.currentClassCode)return true;
+    const input=document.getElementById('studentRealNameInput'), err=document.getElementById('studentNameModalError');
+    const value=input?.value.trim() || '';
+    if(!value){if(err){err.textContent='請輸入真實姓名。';err.style.display='block';}input?.focus();return false;}
+    try { await db.ref('student_real_names').child(uid).set(value);window.boardStorage.local.setItem('real_name:'+window.currentClassCode,value);return true; }
+    catch(e){if(err){err.textContent='真實姓名儲存失敗，請檢查網路後重試。';err.style.display='block';}return false;}
+  }
+
   async saveStudentNameFromModal() {
     const input = document.getElementById('inputStudentModalName');
     const err = document.getElementById('studentNameModalError');
@@ -1463,6 +1478,8 @@ class App {
       input.focus();
       return;
     }
+
+    if (this.classRequiresRealName && !this.isAdmin && !document.getElementById('studentRealNameInput')?.value.trim()) { const field=document.getElementById('studentRealNameInput'); if(err){err.textContent='請輸入真實姓名。';err.style.display='block';} field?.focus(); return; }
 
     // 檢查是否有同名學生 (重複名稱防呆、原身分確認與序號建議)
     const takenNames = await this.getTakenStudentNames();
@@ -1524,6 +1541,7 @@ class App {
       this.setCurrentUserAvatar(this.selectedAvatarId);
     }
 
+    if (!(await this.saveRequiredRealName(this.getUserId()))) return;
     this.setUserName(name);
     this.closeStudentNameModal();
     this.showNotification('成功', `您好，${name}！已完成姓名與頭像設定。`);
@@ -3821,6 +3839,7 @@ class App {
       this.registeredStudents = snapshot.val() || {};
       if (this.activeTabId === 'panel-admin') {
         if (this.currentAdminFeatureKey === 'classStudents') {
+          if (this.isAdmin) this.loadClassRealNames();
           this.renderAdminStudentsList();
         } else if (this.currentAdminFeatureKey === 'classPoints') {
           this.renderAdminPointsPanel();
@@ -4104,7 +4123,7 @@ class App {
         customConfirmModal.classList.remove('active');
         notifyModal.classList.remove('active');
         adminPasswordModal.classList.remove('active');
-        if (studentNameModal) studentNameModal.classList.remove('active');
+        if (studentNameModal && studentNameModal.classList.contains('active')) this.closeStudentNameModal();
         if (itemEditModal) itemEditModal.classList.remove('active');
         const studentHistoryModal = document.getElementById('studentHistoryModal');
         if (studentHistoryModal && studentHistoryModal.classList.contains('active')) this.closeStudentHistoryModal();
@@ -6279,6 +6298,7 @@ class App {
 
     // 學生名冊與參與歷程管理專屬 UI 同步
     if (featureKey === 'classStudents') {
+      this.loadClassRealNames();
       this.renderAdminStudentsList();
     }
 
@@ -18841,8 +18861,10 @@ class App {
         if (btnActionText) btnActionText.textContent = '切換班級';
 
         this.updateStudentNameUI();
-
-        if (!userName) {
+        try { const config=await rawRef(`registered_classes/${code}/requireRealName`).once('value'); this.classRequiresRealName=config.val()===true; }
+        catch(e) { this.classRequiresRealName=false; this.showNotification('無法讀取班級設定','請檢查連線後重新整理。'); return; }
+        const missingRealName=this.classRequiresRealName && !window.boardStorage.local.getItem('real_name:'+code);
+        if (!userName || missingRealName) {
           // 進入班級課堂但未設定姓名或暱稱，非管理員主動跳出提示彈窗要求同學設定
           if (!this.isAdmin) {
             setTimeout(() => {
@@ -19360,6 +19382,12 @@ class App {
     return activities;
   }
 
+  async loadClassRealNames() {
+    if(!this.isAdmin)return; const classCode=window.currentClassCode || '';
+    try { const snap=await db.ref('student_real_names').once('value');if(!this.isAdmin || classCode!==(window.currentClassCode||''))return;this.classRealNames=snap.val()||{};if(this.currentAdminFeatureKey==='classStudents')this.renderAdminStudentsList(); }
+    catch(e){this.showNotification('無法讀取真實姓名','請檢查網路與資料庫權限。');}
+  }
+
   renderAdminStudentsList() {
     const container = document.getElementById('adminStudentsListContainer');
     if (!container) return;
@@ -19385,6 +19413,7 @@ class App {
           uid,
           name: String(data.name).trim(),
           note: data.note ? String(data.note).trim() : '',
+          realName: this.classRealNames?.[uid] ? String(this.classRealNames[uid]) : '',
           avatar: data.avatar !== undefined ? data.avatar : 0,
           points: parseInt(data.points, 10) || 0,
           pointsLog: data.pointsLog || {},
@@ -19480,6 +19509,7 @@ class App {
       filtered = filtered.filter(s =>
         s.name.toLowerCase().includes(query) ||
         (s.note && s.note.toLowerCase().includes(query)) ||
+        (s.realName && s.realName.toLowerCase().includes(query)) ||
         s.uid.toLowerCase().includes(query)
       );
     }
@@ -19543,7 +19573,7 @@ class App {
                 ${avatarHtml}
               </div>
               <div class="admin-student-list-name-box" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <span class="admin-student-list-name" title="${safeName}">${safeName}</span>
+                <span class="admin-student-list-name" title="${safeName}">${safeName}</span>${s.realName ? `<span>真實姓名：${this.escapeHtml(s.realName)}</span>` : ''}
                 ${s.note
                   ? `<span class="student-note-badge has-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="學生備註：${this.escapeHtml(s.note)}（點擊修改真實姓名或注意事項）">📝 ${this.escapeHtml(s.note)}</span>`
                   : `<button type="button" class="student-note-badge empty-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="點擊新增學生備註（真實姓名／座號／注意事項）">＋ 備註</button>`
@@ -19609,7 +19639,7 @@ class App {
               </div>
               <div class="admin-student-card-info">
                 <div class="admin-student-card-name-row" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                  <span class="admin-student-card-name" title="${safeName}">${safeName}</span>
+                  <span class="admin-student-card-name" title="${safeName}">${safeName}</span>${s.realName ? `<span>真實姓名：${this.escapeHtml(s.realName)}</span>` : ''}
                   ${s.note
                     ? `<span class="student-note-badge has-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="學生備註：${this.escapeHtml(s.note)}（點擊修改真實姓名或注意事項）">📝 ${this.escapeHtml(s.note)}</span>`
                     : `<button type="button" class="student-note-badge empty-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="點擊新增學生備註（真實姓名／座號／注意事項）">＋ 備註</button>`
@@ -21558,7 +21588,8 @@ class App {
 
         try {
           // 1. 自名冊刪除
-          await db.ref('quiz/students').child(uid).remove();
+          await db.ref().update({[`quiz/students/${uid}`]:null,[`student_real_names/${uid}`]:null});
+          if (this.classRealNames) delete this.classRealNames[uid];
 
           if (this.registeredStudents && this.registeredStudents[uid]) {
             delete this.registeredStudents[uid];
@@ -27008,6 +27039,7 @@ class App {
   }
 
   async adminCreateNewClass() {
+    if (!this.isAdmin) return;
     const codeInput = document.getElementById('adminNewClassCode');
     const nameInput = document.getElementById('adminNewClassName');
     if (!codeInput) return;
@@ -27024,7 +27056,7 @@ class App {
     try {
       const teacherId = window.teacherAuthManager ? window.teacherAuthManager.getActiveTeacherId() : '';
       const teacherName = window.boardStorage.local.getItem('wb_active_teacher_name') || '授課老師';
-      const created = await window.ClassRoomManager.registerClass(rawCode, rawName, teacherName, teacherId);
+      const created = await window.ClassRoomManager.registerClass(rawCode, rawName, teacherName, teacherId, Boolean(document.getElementById('adminNewClassRealName')?.checked));
       this.showNotification('🎉 開課成功', `班級【${created.code}】（${created.name}）已成功登記！專屬密碼已自動生效，學生現在可以輸入此代碼加入課堂。`);
       codeInput.value = '';
       if (nameInput) nameInput.value = '';
@@ -27215,6 +27247,7 @@ class App {
 
   // ===== 班級修改與代碼變更提醒流程 =====
   adminOpenEditClassModal(code) {
+    if (!this.isAdmin) return;
     if (!code) return;
     const oldCodeInput = document.getElementById('adminEditClassOldCode');
     const codeInput = document.getElementById('adminEditClassCode');
@@ -27230,6 +27263,7 @@ class App {
     if (oldCodeInput) oldCodeInput.value = cls.code;
     if (codeInput) codeInput.value = cls.code;
     if (nameInput) nameInput.value = (cls.name && cls.name !== cls.code) ? cls.name : '';
+    const realNameToggle=document.getElementById('adminEditClassRealName'); if(realNameToggle)realNameToggle.checked=cls.requireRealName===true;
     if (errorEl) {
       errorEl.textContent = '';
       errorEl.style.display = 'none';
@@ -27252,6 +27286,7 @@ class App {
   }
 
   async adminConfirmEditClass() {
+    if (!this.isAdmin) return;
     const oldCodeInput = document.getElementById('adminEditClassOldCode');
     const codeInput = document.getElementById('adminEditClassCode');
     const nameInput = document.getElementById('adminEditClassName');
@@ -27288,7 +27323,7 @@ class App {
         throw new Error('班級管理器尚未就緒，請重整頁面後重試');
       }
 
-      const result = await window.ClassRoomManager.updateClass(oldCode, newCode, newName);
+      const result = await window.ClassRoomManager.updateClass(oldCode, newCode, newName, Boolean(document.getElementById('adminEditClassRealName')?.checked));
 
       // 關閉編輯彈窗
       this.adminCloseEditClassModal();
@@ -28003,13 +28038,14 @@ class App {
 
   // ===== 右下角常用管理功能快捷徑 (FAB ⚡, 需求 2) =====
   getDefaultAdminShortcutKeys() {
-    return ['classPoints', 'classAttendance', 'gameBuzz', 'gameFocus', 'classReaction', 'shareNews'];
+    return ['classPoints', 'classAttendance', 'gameBuzz', 'gameFocus', 'classReaction', 'shareNews', 'practiceTimer'];
   }
 
   getAdminFeaturesCatalog() {
     return [
       { key: 'classPoints', title: '學生個人積分管理', category: '班級經營與學生', icon: 'images/admin_icons/class_points.svg', isDefault: true },
       { key: 'classAttendance', title: '線上點名與出缺勤管理', category: '班級經營與學生', icon: 'images/admin_icons/class_attendance.svg', isDefault: true },
+      { key: 'practiceTimer', title: '課堂計時器', category: '課堂互動與遊戲', icon: 'images/admin_icons/class_reg.svg', isDefault: true },
       { key: 'gameBuzz', title: '搶答', category: '課堂互動與遊戲', icon: 'images/admin_icons/game_buzz.svg', isDefault: true },
       { key: 'gameFocus', title: '專注力測驗', category: '課堂互動與遊戲', icon: 'images/admin_icons/game_focus.svg', isDefault: true },
       { key: 'classReaction', title: '即時互動回饋設定', category: '課堂互動與遊戲', icon: 'images/admin_icons/class_reaction.svg', isDefault: true },
@@ -28121,6 +28157,8 @@ class App {
 
   executeAdminShortcut(key) {
     this.toggleAdminShortcutsMenu(false);
+    if (!this.isAdmin) return;
+    if (key === 'practiceTimer') { window.classroomPracticeTimer?.open(); return; }
     if (typeof this.openAdminFeature === 'function') {
       this.openAdminFeature(key);
     }
@@ -30461,6 +30499,7 @@ function resetAll() {
     db.ref('quiz/videoQuizSettings').remove(),
     db.ref('quiz/videoQuizAnswers').remove(),
     db.ref('quiz/students').remove(),
+    db.ref('student_real_names').remove(),
     db.ref('quiz/presence').remove(), // 徹底清除線上連線與快取記錄，避免舊名稱殘留
     db.ref('whiteboard').remove(),
     db.ref('whiteboard_room').remove(),

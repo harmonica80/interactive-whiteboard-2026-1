@@ -21,3 +21,11 @@
 
 .practice-timer-time-inputs { justify-content:center; gap:12px; }
 .practice-timer-time-inputs label { display:inline-flex; align-items:center; gap:6px; color:var(--text-primary); font-size:14px; }
+
+.practice-timer-animation { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:8px; color:var(--text-primary); font-size:14px; }
+.practice-timer-animation img { width:72px; height:72px; object-fit:contain; }
+.practice-timer-animation img[hidden] { display:none; }
+
+.class-real-name-setting { display:inline-flex; align-items:center; gap:8px; color:var(--text-primary); font-size:14px; }
+.class-real-name-note { width:100%; color:var(--text-secondary); font-size:14px; line-height:1.5; }
+#studentRealNameRow label { display:block; color:var(--text-primary); font-size:14px; }

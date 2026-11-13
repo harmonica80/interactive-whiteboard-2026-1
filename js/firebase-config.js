@@ -142,7 +142,7 @@ window.ClassRoomManager = {
   },
 
   // 老師登記新班級 (開課)
-  async registerClass(code, name = '', createdBy = '老師', ownerTeacherId = '') {
+  async registerClass(code, name = '', createdBy = '老師', ownerTeacherId = '', requireRealName = false) {
     const sanitized = this.sanitizeClassCode(code);
     if (!sanitized) throw new Error('班級代碼不可為空或包含不合法字元！');
     
@@ -158,7 +158,8 @@ window.ClassRoomManager = {
       createdAt: Date.now(),
       createdBy: createdBy || '老師',
       ownerTeacherId: ownerTeacherId || '',
-      status: 'active'
+      status: 'active',
+      requireRealName: Boolean(requireRealName)
     };
 
     await rawRef(`registered_classes/${sanitized}`).set(classData);
@@ -178,7 +179,7 @@ window.ClassRoomManager = {
   },
 
   // 修改已登記班級之代碼與名稱（防範重複代碼與無損遷移資料空間）
-  async updateClass(oldCode, newCode, newName = '') {
+  async updateClass(oldCode, newCode, newName = '', requireRealName = false) {
     const sanitizedOld = this.sanitizeClassCode(oldCode);
     const sanitizedNew = this.sanitizeClassCode(newCode);
     if (!sanitizedOld) throw new Error('原始班級代碼無效！');
@@ -214,6 +215,7 @@ window.ClassRoomManager = {
         ...oldData,
         code: sanitizedNew,
         name: nameToSet,
+        requireRealName: Boolean(requireRealName),
         updatedAt: Date.now()
       };
       await rawRef(`registered_classes/${sanitizedNew}`).set(newClassData);
@@ -242,6 +244,7 @@ window.ClassRoomManager = {
       // 代碼未變更，僅更新班級名稱
       await rawRef(`registered_classes/${sanitizedOld}`).update({
         name: nameToSet,
+        requireRealName: Boolean(requireRealName),
         updatedAt: Date.now()
       });
       return {
