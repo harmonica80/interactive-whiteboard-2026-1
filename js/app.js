@@ -5991,6 +5991,13 @@ class App {
   }
 
   openAdminFeature(featureKey) {
+    if (featureKey === 'practiceTimer') {
+      const select = document.getElementById('adminQuickSwitchSelect');
+      if (select && this.currentAdminFeatureKey) select.value = this.currentAdminFeatureKey;
+      if (!this.isAdmin) { this.pendingAdminFeature = featureKey; this.openAdminPasswordModal(); return; }
+      window.classroomPracticeTimer?.open();
+      return;
+    }
     const adminFeatureConfig = {
       classReg: {
         id: 'adminClassSection',

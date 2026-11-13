@@ -1984,6 +1984,7 @@
                     <option value="quizVideo">B. 影片出題測驗</option>
                   </optgroup>
                   <optgroup label="教學互動管理">
+                    <option value="practiceTimer">⏱️ 課堂計時器</option>
                     <option value="gameBuzz">A. 搶答</option>
                     <option value="gameFocus">B. 專注力測驗</option>
                     <option value="gameWheel">C. 隨機抽人 (5種模式)</option>
@@ -2034,7 +2035,6 @@
                   <input type="text" id="adminNewClassName" class="question-input" placeholder="班級名稱/備註 (例: 三年一班數學, 選填)" style="margin: 0; width: 100%; font-size: 14px;" maxlength="50">
                 </div>
                 <label class="class-real-name-setting"><input type="checkbox" id="adminNewClassRealName"> 要求輸入真實姓名</label>
-                <p class="class-real-name-note">真實姓名會儲存於班級資料庫；目前連線模式無法保證僅教師可讀取，啟用前請確認資料庫規則與使用情境。</p>
                 <button type="button" class="presentation-tool-btn active" onclick="window.app.adminCreateNewClass()" style="white-space: nowrap; padding: 0 16px; height: 38px; border-radius: 10px; font-weight: bold; font-size: 14px;">
                   ➕ 登記並開課
                 </button>
@@ -6715,7 +6715,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c14"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c15"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
@@ -7976,7 +7976,7 @@ Python</pre>
         <input type="text" id="adminEditClassName" class="question-input" maxlength="50" placeholder="例如：三年一班數學 (選填)" style="width: 100%; box-sizing: border-box; margin: 0; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;">
       </div>
 
-      <label class="class-real-name-setting"><input type="checkbox" id="adminEditClassRealName"> 要求同學輸入真實姓名</label><p class="class-real-name-note">目前資料庫連線模式無法保證真實姓名僅教師可讀取。</p>
+      <label class="class-real-name-setting"><input type="checkbox" id="adminEditClassRealName"> 要求同學輸入真實姓名</label>
       <!-- 錯誤提示區塊 -->
       <div id="adminEditClassError" style="display: none; background: rgba(255, 59, 48, 0.1); border: 1px solid rgba(255, 59, 48, 0.35); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; color: #ff3b30; line-height: 1.5;"></div>
 
