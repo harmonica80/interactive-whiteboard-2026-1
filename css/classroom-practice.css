@@ -29,3 +29,9 @@
 .class-real-name-setting { display:inline-flex; align-items:center; gap:8px; color:var(--text-primary); font-size:14px; }
 .class-real-name-note { width:100%; color:var(--text-secondary); font-size:14px; line-height:1.5; }
 #studentRealNameRow label { display:block; color:var(--text-primary); font-size:14px; }
+
+.practice-timer-display { display:flex; align-items:center; justify-content:center; gap:0; }
+.practice-timer-display input { box-sizing:content-box; width:3ch; padding:0; border:0; outline:0; text-align:center; color:var(--accent-color); background:transparent; font:inherit; font-variant-numeric:tabular-nums; appearance:textfield; -moz-appearance:textfield; }
+.practice-timer-display input::-webkit-inner-spin-button,.practice-timer-display input::-webkit-outer-spin-button { appearance:none; margin:0; }
+.practice-timer-display input:focus { outline:2px solid var(--accent-color); border-radius:6px; }
+.practice-timer-hint { text-align:center; }

@@ -19,7 +19,7 @@
     }
   </script>
   <link rel="stylesheet" href="css/board-setup.css?v=c10">
-  <link rel="stylesheet" href="css/classroom-practice.css?v=c5">
+  <link rel="stylesheet" href="css/classroom-practice.css?v=c6">
   <link rel="stylesheet" href="css/system-faq.css?v=c3">
 </head>
 <body>
@@ -6716,7 +6716,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
   <script type="application/x-board-script" data-src="js/app.js?v=c14"></script>
-  <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c3"></script>
+  <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/song_quiz.js?v=c1"></script>
@@ -7010,10 +7010,10 @@ Python</pre>
     <button type="button" class="practice-timer-close" onclick="document.getElementById('practiceTimerModal').close()" aria-label="關閉課堂計時器設定" title="關閉">✕</button>
     <div class="practice-timer-heading"><div class="practice-timer-heading-icon" aria-hidden="true">⏱️</div><h2 id="practiceTimerTitle">課堂計時器</h2>
     <p>自訂練習時間，最後 10 秒會發出倒數提示音。此計時器由教師瀏覽器執行，不會同步至學生。</p></div>
-    <div class="practice-actions practice-timer-time-inputs"><label><input id="practiceTimerMinutes" type="number" min="0" max="180" value="5" class="question-input"> 分鐘</label><label><input id="practiceTimerSeconds" type="number" min="0" max="59" value="0" class="question-input"> 秒</label></div>
+    
     <div class="practice-timer-animation"><label for="practiceTimerAnimation">計時動畫：</label><select id="practiceTimerAnimation" class="question-input" onchange="window.classroomPracticeTimer.setAnimation(this.value)"><option value="none">不顯示</option><option value="hourglass">沙漏流沙</option><option value="clock">指針快轉時鐘</option><option value="candle">蠟燭燃燒融化</option></select><img id="practiceTimerAnimationImage" alt="計時動畫" hidden></div>
-    <div id="practiceTimerDisplay" class="practice-timer-display" aria-live="off">00:00</div><p id="practiceTimerState" role="status">尚未開始</p>
-    <div class="practice-actions"><button class="presentation-tool-btn active" onclick="window.classroomPracticeTimer.start()">開始</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.pause()">暫停</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.resume()">繼續</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.reset()">重設</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.popout()">開啟獨立置頂視窗</button></div>
+    <div id="practiceTimerDisplay" class="practice-timer-display" aria-label="設定倒數時間"><input id="practiceTimerMinutes" type="number" min="0" max="180" value="05" aria-label="分鐘"><span aria-hidden="true">:</span><input id="practiceTimerSeconds" type="number" min="0" max="59" value="00" aria-label="秒"></div><p class="practice-timer-hint">點選藍色數字設定分鐘與秒；計時期間請先按重設才能修改。</p><p id="practiceTimerState" role="status">尚未開始</p>
+    <div class="practice-actions"><button id="practiceTimerToggle" class="presentation-tool-btn active" onclick="window.classroomPracticeTimer.toggle()">開始</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.reset()">重設</button><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.popout()">開啟獨立置頂視窗</button></div>
     <h3>常用時間</h3><p>常用設定儲存在此瀏覽器，相同名稱會更新原有設定。</p>
     <div class="practice-actions"><input id="practiceTimerName" class="question-input" maxlength="40" placeholder="例如：小組討論" aria-label="常用時間名稱"><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.save()">儲存常用時間</button></div>
     <div class="practice-actions"><select id="practiceTimerPresets" class="question-input" aria-label="常用時間" onchange="window.classroomPracticeTimer.select()"></select><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.remove()">刪除</button></div>

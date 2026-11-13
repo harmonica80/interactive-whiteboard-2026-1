@@ -14,7 +14,7 @@
     return items;
   } catch (_) { return []; } };
   const write = (name, data) => { try { store().setItem(name, JSON.stringify(data)); return true; } catch (_) { alert('無法儲存，請檢查瀏覽器儲存空間。'); return false; } };
-  let end = 0, remaining = 0, interval = null, lastSecond = null, audio = null, pip = null;
+  let end = 0, remaining = 0, interval = null, lastSecond = null, audio = null, pip = null, mode = 'idle', configured = 300;
   const $ = id => document.getElementById(id);
   function display(seconds) { seconds = Math.max(0, seconds); return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`; }
   function beep(final = false) {
@@ -22,13 +22,17 @@
     try { const osc = audio.createOscillator(), gain = audio.createGain(); osc.type = 'sine'; osc.frequency.value = final ? 880 : 660; gain.gain.setValueAtTime(0.08, audio.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + (final ? 0.5 : 0.12)); osc.connect(gain); gain.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + (final ? 0.5 : 0.12)); } catch (_) {}
   }
   function update() {
-    if (!allowed()) { stop(); remaining = 0; if ($('practiceTimerFloating')) $('practiceTimerFloating').hidden = true; if (pip && !pip.closed) pip.close(); if ($('practiceTimerModal')?.open) $('practiceTimerModal').close(); return; }
-    const seconds = end ? Math.max(0, Math.ceil((end - Date.now()) / 1000)) : remaining;
-    const text = display(seconds); if ($('practiceTimerDisplay')) $('practiceTimerDisplay').textContent = text;
-    if ($('practiceTimerFloatingTime')) $('practiceTimerFloatingTime').textContent = text;
-    if (pip && !pip.closed) { const t = pip.document.getElementById('pipTime'); if (t) t.textContent = text; }
+    if (!allowed()) { stop(); remaining=0; mode='idle'; if ($('practiceTimerFloating')) $('practiceTimerFloating').hidden=true; if (pip && !pip.closed) pip.close(); if ($('practiceTimerModal')?.open) $('practiceTimerModal').close(); return; }
+    let seconds = end ? Math.max(0, Math.ceil((end - Date.now()) / 1000)) : (mode==='paused' ? remaining : (mode==='finished' ? 0 : configured));
     if (end && seconds !== lastSecond) { if (seconds <= 10) beep(seconds === 0); lastSecond = seconds; }
-    if (end && seconds === 0) { end = 0; remaining = 0; clearInterval(interval); interval = null; if ($('practiceTimerState')) $('practiceTimerState').textContent = '時間到'; }
+    if (end && seconds === 0) { end=0; remaining=0; clearInterval(interval); interval=null; mode='finished'; $('practiceTimerState').textContent='時間到'; if($('practiceTimerFloating'))$('practiceTimerFloating').hidden=true; }
+    const text=display(seconds), active=mode==='running'||mode==='paused';
+    if(mode!=='idle') { $('practiceTimerMinutes').value=String(Math.floor(seconds/60)).padStart(2,'0'); $('practiceTimerSeconds').value=String(seconds%60).padStart(2,'0'); }
+    $('practiceTimerMinutes').readOnly=active; $('practiceTimerSeconds').readOnly=active; $('practiceTimerPresets').disabled=active;
+    const label=mode==='running'?'暫停':mode==='paused'?'繼續':'開始', icon=mode==='running'?'⏸':mode==='paused'?'⏵':'▶';
+    const main=$('practiceTimerToggle');if(main)main.textContent=label;
+    if ($('practiceTimerFloatingTime')) $('practiceTimerFloatingTime').textContent=text;
+    if(pip && !pip.closed) { const t=pip.document.getElementById('pipTime'),btn=pip.document.getElementById('pipToggle');if(t)t.textContent=text;if(btn){btn.textContent=icon;btn.title=label;btn.setAttribute('aria-label',label);} }
   }
   function stop() { clearInterval(interval); interval = null; end = 0; }
   function syncPresets() {
@@ -44,18 +48,19 @@
       try { store().setItem('classroom_timer_animation',path?value:'none'); } catch (_) {}
       if(pip && !pip.closed){const image=pip.document.getElementById('pipAnimation');if(image){image.hidden=!path;if(path)image.src=new URL(path,location.href).href;}}
     },
+    toggle() { if (!allowed()) return; if(mode==='running')this.pause();else if(mode==='paused')this.resume();else this.start(); },
     start() {
-      if (!allowed()) return; const m = Number($('practiceTimerMinutes').value), s = Number($('practiceTimerSeconds').value);
+      if (!allowed()) return; if(mode==='finished'){ $('practiceTimerMinutes').value=Math.floor(configured/60); $('practiceTimerSeconds').value=configured%60; } const m = Number($('practiceTimerMinutes').value), s = Number($('practiceTimerSeconds').value);
       if (!Number.isInteger(m) || !Number.isInteger(s) || m < 0 || m > 180 || s < 0 || s > 59 || m * 60 + s === 0) { alert('請輸入有效時間：0 至 180 分鐘、0 至 59 秒，且總時間大於 0。'); return; }
       try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (_) {}
-      stop(); remaining = m * 60 + s; end = Date.now() + remaining * 1000; lastSecond = null;
+      stop(); configured = m * 60 + s; remaining = configured; mode='running'; end = Date.now() + remaining * 1000; lastSecond = null;
       $('practiceTimerState').textContent = '計時中'; $('practiceTimerFloating').hidden = false; update(); interval = setInterval(update, 250);
     },
-    pause() { if (!allowed() || !end) return; remaining = Math.max(0, Math.ceil((end - Date.now()) / 1000)); stop(); $('practiceTimerState').textContent = '已暫停'; update(); },
-    resume() { if (!allowed() || end || !remaining) return; if (audio) audio.resume(); end = Date.now() + remaining * 1000; lastSecond = null; $('practiceTimerState').textContent = '計時中'; update(); interval = setInterval(update, 250); },
-    reset() { if (!allowed()) return; stop(); remaining = 0; lastSecond = null; $('practiceTimerState').textContent = '尚未開始'; update(); },
+    pause() { if (!allowed() || !end) return; remaining = Math.max(0, Math.ceil((end - Date.now()) / 1000)); stop(); mode='paused'; $('practiceTimerState').textContent = '已暫停'; update(); },
+    resume() { if (!allowed() || end || !remaining) return; if (audio) audio.resume(); mode='running'; end = Date.now() + remaining * 1000; lastSecond = null; $('practiceTimerState').textContent = '計時中'; update(); interval = setInterval(update, 250); },
+    reset() { if (!allowed()) return; stop(); remaining = 0; mode='idle'; if($('practiceTimerFloating'))$('practiceTimerFloating').hidden=true; lastSecond = null; $('practiceTimerMinutes').value=String(Math.floor(configured/60)).padStart(2,'0'); $('practiceTimerSeconds').value=String(configured%60).padStart(2,'0'); $('practiceTimerState').textContent = '尚未開始'; update(); },
     save() { if (!allowed()) return; const m = Number($('practiceTimerMinutes').value), s = Number($('practiceTimerSeconds').value), name = $('practiceTimerName').value.trim(); if (!name || !Number.isInteger(m) || !Number.isInteger(s) || m < 0 || m > 180 || s < 0 || s > 59 || !(m * 60 + s)) { alert('請輸入名稱與有效的時間。'); return; } const items = read(key); const idx = items.findIndex(x => x.name === name); if (idx >= 0) items[idx] = {name, seconds:m * 60 + s}; else items.push({name, seconds:m * 60 + s}); if (write(key, items)) syncPresets(); },
-    select() { if (!allowed()) return; const item = read(key)[Number($('practiceTimerPresets').value)]; if (!item || $('practiceTimerPresets').value === '') return; $('practiceTimerName').value = item.name; $('practiceTimerMinutes').value = Math.floor(item.seconds / 60); $('practiceTimerSeconds').value = item.seconds % 60; },
+    select() { if (!allowed()) return; const item = read(key)[Number($('practiceTimerPresets').value)]; if (!item || $('practiceTimerPresets').value === '') return; $('practiceTimerName').value = item.name; $('practiceTimerMinutes').value = Math.floor(item.seconds / 60); $('practiceTimerSeconds').value = String(item.seconds % 60).padStart(2,'0'); $('practiceTimerMinutes').value=String(Math.floor(item.seconds/60)).padStart(2,'0'); configured=item.seconds; mode='idle'; update(); },
     remove() { if (!allowed()) return; const value = $('practiceTimerPresets').value; if (value === '') return; const items = read(key); if (!confirm(`刪除常用時間「${items[Number(value)].name}」？`)) return; items.splice(Number(value), 1); if (write(key, items)) syncPresets(); },
     async popout() {
       if (!allowed()) return;
@@ -66,7 +71,7 @@
         const c = getComputedStyle(document.documentElement); for (const name of ['--bg-card','--bg-input','--text-primary','--accent-color','--border-color']) d.documentElement.style.setProperty(name, c.getPropertyValue(name));
         style.textContent = 'body{margin:0;display:grid;place-items:center;height:100vh;background:var(--bg-card);color:var(--text-primary);font-family:system-ui;text-align:center}strong{font-size:58px;font-variant-numeric:tabular-nums;color:var(--accent-color)}p{font-size:16px;margin:4px}img{width:80px;height:80px;object-fit:contain}img[hidden]{display:none}.controls{display:flex;justify-content:center;gap:5px;flex-wrap:wrap}.controls button{margin:4px 0}button{display:block;margin:8px auto 0;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-input);color:var(--text-primary);font:600 14px system-ui;cursor:pointer}'; d.head.appendChild(style);
         const box=d.createElement('div'), label=d.createElement('p'), value=d.createElement('strong'), settings=d.createElement('button'), picture=d.createElement('img'), controls=d.createElement('div'); label.textContent='⏱️ 課堂計時器'; value.id='pipTime'; picture.id='pipAnimation';picture.alt='計時動畫';picture.hidden=true; controls.className='controls';
-        for(const [text,title,method] of [['▶','開始','start'],['⏸','暫停','pause'],['⏵','繼續','resume'],['↺','重設','reset']]){const btn=d.createElement('button');btn.type='button';btn.textContent=text;btn.title=title;btn.setAttribute('aria-label',title);btn.addEventListener('click',()=>timer[method]());controls.appendChild(btn);}
+        for(const [text,title,method] of [['▶','開始','toggle'],['↺','重設','reset']]){const btn=d.createElement('button');btn.type='button';if(method==='toggle')btn.id='pipToggle';btn.textContent=text;btn.title=title;btn.setAttribute('aria-label',title);btn.addEventListener('click',()=>timer[method]());controls.appendChild(btn);}
         settings.type='button'; settings.textContent='開啟計時器設定'; settings.addEventListener('click',()=>{ if (!allowed()) return; window.focus(); timer.open(); }); box.append(label,picture,value,controls,settings); d.body.appendChild(box);timer.setAnimation($('practiceTimerAnimation')?.value||'none'); update();
       } catch (_) { alert('無法開啟置頂視窗，請確認瀏覽器允許畫中畫視窗。'); }
     }
@@ -80,6 +85,7 @@
   window.classroomPracticeTimer=timer; window.savedReactionScenarios=reactions;
   document.addEventListener('board-ready', () => {
     syncPresets(); reactions.refresh();
+    for(const id of ['practiceTimerMinutes','practiceTimerSeconds']) { const field=$(id); field.addEventListener('input',()=>{if(mode!=='idle' && mode!=='finished')return; mode='idle'; const m=Number($('practiceTimerMinutes').value),sec=Number($('practiceTimerSeconds').value);if(m>=0&&m<=180&&sec>=0&&sec<=59){configured=m*60+sec; $('practiceTimerState').textContent='尚未開始'; update();}});field.addEventListener('blur',()=>{if(field.value!=='')field.value=String(Number(field.value)).padStart(2,'0');}); }
     try { const value=store().getItem('classroom_timer_animation'); if(value && allowed())timer.setAnimation(value); } catch (_) {}
     const dialog=$('practiceTimerModal');
     dialog.addEventListener('click',event=>{ if(event.target!==dialog)return; const rect=dialog.getBoundingClientRect(); if(event.clientX<rect.left || event.clientX>rect.right || event.clientY<rect.top || event.clientY>rect.bottom) dialog.close(); });
