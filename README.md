@@ -123,7 +123,7 @@ npm test
 ```
 interactive-whiteboard/
 ├── index.html                   # 系統主入口與完整教室 UI
-├── whiteboard_v146.html          # 獨立核心白板入口
+├── whiteboard.html               # 獨立核心白板入口
 ├── teacher-guide.html           # 教師專屬建置與連線指南獨立頁
 ├── css/
 │   ├── style.css                # 核心樣式庫
@@ -145,7 +145,7 @@ interactive-whiteboard/
 
 ## 💻 技術規格
 
-- **前端核心**：HTML5 Canvas、CSS3、Vanilla JavaScript (ES6+)、tldraw 白板引擎
+- **前端核心**：HTML5 Canvas、CSS3、Vanilla JavaScript (ES6+)、互動白板引擎
 - **即時通訊與資料庫**：Firebase Realtime Database (WebSocket 即時雙向同頻)
 - **短網址與 QR Code**：is.gd、v.gd、TinyURL Proxy 多層備援、QRCode.js
 - **身分安全驗證**：Web Crypto API (SHA-256 原生加密)、自適應防爆破鎖定機制

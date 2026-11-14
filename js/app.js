@@ -182,7 +182,6 @@ class App {
     this.initImageCanvasDrawing();
     this.initLuckyWheel();
     this.initLiveReactions();
-    this.bindTldrawRealtimeSync();
     this.checkSecurityRuleExpiry();
     this.initClassRoomUI();
     this.initFabQuickInfo();
@@ -12990,236 +12989,20 @@ class App {
     }
   }
 
-  getTldrawSnapshot() {
-    return new Promise((resolve) => {
-      const iframe = document.getElementById('whiteboardFrame');
-      if (!iframe || !iframe.contentWindow) {
-        resolve(null);
-        return;
-      }
-      const requestId = 'export_' + Date.now();
-      const handleMessage = (event) => {
-        if (event.data && event.data.type === 'TLDRAW_SNAPSHOT_RESPONSE' && event.data.requestId === requestId) {
-          window.removeEventListener('message', handleMessage);
-          resolve(event.data.snapshot || null);
-        }
-      };
-      window.addEventListener('message', handleMessage);
-      try {
-        iframe.contentWindow.postMessage({ type: 'GET_TLDRAW_SNAPSHOT', requestId: requestId }, '*');
-      } catch (e) {
-        console.warn('Could not postMessage to iframe:', e);
-        window.removeEventListener('message', handleMessage);
-        resolve(null);
-        return;
-      }
-      
-      // 超時 1.5 秒無回應時自動跳過，避免阻塞整體匯出
-      setTimeout(() => {
-        window.removeEventListener('message', handleMessage);
-        resolve(null);
-      }, 1500);
-    });
-  }
-
-  sanitizeTldrawPayload(raw) {
-    let parsed = raw;
-    if (typeof parsed === 'string') {
-      try {
-        parsed = JSON.parse(parsed);
-      } catch (e) {
-        console.warn('[Tldraw Boundary] Invalid JSON snapshot payload:', e);
-        return null;
-      }
-    }
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return null;
-    }
-
-    let rawStore = null;
-    let rawSchema = null;
-    if (parsed.store && typeof parsed.store === 'object' && !Array.isArray(parsed.store)) {
-      rawStore = parsed.store;
-      rawSchema = parsed.schema;
-    } else if (parsed.document && typeof parsed.document === 'object' && parsed.document.store && typeof parsed.document.store === 'object' && !Array.isArray(parsed.document.store)) {
-      rawStore = parsed.document.store;
-      rawSchema = parsed.document.schema || parsed.schema;
-    }
-
-    if (!rawStore) {
-      return null;
-    }
-
-    const allowedTypes = new Set(['document', 'page', 'shape', 'asset']);
-    const cleanStore = {};
-    for (const [key, rec] of Object.entries(rawStore)) {
-      if (!rec || typeof rec !== 'object' || Array.isArray(rec)) continue;
-      if (typeof rec.id !== 'string' || typeof rec.typeName !== 'string') continue;
-      if (!allowedTypes.has(rec.typeName)) continue;
-      if (!rec.id.startsWith(rec.typeName + ':')) continue;
-      cleanStore[rec.id] = rec;
-    }
-
-    return {
-      store: cleanStore,
-      schema: (rawSchema && typeof rawSchema === 'object' && !Array.isArray(rawSchema)) ? rawSchema : undefined
-    };
-  }
-
-  loadTldrawSnapshot(snapshot) {
-    const cleanSnapshot = this.sanitizeTldrawPayload(snapshot);
-    if (!cleanSnapshot) {
-      console.warn('[Tldraw Boundary] Skipped loading invalid tldraw snapshot');
-      return false;
-    }
-    this.pendingTldrawSnapshot = cleanSnapshot;
-    const iframe = document.getElementById('whiteboardFrame');
-    if (iframe && iframe.contentWindow) {
-      try {
-        iframe.contentWindow.postMessage({
-          type: 'LOAD_TLDRAW_SNAPSHOT',
-          snapshot: cleanSnapshot
-        }, '*');
-        return true;
-      } catch (e) {
-        console.warn('Failed to send tldraw snapshot to iframe:', e);
-      }
-    }
-    return false;
-  }
-
-  clearTldrawWhiteboard() {
-    this.pendingTldrawSnapshot = null;
-    const iframe = document.getElementById('whiteboardFrame');
-    if (iframe && iframe.contentWindow) {
-      try {
-        iframe.contentWindow.postMessage({ type: 'CLEAR_TLDRAW' }, '*');
-      } catch (e) {
-        console.warn('Failed to send CLEAR_TLDRAW to iframe:', e);
-      }
-    }
-  }
-
-  bindTldrawRealtimeSync() {
-    this.tldrawSyncRef = db.ref('whiteboard_room');
-    this.isPublishingTldraw = false;
-    this.myTldrawClientId = 'client_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
-
-    // 1. 監聽 Firebase 遠端推播過來的即時白板畫稿變更
-    this.tldrawSyncRef.on('value', (snapshot) => {
-      const val = snapshot.val();
-      if (!val || !val.data) return;
-
-      // 若是自己剛剛發送至 Firebase 的異動，跳過避免循環刷新
-      if (this.isPublishingTldraw || val.updatedBy === this.myTldrawClientId) {
-        return;
-      }
-
-      try {
-        const cleanSnapshot = this.sanitizeTldrawPayload(val.data);
-        if (cleanSnapshot) {
-          this.pendingTldrawSnapshot = cleanSnapshot;
-          const iframe = document.getElementById('whiteboardFrame');
-          if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.postMessage({
-              type: 'LOAD_TLDRAW_SNAPSHOT',
-              snapshot: cleanSnapshot
-            }, '*');
-          }
-        } else {
-          console.warn('[Firebase Sync] Ignored malformed snapshot from Firebase');
-        }
-      } catch (err) {
-        console.error('Failed to parse remote tldraw snapshot:', err);
-      }
-    });
-
-    // 2. 監聽來自 iframe (whiteboard.html) 的使用者繪圖與就緒事件
-    if (this._tldrawMessageBound) return;
-    this._tldrawMessageBound = true;
-
-    window.addEventListener('message', (event) => {
-      const data = event.data;
-      if (!data || typeof data !== 'object') return;
-
-      if (data.type === 'CLOSE_WHITEBOARD') {
-        this.switchToTab('panel-questions');
-        return;
-      }
-
-      if (data.type === 'TLDRAW_LOCAL_CHANGE' && data.snapshot) {
-        const cleanOutgoing = this.sanitizeTldrawPayload(data.snapshot);
-        if (!cleanOutgoing) return;
-
-        this.isPublishingTldraw = true;
-        
-        try {
-          const jsonStr = JSON.stringify(cleanOutgoing);
-          // 將畫稿 Snapshot 序列化為純文字 JSON 字串寫入 Firebase (避免 Firebase 物件 Key 包含 "." 的非法字元錯誤)
-          this.tldrawSyncRef.set({
-            data: jsonStr,
-            updatedBy: this.myTldrawClientId,
-            updatedAt: firebase.database.ServerValue.TIMESTAMP
-          }).catch(err => {
-            console.error('Failed to push tldraw snapshot to Firebase:', err);
-          }).finally(() => {
-            setTimeout(() => {
-              this.isPublishingTldraw = false;
-            }, 350);
-          });
-        } catch (err) {
-          this.isPublishingTldraw = false;
-          console.error('Failed to stringify tldraw snapshot:', err);
-        }
-      } else if (data.type === 'TLDRAW_READY') {
-        if (this.pendingTldrawSnapshot) {
-          const iframe = document.getElementById('whiteboardFrame');
-          if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.postMessage({
-              type: 'LOAD_TLDRAW_SNAPSHOT',
-              snapshot: this.pendingTldrawSnapshot
-            }, '*');
-          }
-        }
-        // 當白板載入完成時，主動向 Firebase 拉取最新畫稿給 iframe 展示
-        this.tldrawSyncRef.once('value').then(snapshot => {
-          const val = snapshot.val();
-          if (val && val.data) {
-            try {
-              const cleanSnapshot = this.sanitizeTldrawPayload(val.data);
-              if (cleanSnapshot) {
-                this.pendingTldrawSnapshot = cleanSnapshot;
-                const iframe = document.getElementById('whiteboardFrame');
-                if (iframe && iframe.contentWindow) {
-                  iframe.contentWindow.postMessage({
-                    type: 'LOAD_TLDRAW_SNAPSHOT',
-                    snapshot: cleanSnapshot
-                  }, '*');
-                }
-              } else {
-                console.warn('[Firebase Ready Sync] Ignored malformed initial snapshot');
-              }
-            } catch (e) {
-              console.error('Failed to parse initial tldraw snapshot:', e);
-            }
-          }
-        });
-      }
-    });
-  }
-
   async adminExportRecord() {
-    this.showNotification('提示', '正在準備匯出檔案（含 tldraw 白板畫稿），請稍候...');
+    this.showNotification('提示', '正在準備匯出課堂資料與互動白板，請稍候...');
     
     try {
-      const [questionsSnap, imagesSnap, videosSnap, sharesSnap, quizSnap, whiteboardSnap, tldrawSnapshot] = await Promise.all([
+      const [questionsSnap, imagesSnap, videosSnap, sharesSnap, quizSnap, whiteboardSnap, canvasesSnap, pagesSnap, settingsSnap] = await Promise.all([
         db.ref('questions').once('value'),
         db.ref('images').once('value'),
         db.ref('videos').once('value'),
         db.ref('teacherShares').once('value'),
         db.ref('quiz').once('value'),
         db.ref('whiteboard').once('value'),
-        this.getTldrawSnapshot()
+        db.ref('whiteboard_v2/canvases').once('value'),
+        db.ref('whiteboard_v2/pages').once('value'),
+        db.ref('whiteboard_v2/settings').once('value')
       ]);
       
       const quizData = quizSnap.val() || {};
@@ -13242,7 +13025,7 @@ class App {
         videos: videosSnap.val() || {},
         teacherShares: sharesSnap.val() || {},
         whiteboard: whiteboardSnap.val() || {},
-        tldrawSnapshot: tldrawSnapshot || null,
+        whiteboardV2: { canvases: canvasesSnap.val() || null, pages: pagesSnap.val() || null, settings: settingsSnap.val() || null },
         quiz: {
           current: quizData.current || null,
           answers: quizData.answers || null,
@@ -13326,7 +13109,7 @@ class App {
         const importedData = JSON.parse(rawText);
         
         // Validate format
-        if (!importedData || (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard && !importedData.tldrawSnapshot)) {
+        if (!importedData || (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard && !importedData.whiteboardV2)) {
           this.showNotification('錯誤', '無效的記錄檔格式！');
           return;
         }
@@ -13357,16 +13140,19 @@ class App {
         const doExecuteImport = () => {
           this.showNotification('提示', '正在匯入資料，請稍候...');
 
-          // 若包含 tldraw 白板畫稿快照，發送給 iframe 恢復
-          if (importedData.tldrawSnapshot) {
-            this.loadTldrawSnapshot(importedData.tldrawSnapshot);
-          }
-          
           const promises = [];
           
           // Set data nodes
           promises.push(db.ref('questions').set(importedData.questions || null));
           promises.push(db.ref('whiteboard').set(importedData.whiteboard || null));
+          // 僅還原白板內容與設定，不覆寫線上連線狀態；舊備份沒有新白板欄位時保留現有畫稿。
+          if (importedData.whiteboardV2 && typeof importedData.whiteboardV2 === 'object' && !Array.isArray(importedData.whiteboardV2)) {
+            for (const key of ['canvases', 'pages', 'settings']) {
+              if (Object.prototype.hasOwnProperty.call(importedData.whiteboardV2, key)) {
+                promises.push(db.ref(`whiteboard_v2/${key}`).set(importedData.whiteboardV2[key]));
+              }
+            }
+          }
           promises.push(db.ref('quiz/broadcastVideo').remove()); // Reset broadcast state
           
           // Write images sequentially to prevent WebSocket connection frame overflow & disconnects
@@ -30472,11 +30258,6 @@ function closeNotifyModal() {
 }
 
 function resetAll() {
-  // 清除 tldraw 白板畫稿與本機快取
-  if (window.app && typeof window.app.clearTldrawWhiteboard === 'function') {
-    window.app.clearTldrawWhiteboard();
-  }
-
   // 清除選擇題測驗畫面與結果
   if (window.quiz && typeof window.quiz.clearQuizResults === 'function') {
     window.quiz.clearQuizResults();
@@ -30510,7 +30291,6 @@ function resetAll() {
     db.ref('student_reaction_counts').remove(),
     db.ref('quiz/presence').remove(), // 徹底清除線上連線與快取記錄，避免舊名稱殘留
     db.ref('whiteboard').remove(),
-    db.ref('whiteboard_room').remove(),
     db.ref('whiteboard_v2').remove(),
     db.ref('system/quotaStats/classStorageMap').child(classKey).set(0),
     db.ref('quiz/resetTimestamp').set(Date.now()) // 廣播重設事件至所有線上學生端
