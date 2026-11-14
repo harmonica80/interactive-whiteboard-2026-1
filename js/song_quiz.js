@@ -1050,8 +1050,8 @@
     grid.innerHTML = `
       <div class="song-quiz-wrapper ${isMeBuzzed ? 'answering-mode' : ''}">
         ${headerHtml}
-        ${isMobileStudent ? interactiveAreaHtml : vinylHtml}
-        ${isMobileStudent ? vinylHtml : interactiveAreaHtml}
+        ${roundStatus === 'waiting' ? (this.isAdmin ? interactiveAreaHtml : vinylHtml) : (isMobileStudent ? interactiveAreaHtml : vinylHtml)}
+        ${roundStatus === 'waiting' ? '' : (isMobileStudent ? vinylHtml : interactiveAreaHtml)}
         ${teacherOptionsHtml}
         ${teacherControlHtml}
         ${scoreBoardHtml}
