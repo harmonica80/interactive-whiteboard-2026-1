@@ -1047,11 +1047,12 @@
 
     // 手機學生端：搶答按鈕優先顯示在最上方，讓學生無需捲動即可立刻按搶答
     const isMobileStudent = (window.innerWidth <= 768) && !this.isAdmin;
+    const useSingleStatus = (this.isAdmin && ['waiting','playing','buzzed','answered_wrong'].includes(roundStatus)) || (!this.isAdmin && ['buzzed','answered_wrong'].includes(roundStatus));
     grid.innerHTML = `
       <div class="song-quiz-wrapper ${isMeBuzzed ? 'answering-mode' : ''}">
         ${headerHtml}
-        ${roundStatus === 'waiting' ? (this.isAdmin ? interactiveAreaHtml : vinylHtml) : (isMobileStudent ? interactiveAreaHtml : vinylHtml)}
-        ${roundStatus === 'waiting' ? '' : (isMobileStudent ? vinylHtml : interactiveAreaHtml)}
+        ${useSingleStatus ? interactiveAreaHtml : (roundStatus === 'waiting' ? vinylHtml : (isMobileStudent ? interactiveAreaHtml : vinylHtml))}
+        ${useSingleStatus || roundStatus === 'waiting' ? '' : (isMobileStudent ? vinylHtml : interactiveAreaHtml)}
         ${teacherOptionsHtml}
         ${teacherControlHtml}
         ${scoreBoardHtml}
