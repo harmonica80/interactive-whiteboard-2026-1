@@ -13408,13 +13408,15 @@ class App {
       characterCrossword: '一字千金：字字珠璣',
       characterUnitedWords: '一字千金：團結一詞',
       classicsQuiz: '成語與佳句名言典故',
-      songQuiz: '聽歌搶答'
+      songQuiz: '聽歌搶答',
+      dilemma: '左右為難'
     };
     return map[type] || type || '專注力測驗';
   }
 
   // 清除專注力測驗所有網頁暫存、本機記憶體狀態、舊音訊、計時器與舊版面 DOM
   resetFocusGameLocalState() {
+    if (window.dilemmaGame) window.dilemmaGame.detach();
     // 1. 停止所有測驗音訊（含聽歌搶答 YouTube 播放與原生音訊）
     if (typeof this.stopSongQuizAudio === 'function') {
       try { this.stopSongQuizAudio(); } catch (e) {}
@@ -13613,6 +13615,8 @@ class App {
       );
       return;
     }
+
+    if (gameType === 'dilemma') { window.dilemmaGame?.start(this); return; }
 
     // 1. 若先前有測驗，先將其在 Firebase 完全停止並重置
     if (isPreviousActive) {
@@ -13856,6 +13860,7 @@ class App {
     if (charCrosswordSettings) charCrosswordSettings.style.display = gameType === 'characterCrossword' ? 'block' : 'none';
     if (charUnitedWordsSettings) charUnitedWordsSettings.style.display = gameType === 'characterUnitedWords' ? 'block' : 'none';
     if (songQuizSettings) songQuizSettings.style.display = gameType === 'songQuiz' ? 'block' : 'none';
+    const dilemmaSettings=document.getElementById('focusDilemmaSettings');if(dilemmaSettings)dilemmaSettings.style.display=gameType==='dilemma'?'block':'none';
 
     if (gameType === 'songQuiz') {
       this.updateSongQuizAdminTagSelect();
@@ -14092,6 +14097,7 @@ class App {
   }
 
   handleFocusGameSync(game) {
+    if ((!game || game.gameType !== 'dilemma' || game.status !== 'playing') && window.dilemmaGame) window.dilemmaGame.detach();
     const prevStatus = this.focusPrevStatus;
     this.focusPrevStatus = game ? game.status : null;
 
@@ -14170,6 +14176,7 @@ class App {
       (isSongQuizBuzzer && this.activeTabId !== 'panel-admin')
     );
     if (this.isAdmin && !isTeacherPreviewingFocus) {
+      if (game.gameType === 'dilemma' && window.dilemmaGame) window.dilemmaGame.detach();
       if (gameOverlay) {
         gameOverlay.style.display = 'none';
         gameOverlay.classList.remove('active');
@@ -14193,7 +14200,7 @@ class App {
     // 更新底部遊戲說明提示文字
     const instEl = document.getElementById('focusGameInstruction');
     if (instEl && game) {
-      if (game.gameType === 'classicsQuiz' || game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
+      if (game.gameType === 'dilemma' || game.gameType === 'classicsQuiz' || game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
         // 成語測驗、一字千金、字字珠璣、團結一詞已在各題目卡片中顯示專屬指引，隱藏全域說明以杜絕版面重疊
         instEl.style.display = 'none';
         instEl.textContent = '';
@@ -14222,6 +14229,13 @@ class App {
     else if (game.status === 'playing') {
       document.getElementById('focusCountdownArea').style.display = 'none';
       
+      if (game.gameType === 'dilemma') {
+        document.getElementById('focusPlayArea').style.display='flex';
+        document.getElementById('focusFinishArea').style.display='none';
+        window.dilemmaGame?.render(this,game);
+        return;
+      }
+
       // 全班同步聽歌搶答：直接由專屬即時狀態機驅動
       if (isSongQuizBuzzer) {
         document.getElementById('focusPlayArea').style.display = 'flex';

@@ -20,6 +20,7 @@
   </script>
   <link rel="stylesheet" href="css/board-setup.css?v=c10">
   <link rel="stylesheet" href="css/classroom-practice.css?v=c7">
+  <link rel="stylesheet" href="css/dilemma-game.css?v=c1">
   <link rel="stylesheet" href="css/system-faq.css?v=c3">
 </head>
 <body>
@@ -1809,7 +1810,7 @@
                       <img src="images/admin_icons/game_focus.svg" width="64" height="64" alt="專注力測驗">
                     </div>
                     <div class="admin-feature-card-title">B. 專注力測驗</div>
-                    <div class="admin-feature-card-desc">舒爾特方格、翻牌記憶、字力測驗、十字選字、團結一詞與成語典故測驗。</div>
+                    <div class="admin-feature-card-desc">舒爾特方格、翻牌記憶、字力測驗、成語典故與左右為難對錯挑戰。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
@@ -4150,8 +4151,22 @@
                   <option value="characterCrossword">✍️ 一字千金：字字珠璣 (十字選字)</option>
                   <option value="characterUnitedWords">✍️ 一字千金：團結一詞 (部件組詞)</option>
                   <option value="classicsQuiz">📜 成語與佳句名言典故 (選擇題)</option>
+                  <option value="dilemma">⚖️ 左右為難（對或錯）</option>
                   <option value="songQuiz">🎵 聽歌搶答 (歌曲聽音辨曲)</option>
                 </select>
+              </div>
+              <div id="focusDilemmaSettings" class="dilemma-settings" style="display:none">
+                <label for="dilemmaLevel">挑戰難度</label><select id="dilemmaLevel" class="question-input"><option>國小</option><option>國中</option><option>高中</option><option>大學</option></select>
+                <fieldset><legend>出題範圍（可複選）</legend><div class="dilemma-subjects">
+                  <label><input type="checkbox" class="dilemma-subject" value="國文" checked> 國文</label>
+                  <label><input type="checkbox" class="dilemma-subject" value="數學" checked> 數學</label>
+                  <label><input type="checkbox" class="dilemma-subject" value="社會" checked> 社會</label>
+                  <label><input type="checkbox" class="dilemma-subject" value="音樂" checked> 音樂</label>
+                  <label><input type="checkbox" class="dilemma-subject" value="健康" checked> 健康</label>
+                  <label><input type="checkbox" class="dilemma-subject" value="歷史" checked> 歷史</label>
+                  <label><input type="checkbox" class="dilemma-subject" value="地理" checked> 地理</label>
+                  <label><input type="checkbox" class="dilemma-subject" value="自然" checked> 自然</label>
+                </div></fieldset><p>老師控制題目；同學選答後可看人數，並有一次改選機會。</p>
               </div>
               <div id="focusNumberGridSettings" style="margin-bottom: 16px;">
                 <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 設定數字數量 (格子數)：</label>
@@ -6715,11 +6730,13 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c18"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c19"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c5"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/song_quiz.js?v=c4"></script>
+  <script type="application/x-board-script" data-src="js/dilemma-question-bank.js?v=c1"></script>
+  <script type="application/x-board-script" data-src="js/dilemma-game.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/word_cloud.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/presentation-draft.js?v=c1"></script>

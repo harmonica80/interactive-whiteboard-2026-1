@@ -1,0 +1,13 @@
+.dilemma-settings { margin:0 0 16px; padding:16px; border:1px solid var(--border-color); border-radius:12px; background:var(--bg-card); color:var(--text-primary); font-size:14px; }
+.dilemma-settings label,.dilemma-settings legend { font-size:14px; font-weight:700; }
+.dilemma-settings fieldset { border:1px solid var(--border-color); border-radius:10px; margin-top:12px; }
+.dilemma-settings p,.dilemma-note { color:var(--text-secondary); font-size:14px; }
+.dilemma-subjects,.dilemma-controls { display:flex; flex-wrap:wrap; gap:10px; }
+.dilemma-board { box-sizing:border-box; width:100%; padding:18px; color:var(--text-primary); background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; box-shadow:var(--shadow); }
+.dilemma-meta { font-weight:700; color:var(--accent-color); font-size:16px; }
+.dilemma-layout { display:grid; grid-template-columns:minmax(110px,1fr) minmax(160px,2fr) minmax(110px,1fr); align-items:stretch; gap:14px; }
+.dilemma-question { display:flex; align-items:center; justify-content:center; padding:12px; text-align:center; font-size:clamp(20px,3vw,36px); font-weight:800; line-height:1.5; }
+.dilemma-choice { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; min-height:160px; padding:16px; border:2px solid var(--border-color); border-radius:16px; background:var(--bg-input); color:var(--text-primary); cursor:pointer; }
+.dilemma-choice span { font-size:64px; line-height:1; color:var(--accent-color); }.dilemma-choice strong { font-size:24px; }.dilemma-choice small { font-size:14px; }.dilemma-choice.selected { border-color:var(--accent-color); box-shadow:0 0 0 2px var(--accent-color); }.dilemma-choice:disabled { cursor:default; opacity:0.8; }
+.dilemma-reveal { color:var(--accent-color); font-size:20px; font-weight:700; text-align:center; }.dilemma-controls { justify-content:center; margin-top:16px; }
+@media(max-width:600px){.dilemma-layout { grid-template-columns:1fr 1fr; }.dilemma-question { grid-column:1 / -1; grid-row:1; }.dilemma-choice { min-height:115px; }}
