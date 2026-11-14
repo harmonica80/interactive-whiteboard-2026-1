@@ -12990,10 +12990,23 @@ class App {
   }
 
   async adminExportRecord() {
-    this.showNotification('提示', '正在準備匯出課堂資料與互動白板，請稍候...');
+    this.showNotification('提示', '正在準備匯出課堂、白板與簡報資料，請稍候...');
     
     try {
-      const [questionsSnap, imagesSnap, videosSnap, sharesSnap, quizSnap, whiteboardSnap, canvasesSnap, pagesSnap, settingsSnap] = await Promise.all([
+      // 等待進行中的簡報暫存，避免匯出未完成的內容。
+      const draft = window.presentationManager?.draft;
+      if (draft && draft.matchesScope() && draft.manager.isTeacher()) {
+        const deadline = Date.now() + 15000;
+        if (draft.loading) await Promise.race([draft.loading, new Promise((_,reject)=>setTimeout(()=>reject(new Error('簡報暫存載入逾時，請稍後再試')),15000))]);
+        if (!draft.ready && (draft.manager.slides || []).length) throw new Error('簡報尚未完成暫存，請檢查連線後再匯出');
+        while ((draft.pending || draft.saving) && Date.now() < deadline) {
+          if (!draft.saving && draft.pending) await draft.flush();
+          else await new Promise(resolve => setTimeout(resolve, 100));
+          if (draft.failures) throw new Error('簡報暫存尚未成功，請檢查連線後再匯出');
+        }
+        if (draft.pending || draft.saving) throw new Error('簡報暫存尚未完成，請稍後再匯出');
+      }
+      const [questionsSnap, imagesSnap, videosSnap, sharesSnap, quizSnap, whiteboardSnap, canvasesSnap, pagesSnap, settingsSnap, draftSnap, materialsSnap, materialDataSnap, archivesSnap, archiveDataSnap] = await Promise.all([
         db.ref('questions').once('value'),
         db.ref('images').once('value'),
         db.ref('videos').once('value'),
@@ -13002,9 +13015,19 @@ class App {
         db.ref('whiteboard').once('value'),
         db.ref('whiteboard_v2/canvases').once('value'),
         db.ref('whiteboard_v2/pages').once('value'),
-        db.ref('whiteboard_v2/settings').once('value')
+        db.ref('whiteboard_v2/settings').once('value'),
+        db.ref('presentation_draft').once('value'),
+        db.ref('presentation_materials').once('value'),
+        db.ref('presentation_material_data').once('value'),
+        db.ref('whiteboard_archives').once('value'),
+        db.ref('whiteboard_archive_data').once('value')
       ]);
       
+      for (const [label, listSnap, dataSnap] of [['簡報教材', materialsSnap, materialDataSnap], ['白板歷程', archivesSnap, archiveDataSnap]]) {
+        const list = listSnap.val() || {}, data = dataSnap.val() || {};
+        const ids = Object.keys(list);
+        if (ids.length !== Object.keys(data).length || ids.some(id => typeof data[id] !== 'string' || !data[id])) throw new Error(`${label}清單與內容不一致，請重新整理後再匯出`);
+      }
       const quizData = quizSnap.val() || {};
       const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
         ? window.ClassRoomManager.getActiveClassCode()
@@ -13026,6 +13049,7 @@ class App {
         teacherShares: sharesSnap.val() || {},
         whiteboard: whiteboardSnap.val() || {},
         whiteboardV2: { canvases: canvasesSnap.val() || null, pages: pagesSnap.val() || null, settings: settingsSnap.val() || null },
+        courseMaterials: { version: 1, presentationDraft: draftSnap.val() || null, presentationMaterials: { list: materialsSnap.val() || {}, data: materialDataSnap.val() || {} }, whiteboardArchives: { list: archivesSnap.val() || {}, data: archiveDataSnap.val() || {} } },
         quiz: {
           current: quizData.current || null,
           answers: quizData.answers || null,
@@ -13114,6 +13138,24 @@ class App {
           return;
         }
 
+        // 在任何寫入前檢查教材清單與壓縮內容是否成對，防止損毀檔案覆蓋現有資料。
+        const materialsBackup = importedData.courseMaterials;
+        if (materialsBackup !== undefined) {
+          const objectMap = value => value && typeof value === 'object' && !Array.isArray(value);
+          const validKey = key => key && !/[.#$\[\]/\x00-\x1f\x7f]/.test(key);
+          if (!objectMap(materialsBackup) || materialsBackup.version !== 1 || !('presentationDraft' in materialsBackup)) throw new Error('課堂教材備份格式不正確');
+          if (materialsBackup.presentationDraft !== null && !objectMap(materialsBackup.presentationDraft)) throw new Error('簡報暫存格式不正確');
+          if (materialsBackup.presentationDraft) {
+            const d = materialsBackup.presentationDraft;
+            if (d.version !== 1 || (d.slides != null && typeof d.slides !== 'object') || (d.annotations != null && !objectMap(d.annotations)) || Object.keys(d.slides || {}).some(id => !/^\d+$/.test(id)) || Object.keys(d.annotations || {}).some(id => !validKey(id))) throw new Error('簡報暫存格式不正確');
+          }
+          for (const pair of [materialsBackup.presentationMaterials, materialsBackup.whiteboardArchives]) {
+            if (!objectMap(pair) || !objectMap(pair.list) || !objectMap(pair.data)) throw new Error('教材或歷程備份格式不正確');
+            const ids = Object.keys(pair.list), dataIds = Object.keys(pair.data);
+            if (ids.length !== dataIds.length || ids.some(id => !validKey(id) || !Object.prototype.hasOwnProperty.call(pair.data,id) || !objectMap(pair.list[id]) || typeof pair.data[id] !== 'string' || !pair.data[id] || pair.data[id].length > 9*1024*1024)) throw new Error('教材或歷程的清單與內容不完整，請確認備份檔案');
+          }
+        }
+
         // 解析備份檔案空間資訊與目前空間
         const fileClassCode = importedData.classCode ? String(importedData.classCode).trim().toUpperCase() : null;
         const fileClassName = importedData.className ? String(importedData.className).trim() : '';
@@ -13152,6 +13194,36 @@ class App {
                 promises.push(db.ref(`whiteboard_v2/${key}`).set(importedData.whiteboardV2[key]));
               }
             }
+          }
+          if (materialsBackup !== undefined) {
+            // 逐筆還原壓縮內容與清單，避免把大型教材合併成單一資料庫寫入。
+            const restorePair = async (listPath, dataPath, pair) => {
+              const [oldList, oldData] = await Promise.all([db.ref(listPath).once('value'), db.ref(dataPath).once('value')]);
+              const oldIds = new Set([...Object.keys(oldList.val() || {}), ...Object.keys(oldData.val() || {})]);
+              for (const id of Object.keys(pair.list)) {
+                await db.ref().update({ [`${listPath}/${id}`]: pair.list[id], [`${dataPath}/${id}`]: pair.data[id] });
+                oldIds.delete(id);
+              }
+              for (const id of oldIds) await db.ref().update({ [`${listPath}/${id}`]: null, [`${dataPath}/${id}`]: null });
+            };
+            const restoreDraft = async draftData => {
+              const ref = db.ref('presentation_draft');
+              if (draftData === null) { await ref.remove(); return; }
+              // 分頁逐筆寫入，避免多張圖片合併超過單次寫入限制。
+              const slides = draftData.slides || {}, annotations = draftData.annotations || {};
+              const [oldSlides, oldAnnotations] = await Promise.all([ref.child('slides').once('value'), ref.child('annotations').once('value')]);
+              for (const [id,slide] of Object.entries(slides)) await ref.child('slides').child(id).set(slide);
+              for (const id of Object.keys(oldSlides.val() || {})) if (!Object.prototype.hasOwnProperty.call(slides,id)) await ref.child('slides').child(id).remove();
+              for (const [id,annotation] of Object.entries(annotations)) await ref.child('annotations').child(id).set(annotation);
+              for (const id of Object.keys(oldAnnotations.val() || {})) if (!Object.prototype.hasOwnProperty.call(annotations,id)) await ref.child('annotations').child(id).remove();
+              await ref.update({ version: draftData.version || 1, currentSlideIndex: draftData.currentSlideIndex || 0, updatedAt: Date.now() });
+            };
+            // 先完成單組再處理下一組，避免多份大型圖檔同時上傳。
+            promises.push((async () => {
+              await restoreDraft(materialsBackup.presentationDraft);
+              await restorePair('presentation_materials', 'presentation_material_data', materialsBackup.presentationMaterials);
+              await restorePair('whiteboard_archives', 'whiteboard_archive_data', materialsBackup.whiteboardArchives);
+            })());
           }
           promises.push(db.ref('quiz/broadcastVideo').remove()); // Reset broadcast state
           
@@ -13249,7 +13321,7 @@ class App {
             }, 1000);
           }).catch(err => {
             console.error("Import set failed:", err);
-            this.showNotification('錯誤', '寫入資料庫失敗: ' + err.message);
+            this.showNotification('錯誤', '匯入未完全完成，部分資料可能已更新。請檢查連線與權限，再以備份檔重新匯入：' + err.message);
           });
         };
 
@@ -13264,7 +13336,7 @@ class App {
             </div>
             <div style="color: var(--text-primary); font-size: 13px; line-height: 1.6; margin-bottom: 8px;">
               確定要將此份歷史記錄匯入至 <strong>${currentDesc}</strong> 嗎？<br>
-              <span style="color: #ff3b30; font-weight: bold;">⚠️ 提問、測驗、圖片、影片及白板畫稿將完整導入並覆蓋目前班級資料。</span>
+              <span style="color: #ff3b30; font-weight: bold;">⚠️ 備份包含的提問、測驗、圖片、白板、簡報暫存及雲端教材歷程將覆蓋目前班級資料。</span>
             </div>
           `;
           this.showConfirmModal(
@@ -13282,7 +13354,7 @@ class App {
               <div>📍 匯入目標：<strong>${currentDesc}</strong></div>
             </div>
             <div style="color: #ff3b30; font-weight: bold; font-size: 13px;">
-              ⚠️ 此動作會覆蓋當前 ${currentDesc} 的所有資料（提問、測驗、圖片與白板畫跡），且無法復原。
+              ⚠️ 此動作會覆蓋當前 ${currentDesc} 中備份包含的提問、測驗、圖片、白板、簡報暫存及雲端教材歷程，且無法復原。
             </div>
           `;
           this.showConfirmModal(
