@@ -35,3 +35,5 @@
 .practice-timer-display input::-webkit-inner-spin-button,.practice-timer-display input::-webkit-outer-spin-button { appearance:none; margin:0; }
 .practice-timer-display input:focus { outline:2px solid var(--accent-color); border-radius:6px; }
 .practice-timer-hint { text-align:center; }
+
+.student-practice-timer { padding:9px 13px; color:var(--text-primary); background:var(--bg-card); border:1px solid var(--border-color); font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; }

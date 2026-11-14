@@ -758,6 +758,9 @@
       </div>
     `;
 
+    // 播放開始後，教師可查看相同的作答選項，且不提前標示答案。
+    const teacherOptionsHtml = this.isAdmin && roundStatus !== 'waiting' ? `
+      <div class="song-quiz-answer-card"><div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">同學的作答選項</div><div class="song-quiz-options-list">${(question.options || []).map((option,index)=>`<div class="song-quiz-option-btn">${String.fromCharCode(65+index)}．${escapeForSong(option)}</div>`).join('')}</div></div>` : '';
     // 核心互動搶答按鈕 / 作答選項區 (老師端與學生端分離)
     let interactiveAreaHtml = '';
 
@@ -1049,6 +1052,7 @@
         ${headerHtml}
         ${isMobileStudent ? interactiveAreaHtml : vinylHtml}
         ${isMobileStudent ? vinylHtml : interactiveAreaHtml}
+        ${teacherOptionsHtml}
         ${teacherControlHtml}
         ${scoreBoardHtml}
       </div>

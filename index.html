@@ -19,7 +19,7 @@
     }
   </script>
   <link rel="stylesheet" href="css/board-setup.css?v=c10">
-  <link rel="stylesheet" href="css/classroom-practice.css?v=c6">
+  <link rel="stylesheet" href="css/classroom-practice.css?v=c7">
   <link rel="stylesheet" href="css/system-faq.css?v=c3">
 </head>
 <body>
@@ -6715,11 +6715,11 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c15"></script>
-  <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c4"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c16"></script>
+  <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c5"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
-  <script type="application/x-board-script" data-src="js/song_quiz.js?v=c1"></script>
+  <script type="application/x-board-script" data-src="js/song_quiz.js?v=c2"></script>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/word_cloud.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/presentation-draft.js?v=c1"></script>
@@ -7009,7 +7009,7 @@ Python</pre>
   <dialog id="practiceTimerModal" class="practice-timer-dialog" aria-labelledby="practiceTimerTitle">
     <button type="button" class="practice-timer-close" onclick="document.getElementById('practiceTimerModal').close()" aria-label="關閉課堂計時器設定" title="關閉">✕</button>
     <div class="practice-timer-heading"><div class="practice-timer-heading-icon" aria-hidden="true">⏱️</div><h2 id="practiceTimerTitle">課堂計時器</h2>
-    <p>自訂練習時間，最後 10 秒會發出倒數提示音。此計時器由教師瀏覽器執行，不會同步至學生。</p></div>
+    <p>自訂練習時間，最後 10 秒會發出倒數提示音。開始後，同學的畫面也會顯示倒數時間。</p></div>
     
     <div class="practice-timer-animation"><label for="practiceTimerAnimation">計時動畫：</label><select id="practiceTimerAnimation" class="question-input" onchange="window.classroomPracticeTimer.setAnimation(this.value)"><option value="none">不顯示</option><option value="hourglass">沙漏流沙</option><option value="clock">指針快轉時鐘</option><option value="candle">蠟燭燃燒融化</option></select><img id="practiceTimerAnimationImage" alt="計時動畫" hidden></div>
     <div id="practiceTimerDisplay" class="practice-timer-display" aria-label="設定倒數時間"><input id="practiceTimerMinutes" type="number" min="0" max="180" value="05" aria-label="分鐘"><span aria-hidden="true">:</span><input id="practiceTimerSeconds" type="number" min="0" max="59" value="00" aria-label="秒"></div><p class="practice-timer-hint">點選藍色數字設定分鐘與秒；計時期間請先按重設才能修改。</p><p id="practiceTimerState" role="status">尚未開始</p>
@@ -7018,6 +7018,7 @@ Python</pre>
     <div class="practice-actions"><input id="practiceTimerName" class="question-input" maxlength="40" placeholder="例如：小組討論" aria-label="常用時間名稱"><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.save()">儲存常用時間</button></div>
     <div class="practice-actions"><select id="practiceTimerPresets" class="question-input" aria-label="常用時間" onchange="window.classroomPracticeTimer.select()"></select><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.remove()">刪除</button></div>
   </dialog>
+  <div id="studentPracticeTimer" class="practice-timer-floating student-practice-timer" hidden aria-live="off">⏱️ <span id="studentPracticeTimerText">00:00</span></div>
   <div id="practiceTimerFloating" class="practice-timer-floating" hidden><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.open()" aria-label="開啟課堂計時器設定">⏱️ <span id="practiceTimerFloatingTime">00:00</span></button></div>
   <dialog id="systemFaqViewer" class="system-faq-viewer" aria-labelledby="systemFaqViewerTitle">
     <div class="system-faq-viewer-header"><h2 id="systemFaqViewerTitle">❔ 常見問題 FAQ</h2><button type="button" class="presentation-tool-btn" onclick="document.getElementById('systemFaqViewer').close()" aria-label="關閉常見問題">✕</button></div>
@@ -7325,7 +7326,7 @@ Python</pre>
 
         <!-- 搶答活動專用隨機位移區 -->
         <div id="buzzMoveArea" style="width: 100%; height: 350px; background: rgba(0,0,0,0.02); border: 1px dashed var(--border-color); border-radius: 16px; position: relative; margin: 10px 0; overflow: hidden; box-sizing: border-box;">
-          <button id="buzzCircleButton" onclick="window.app.buzzIn()" style="position: absolute; width: 140px; height: 140px; border-radius: 50%; border: none; background: linear-gradient(135deg, #ff5e3a 0%, #ff2a68 100%); color: white; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 8px 24px rgba(255, 42, 104, 0.4); transition: all 0.25s ease-out; display: flex; align-items: center; justify-content: center; outline: none; user-select: none;">
+          <button id="buzzCircleButton" onclick="window.app.buzzIn()" style="position: absolute; width: 140px; height: 140px; border-radius: 50%; border: none; background: linear-gradient(135deg, #ff5e3a 0%, #ff2a68 100%); color: white; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 8px 24px rgba(255, 42, 104, 0.4); transition: left 0.5s ease-in-out, top 0.5s ease-in-out; display: flex; align-items: center; justify-content: center; outline: none; user-select: none;">
             快點我
           </button>
         </div>
@@ -8206,6 +8207,7 @@ Python</pre>
           <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
             <span>💭</span> 文字雲：<strong id="studentHistoryWcCount">0</strong>
           </div>
+          <div class="student-stat-pill" style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-color);font-size:14px;"><span>💖</span> 即時回饋：<strong id="studentHistoryReactionCount">0</strong></div>
           <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
             <span>⭐️</span> 點數記錄：<strong id="studentHistoryPointCount">0</strong>
           </div>
@@ -8220,6 +8222,7 @@ Python</pre>
         <button type="button" class="student-history-filter-btn" data-filter="media" onclick="window.app && window.app.filterStudentHistory('media')">🖼️ 圖片/影片</button>
         <button type="button" class="student-history-filter-btn" data-filter="quiz" onclick="window.app && window.app.filterStudentHistory('quiz')">📝 測驗作答</button>
         <button type="button" class="student-history-filter-btn" data-filter="wordcloud" onclick="window.app && window.app.filterStudentHistory('wordcloud')">💭 文字雲</button>
+        <button type="button" class="student-history-filter-btn" data-filter="reaction" onclick="window.app && window.app.filterStudentHistory('reaction')">💖 即時回饋</button>
         <button type="button" class="student-history-filter-btn" data-filter="point" onclick="window.app && window.app.filterStudentHistory('point')">⭐️ 點數記錄</button>
       </div>
 

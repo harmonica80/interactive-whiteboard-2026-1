@@ -2961,7 +2961,7 @@ class App {
     // 透過 Firebase 即時廣播給全班
     if (this.db) {
       const reactionsRef = this.db.ref('quiz/liveReactions').push();
-      reactionsRef.set({
+      const reactionData = {
         reactionId: reactionId,
         emoji: String(emoji).slice(0, 16),
         floatBadge: String(floatBadge || '').slice(0, 24),
@@ -2970,14 +2970,25 @@ class App {
         uid: myUid,
         xRatio: 0.12 + Math.random() * 0.76, // 螢幕水平分佈 12% ~ 88%
         timestamp: firebase.database.ServerValue.TIMESTAMP
-      }).then(() => {
-        setTimeout(() => {
-          reactionsRef.remove().catch(() => {});
-        }, 8000);
+      };
+      const updates = { [`quiz/liveReactions/${reactionsRef.key}`]: reactionData };
+      if (!this.isAdmin && myUid) {
+        updates[`student_reaction_counts/${myUid}/count`] = firebase.database.ServerValue.increment(1);
+        updates[`student_reaction_counts/${myUid}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
+      }
+      this.db.ref().update(updates).then(() => {
+        setTimeout(() => { reactionsRef.remove().catch(() => {}); }, 8000);
       }).catch(err => {
-        console.warn('即時回饋同步失敗:', err);
+        console.warn('即時回饋與次數同步失敗:', err);
       });
     }
+  }
+
+  async loadReactionHistoryCounts() {
+    if(!this.isAdmin || !this.db)return;
+    const code=window.currentClassCode || '';
+    try {const snap=await this.db.ref('student_reaction_counts').once('value');if(!this.isAdmin || code!==(window.currentClassCode||''))return;this.reactionHistoryCounts=snap.val()||{};if(this.currentAdminFeatureKey==='classStudents')this.renderAdminStudentsList();}
+    catch(err){console.warn('讀取互動回饋次數失敗:',err);}
   }
 
   triggerFloatingReaction(emoji, userName, avatar, isSelf = false, xRatio = null, floatBadge = '') {
@@ -6306,6 +6317,7 @@ class App {
     // 學生名冊與參與歷程管理專屬 UI 同步
     if (featureKey === 'classStudents') {
       this.loadClassRealNames();
+      this.loadReactionHistoryCounts();
       this.renderAdminStudentsList();
     }
 
@@ -15104,36 +15116,17 @@ class App {
     let currentY = Math.floor((buzzArea?.clientHeight || 350) / 2 - (buzzCircle?.clientHeight || 140) / 2);
     if (isNaN(currentX) || currentX < 0) currentX = 0;
     if (isNaN(currentY) || currentY < 0) currentY = 0;
-    let stepCount = 0;
-
     const randomizePosition = () => {
       if (!buzzArea || !buzzCircle) return;
       
       const maxX = Math.max(1, buzzArea.clientWidth - buzzCircle.clientWidth);
       const maxY = Math.max(1, buzzArea.clientHeight - buzzCircle.clientHeight);
-      const maxPossibleDist = Math.sqrt(maxX * maxX + maxY * maxY);
-      
-      stepCount++;
-      // 每次距離加大，初始 40px，每步加 15px，但不超過最大可能距離的 85%
-      const targetMinDist = Math.min(maxPossibleDist * 0.85, 40 + stepCount * 15);
-      
-      let randomX = currentX;
-      let randomY = currentY;
-      let attempts = 0;
-      
-      while (attempts < 50) {
-        const testX = Math.floor(Math.random() * maxX);
-        const testY = Math.floor(Math.random() * maxY);
-        const dist = Math.sqrt(Math.pow(testX - currentX, 2) + Math.pow(testY - currentY, 2));
-        
-        if (dist >= targetMinDist || attempts === 49) {
-          randomX = testX;
-          randomY = testY;
-          break;
-        }
-        attempts++;
-      }
-      
+      // 限制每次移動距離，避免由畫面一端跳至另一端。
+      const radius = Math.max(20, Math.min(90, Math.min(maxX, maxY) * 0.4));
+      const angle = Math.random() * Math.PI * 2;
+      const distance = radius * (0.5 + Math.random() * 0.5);
+      const randomX = Math.max(0, Math.min(maxX, Math.round(currentX + Math.cos(angle) * distance)));
+      const randomY = Math.max(0, Math.min(maxY, Math.round(currentY + Math.sin(angle) * distance)));
       currentX = randomX;
       currentY = randomY;
       buzzCircle.style.left = randomX + 'px';
@@ -15141,7 +15134,7 @@ class App {
     };
 
     randomizePosition();
-    this.buzzCircleInterval = setInterval(randomizePosition, 600);
+    this.buzzCircleInterval = setInterval(randomizePosition, 1000);
   }
 
   buzzIn() {
@@ -19354,6 +19347,10 @@ class App {
       });
     }
 
+    const reactionSummary=(this.reactionHistoryCounts || {})[targetUid];
+    const reactionCount=Math.max(0,Number(reactionSummary?.count)||0);
+    if(reactionCount) activities.push({id:`reaction_${targetUid}`,type:'reaction',typeName:'即時互動回饋',icon:'💖',timestamp:Number(reactionSummary.updatedAt)||0,title:`即時互動回饋累計 ${reactionCount} 次`,details:'此項為累計次數，非逐次明細。',count:reactionCount});
+
     // 8. 點數異動記錄 (Points Log)
     const stData = (this.registeredStudents || {})[targetUid];
     if (stData && stData.pointsLog && typeof stData.pointsLog === 'object') {
@@ -19496,7 +19493,7 @@ class App {
         pointsLog: s.pointsLog || {},
         isOnline,
         lastLoginAt: s.lastLoginAt || latestActivityTime || null,
-        activityTotal: activities.length,
+        activityTotal: activities.reduce((total,a)=>total+(a.type==='reaction'?a.count:1),0),
         stats: { qCount, cCount, imgCount, vidCount, quizCount, wcCount }
       };
     });
@@ -19814,7 +19811,9 @@ class App {
     }
   }
 
-  adminOpenStudentHistoryModal(studentUid) {
+  async adminOpenStudentHistoryModal(studentUid) {
+    if (!this.isAdmin) return;
+    await this.loadReactionHistoryCounts();
     try {
       const regStudents = this.registeredStudents || {};
       let student = regStudents[studentUid];
@@ -19870,7 +19869,8 @@ class App {
       });
 
       const setElText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-      setElText('studentHistoryTotalCount', activities.length);
+      setElText('studentHistoryTotalCount', activities.reduce((total,a)=>total+(a.type==='reaction'?a.count:1),0));
+      setElText('studentHistoryReactionCount', activities.filter(a=>a.type==='reaction').reduce((total,a)=>total+a.count,0));
       setElText('studentHistoryQCount', qCount);
       setElText('studentHistoryCommentCount', cCount);
       setElText('studentHistoryImgCount', imgCount);
@@ -20008,7 +20008,7 @@ class App {
     txt += `學生姓名: ${s.name}\n`;
     txt += `學生 UID: ${s.uid}\n`;
     txt += `匯出日期: ${new Date().toLocaleString()}\n`;
-    txt += `歷程總數: ${activities.length} 項\n`;
+    txt += `歷程總數: ${activities.reduce((n,a)=>n+(a.type==='reaction'?a.count:1),0)} 項\n`;
     txt += `----------------------------------------\n\n`;
 
     activities.forEach((a, idx) => {
@@ -20090,7 +20090,7 @@ class App {
       const regEntry = (this.registeredStudents && this.registeredStudents[s.uid]) || {};
       const safeNote = `"${String(regEntry.note || '').replace(/"/g, '""')}"`;
 
-      csv += `"${s.uid}","${classCode}",${safeName},${safeNote},"${isOnline}","${timeStr}",${activities.length},${qCount},${cCount},${imgCount},${vidCount},${quizCount},${wcCount}\n`;
+      csv += `"${s.uid}","${classCode}",${safeName},${safeNote},"${isOnline}","${timeStr}",${activities.reduce((n,a)=>n+(a.type==='reaction'?a.count:1),0)},${qCount},${cCount},${imgCount},${vidCount},${quizCount},${wcCount}\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -21595,7 +21595,7 @@ class App {
 
         try {
           // 1. 自名冊刪除
-          await db.ref().update({[`quiz/students/${uid}`]:null,[`student_real_names/${uid}`]:null});
+          await db.ref().update({[`quiz/students/${uid}`]:null,[`student_real_names/${uid}`]:null,[`student_reaction_counts/${uid}`]:null});
           if (this.classRealNames) delete this.classRealNames[uid];
 
           if (this.registeredStudents && this.registeredStudents[uid]) {
@@ -30507,6 +30507,7 @@ function resetAll() {
     db.ref('quiz/videoQuizAnswers').remove(),
     db.ref('quiz/students').remove(),
     db.ref('student_real_names').remove(),
+    db.ref('student_reaction_counts').remove(),
     db.ref('quiz/presence').remove(), // 徹底清除線上連線與快取記錄，避免舊名稱殘留
     db.ref('whiteboard').remove(),
     db.ref('whiteboard_room').remove(),
