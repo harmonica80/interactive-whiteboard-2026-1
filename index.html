@@ -20,7 +20,7 @@
   </script>
   <link rel="stylesheet" href="css/board-setup.css?v=c10">
   <link rel="stylesheet" href="css/classroom-practice.css?v=c7">
-  <link rel="stylesheet" href="css/dilemma-game.css?v=c1">
+  <link rel="stylesheet" href="css/dilemma-game.css?v=c2">
   <link rel="stylesheet" href="css/system-faq.css?v=c3">
 </head>
 <body>
@@ -4157,6 +4157,7 @@
               </div>
               <div id="focusDilemmaSettings" class="dilemma-settings" style="display:none">
                 <label for="dilemmaLevel">挑戰難度</label><select id="dilemmaLevel" class="question-input"><option>國小</option><option>國中</option><option>高中</option><option>大學</option></select>
+                <div class="dilemma-count"><label for="dilemmaCount">出題數量</label><select id="dilemmaCount" class="question-input" onchange="window.dilemmaGame.updateCountMode()"><option value="3">3 題</option><option value="5" selected>5 題</option><option value="10">10 題</option><option value="15">15 題</option><option value="custom">自訂</option></select><input id="dilemmaCustomCount" class="question-input" type="number" min="1" max="160" step="1" value="20" aria-label="自訂出題數量" hidden></div>
                 <fieldset><legend>出題範圍（可複選）</legend><div class="dilemma-subjects">
                   <label><input type="checkbox" class="dilemma-subject" value="國文" checked> 國文</label>
                   <label><input type="checkbox" class="dilemma-subject" value="數學" checked> 數學</label>
@@ -4167,6 +4168,7 @@
                   <label><input type="checkbox" class="dilemma-subject" value="地理" checked> 地理</label>
                   <label><input type="checkbox" class="dilemma-subject" value="自然" checked> 自然</label>
                 </div></fieldset><p>老師控制題目；同學選答後可看人數，並有一次改選機會。</p>
+                <div class="dilemma-bank-actions"><button type="button" class="presentation-tool-btn active" onclick="window.dilemmaBank.open()">🔍 管理與搜尋題庫</button><button type="button" class="presentation-tool-btn" onclick="window.dilemmaBank.chooseImport()">📥 匯入題庫（CSV）</button><button type="button" class="presentation-tool-btn" onclick="window.dilemmaBank.exportCSV()">📤 匯出題庫（CSV）</button><button type="button" class="presentation-tool-btn" onclick="window.dilemmaBank.template()">📄 下載 CSV 範本</button><button type="button" class="presentation-tool-btn" onclick="window.dilemmaBank.reset()">🔄 恢復預設</button><input id="dilemmaCsvInput" type="file" accept=".csv,text/csv" hidden onchange="window.dilemmaBank.importFile(this)"></div><p id="dilemmaBankInfo">題庫儲存在目前瀏覽器，可匯出 CSV 分享至其他裝置。</p>
               </div>
               <div id="focusNumberGridSettings" style="margin-bottom: 16px;">
                 <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 設定數字數量 (格子數)：</label>
@@ -6736,7 +6738,8 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/song_quiz.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/dilemma-question-bank.js?v=c1"></script>
-  <script type="application/x-board-script" data-src="js/dilemma-game.js?v=c1"></script>
+  <script type="application/x-board-script" data-src="js/dilemma-bank-manager.js?v=c1"></script>
+  <script type="application/x-board-script" data-src="js/dilemma-game.js?v=c2"></script>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/word_cloud.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/presentation-draft.js?v=c1"></script>
@@ -7037,6 +7040,13 @@ Python</pre>
   </dialog>
   <div id="studentPracticeTimer" class="practice-timer-floating student-practice-timer" hidden aria-live="off">⏱️ <span id="studentPracticeTimerText">00:00</span></div>
   <div id="practiceTimerFloating" class="practice-timer-floating" hidden><button class="presentation-tool-btn" onclick="window.classroomPracticeTimer.open()" aria-label="開啟課堂計時器設定">⏱️ <span id="practiceTimerFloatingTime">00:00</span></button></div>
+  <dialog id="dilemmaBankDialog" class="dilemma-bank-dialog" aria-labelledby="dilemmaBankTitle">
+    <div class="dilemma-bank-header"><h2 id="dilemmaBankTitle">📚 左右為難題庫管理</h2><button type="button" class="presentation-tool-btn" aria-label="關閉題庫管理" onclick="document.getElementById('dilemmaBankDialog').close()">✕</button></div>
+    <p>題庫保存在目前瀏覽器；匯入採新增方式，可匯出 CSV 備份或分享至其他裝置。</p>
+    <div class="dilemma-bank-actions"><input id="dilemmaBankSearch" class="question-input" type="search" placeholder="搜尋題目" aria-label="搜尋題目" oninput="window.dilemmaBank.render()"><select id="dilemmaBankSubjectFilter" class="question-input" aria-label="篩選領域" onchange="window.dilemmaBank.render()"><option value="">全部領域</option></select><select id="dilemmaBankLevelFilter" class="question-input" aria-label="篩選難度" onchange="window.dilemmaBank.render()"><option value="">全部難度</option></select></div>
+    <div id="dilemmaBankStatus" role="status"></div><div id="dilemmaBankList" class="dilemma-bank-list"></div>
+    <form id="dilemmaBankForm" class="dilemma-bank-form" onsubmit="event.preventDefault();window.dilemmaBank.save()"><h3 id="dilemmaBankFormTitle">新增題目</h3><input id="dilemmaBankEditId" type="hidden"><label>領域 <select id="dilemmaBankSubject" class="question-input" required></select></label><label>難度 <select id="dilemmaBankLevel" class="question-input" required></select></label><label>題目 <textarea id="dilemmaBankText" class="question-input" maxlength="300" rows="3" required></textarea></label><label>正確答案 <select id="dilemmaBankAnswer" class="question-input"><option value="true">對</option><option value="false">錯</option></select></label><div class="dilemma-bank-actions"><button type="submit" class="presentation-tool-btn active">💾 儲存題目</button><button type="button" class="presentation-tool-btn" onclick="window.dilemmaBank.clearForm()">取消編輯</button></div></form>
+  </dialog>
   <dialog id="systemFaqViewer" class="system-faq-viewer" aria-labelledby="systemFaqViewerTitle">
     <div class="system-faq-viewer-header"><h2 id="systemFaqViewerTitle">❔ 常見問題 FAQ</h2><button type="button" class="presentation-tool-btn" onclick="document.getElementById('systemFaqViewer').close()" aria-label="關閉常見問題">✕</button></div>
     <p id="systemFaqViewerStatus" class="system-faq-help" role="status">正在讀取…</p><div id="systemFaqViewerList"></div>

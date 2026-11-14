@@ -11,3 +11,26 @@
 .dilemma-choice span { font-size:64px; line-height:1; color:var(--accent-color); }.dilemma-choice strong { font-size:24px; }.dilemma-choice small { font-size:14px; }.dilemma-choice.selected { border-color:var(--accent-color); box-shadow:0 0 0 2px var(--accent-color); }.dilemma-choice:disabled { cursor:default; opacity:0.8; }
 .dilemma-reveal { color:var(--accent-color); font-size:20px; font-weight:700; text-align:center; }.dilemma-controls { justify-content:center; margin-top:16px; }
 @media(max-width:600px){.dilemma-layout { grid-template-columns:1fr 1fr; }.dilemma-question { grid-column:1 / -1; grid-row:1; }.dilemma-choice { min-height:115px; }}
+.dilemma-count { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:12px 0; }
+.dilemma-count input { width:100px; }
+.dilemma-count input[hidden] { display:none; }
+#focusGameOverlay.dilemma-active #focusGameOverlayContent { width:min(96%,1100px) !important; max-width:1100px !important; }
+.dilemma-board { padding:clamp(16px,2.5vw,28px); }
+.dilemma-layout { grid-template-columns:minmax(150px,1fr) minmax(220px,2fr) minmax(150px,1fr); gap:clamp(14px,2vw,24px); }
+.dilemma-choice { min-height:220px; border-width:2px; transition:transform .16s ease,box-shadow .16s ease; }
+.dilemma-choice.yes { background:color-mix(in srgb,var(--danger-color) 18%,var(--bg-card)); border-color:color-mix(in srgb,var(--danger-color) 55%,var(--border-color)); }
+.dilemma-choice.no { background:color-mix(in srgb,var(--accent-color) 18%,var(--bg-card)); border-color:color-mix(in srgb,var(--accent-color) 55%,var(--border-color)); }
+.dilemma-choice.yes span { color:var(--danger-color); }.dilemma-choice.no span { color:var(--accent-color); }
+.dilemma-choice span { font-size:clamp(64px,8vw,100px); font-weight:800; }.dilemma-choice strong { font-size:30px; }
+.dilemma-choice:not(:disabled):hover { transform:translateY(-3px); box-shadow:var(--shadow-hover); }
+.dilemma-choice:disabled { opacity:1; }.dilemma-choice.selected { outline:3px solid var(--text-primary); outline-offset:2px; }
+.dilemma-reference { display:inline-block; margin-top:8px; color:var(--accent-color); font-size:14px; font-weight:600; }
+.dilemma-ranking { margin-top:20px; padding:14px; background:var(--bg-input); border:1px solid var(--border-color); border-radius:12px; text-align:left; }
+.dilemma-ranking h3 { margin:0; color:var(--text-primary); font-size:18px; }.dilemma-ranking p { color:var(--text-secondary); font-size:14px; }.dilemma-ranking ol { padding:0; margin:0; list-style:none; }.dilemma-ranking li { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:8px; border-bottom:1px solid var(--border-color); font-size:14px; }
+@media(max-width:600px){.dilemma-layout { grid-template-columns:1fr 1fr; }.dilemma-choice { min-height:140px; }.dilemma-choice span { font-size:64px; }}
+@media(prefers-reduced-motion:reduce){.dilemma-choice { transition:none; }}
+.dilemma-bank-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:10px 0; }.dilemma-bank-actions button { font-size:14px; }.dilemma-bank-actions [hidden] { display:none; }
+.dilemma-bank-dialog { position:fixed; inset:0; margin:auto; box-sizing:border-box; width:min(960px,calc(100% - 24px)); max-height:90vh; overflow:auto; padding:20px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--border-color); border-radius:16px; box-shadow:var(--shadow); font-size:14px; }
+.dilemma-bank-dialog::backdrop { background:color-mix(in srgb,var(--bg-primary) 65%,transparent); }.dilemma-bank-header { display:flex; justify-content:space-between; align-items:center; gap:10px; }.dilemma-bank-header h2 { font-size:20px; }.dilemma-bank-dialog p { color:var(--text-secondary); }
+.dilemma-bank-list { max-height:40vh; overflow:auto; }.dilemma-bank-item { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px; border-bottom:1px solid var(--border-color); }.dilemma-bank-item strong,.dilemma-bank-item span { display:block; overflow-wrap:anywhere; }.dilemma-bank-item span { color:var(--text-secondary); font-size:14px; margin-top:4px; }
+.dilemma-bank-form { display:grid; gap:8px; margin-top:16px; padding:14px; border:1px solid var(--border-color); border-radius:12px; background:var(--bg-input); }.dilemma-bank-form h3 { margin:0; font-size:16px; }.dilemma-bank-form label { display:grid; gap:4px; font-size:14px; }.dilemma-bank-form textarea { width:100%; box-sizing:border-box; }
