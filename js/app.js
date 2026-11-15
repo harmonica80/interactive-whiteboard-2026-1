@@ -16083,6 +16083,12 @@ class App {
     
     // 團結一詞自動校對是否正確
     let autoStatus = 'pending';
+    let questionResults = null;
+    if(currentGameType==='characterTest'){
+      if(!questions.length || questions.some(q=>!String(q.char||'').trim())){this.showNotification('題目設定不完整','題目缺少標準答案，請老師檢查題庫後重新出題。');return;}
+      questionResults=questions.map((q,i)=>String(answers[i]||'').trim().normalize('NFC')===String(q.char).trim().normalize('NFC'));
+      autoStatus=questionResults.every(Boolean)?'correct':'incorrect';
+    }
     if(isCrossword){
       const correctChar=String(questions[0]?.char||'').trim().normalize('NFC');
       if(!correctChar){this.showNotification('題目設定不完整','本題缺少標準答案，請老師檢查題庫後重新出題。');return;}
@@ -16109,13 +16115,14 @@ class App {
       timeSpent: timeSpent,
       completedAt: firebase.database.ServerValue.TIMESTAMP,
       status: autoStatus,
+      questionResults: questionResults,
       gameType: currentGameType,
       helpCount: this.focusHelpCount || 0,
       penaltySeconds: this.focusHelpPenaltySeconds || 0
     }).then(() => {
       if (autoStatus === 'correct') {
         this.playFocusSound('correct');
-        this.showNotification('太棒了！', isCrossword?'恭喜答對！完成十字選字！':'恭喜答對！完成團結一詞！');
+        this.showNotification('太棒了！', isCrossword?'恭喜答對！完成十字選字！':currentGameType==='characterTest'?'恭喜！字力測驗全部答對！':'恭喜答對！完成團結一詞！');
       } else if (autoStatus === 'incorrect') {
         this.playFocusSound('wrong');
         this.showNotification('提示', '答案未完全吻合，可於上方查看並再次重試！');
@@ -16124,7 +16131,8 @@ class App {
       }
       this.renderCharacterTestPlayCompleted(this.focusGame, {
         answers: answers,
-        status: autoStatus
+        status: autoStatus,
+        questionResults: questionResults
       });
     }).catch(err => {
       this.showNotification('錯誤', '送出失敗: ' + err.message);
@@ -16288,7 +16296,8 @@ class App {
     questions.forEach((q, idx) => {
       const userWord = answers[idx] || '';
       const displayWord = userWord;
-      const displayColor = status === 'incorrect' ? '#dc3545' : (status === 'correct' ? '#28a745' : 'var(--accent-color)');
+      const itemVerdict=Array.isArray(result.questionResults)?result.questionResults[idx]:null;
+      const displayColor = itemVerdict!==null?(itemVerdict?'var(--success-color)':'var(--danger-color)'):(status==='incorrect'?'var(--danger-color)':status==='correct'?'var(--success-color)':'var(--accent-color)');
       
       if (isUnitedWords) {
         const correctWord = q.targetWord || '';
@@ -16345,15 +16354,9 @@ class App {
           </div>
         `;
       } else {
-        // 字力測驗 (一字千金)
-        const correctChar = q.char || '';
-        const answerBlock = !isPending
-          ? `<div style="text-align: center; font-size: 16px; color: #167a31; margin-top: 10px; font-weight: bold; background: rgba(52, 199, 89, 0.12); padding: 8px 12px; border-radius: 8px; border: 1px solid #34c759;">
-               💡 正確答案：<span style="font-size: 26px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; font-weight: 900; color: #167a31;">${this.escapeHtml(correctChar)}</span>
-             </div>`
-          : `<div style="text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 8px;">
-               ⏳ 答案已送出，請靜候老師評分
-             </div>`;
+        // 字力測驗只呈現各題評分，不提供正確國字。
+        const verdict=Array.isArray(result.questionResults)?result.questionResults[idx]:null;
+        const answerBlock=verdict===null?'':`<div style="text-align:center;font-size:20px;font-weight:800;color:${verdict?'var(--success-color)':'var(--danger-color)'}">${idx+1}：${verdict?'✅ 對':'❌ 錯'}</div>`;
 
         html += `
           <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.95;">
@@ -16538,6 +16541,7 @@ class App {
         color = 'var(--danger-color)';
       }
       
+      if(res.gameType==='characterTest' && Array.isArray(res.questionResults)){statusIcon=res.questionResults.map((correct,i)=>`${i+1}：${correct?'✅ 對':'❌ 錯'}`).join('　');}
       const helpNote = res.helpCount ? `，提示 ${res.helpCount} 次` : '';
       const userAvatar = this.renderAvatarHtml(this.getUserAvatar(res.uid, res.name, res.avatar), 18);
       const groupBadgeHtml = typeof this.renderStudentGroupBadgeHtml === 'function' ? this.renderStudentGroupBadgeHtml(res.uid, res.name) : '';
