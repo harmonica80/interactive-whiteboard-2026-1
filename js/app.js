@@ -16125,7 +16125,7 @@ class App {
         this.showNotification('太棒了！', isCrossword?'恭喜答對！完成十字選字！':currentGameType==='characterTest'?'恭喜！字力測驗全部答對！':'恭喜答對！完成團結一詞！');
       } else if (autoStatus === 'incorrect') {
         this.playFocusSound('wrong');
-        this.showNotification('提示', '答案未完全吻合，可於上方查看並再次重試！');
+        this.showNotification('提示', isCrossword ? '答錯了' : '答案未完全吻合，可於上方查看並再次重試！');
       } else {
         this.showNotification('成功', '答案已送出！');
       }
