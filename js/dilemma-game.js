@@ -1,10 +1,12 @@
 (() => {
   let state=null, refs=[], counts={yes:0,no:0}, mine=null, busy=false;
+  let ticker=null, celebrated=null, hintOpen=false;
   let teacherRefs=[], teacherVotes={}, teacherSession=null;
   const root=()=>window.app?.db;
   function detach(preserveTeacher=false){
+    clearInterval(ticker);ticker=null;hintOpen=false;document.querySelectorAll(".dilemma-fireworks").forEach(el=>el.remove());
     for(const [ref,fn] of refs)ref.off('value',fn);refs=[];state=null;counts={yes:0,no:0};mine=null;busy=false;
-    if(!preserveTeacher){for(const [ref,event,fn] of teacherRefs)ref.off(event,fn);teacherRefs=[];teacherVotes={};teacherSession=null;document.getElementById('focusGameOverlay')?.classList.remove('dilemma-active');}
+    if(!preserveTeacher){celebrated=null;for(const [ref,event,fn] of teacherRefs)ref.off(event,fn);teacherRefs=[];teacherVotes={};teacherSession=null;document.getElementById('focusGameOverlay')?.classList.remove('dilemma-active');}
   }
   function listen(ref,fn){const cb=ref.on('value',fn,()=>{window.app?.showNotification('連線失敗','無法讀取作答狀態，請檢查網路與資料庫權限。')});refs.push([ref,cb]);}
   function path(game){return `quiz/dilemmaVotes/${game.sessionId}/${game.questionIndex}`;}
@@ -23,27 +25,28 @@
     }
   }
   function leaderboard(app,game){
-    const players={};
-    for(const [index,entries] of Object.entries(teacherVotes)){
-      const q=game.questions[Number(index)];if(!q)continue;
-      for(const [uid,vote] of Object.entries(entries)){
-        const choice=vote?.pending ? vote.pending.from : vote?.choice;
-        if(!['yes','no'].includes(choice))continue;
-        const item=players[uid]||(players[uid]={uid,name:app.registeredStudents?.[uid]?.name || vote.name || '同學',correct:0,answered:0});
-        item.answered++;if((choice==='yes')===q.answer)item.correct++;
-      }
-    }
-    const rows=Object.values(players).sort((a,b)=>b.correct-a.correct || a.name.localeCompare(b.name,'zh-Hant'));
-    let rank=0,previous=null;const list=rows.map((item,index)=>{if(item.correct!==previous){rank=index+1;previous=item.correct;}return `<li><span>${rank}. ${escape(item.name)}</span><strong>答對 ${item.correct} 題／作答 ${item.answered} 題</strong></li>`}).join('');
-    return `<section class="dilemma-ranking" aria-label="即時成績排行榜"><h3>🏆 即時成績排行榜</h3><p>教師專用；依答對題數排序，改選後會即時更新。</p>${rows.length?`<ol>${list}</ol>`:'<p>尚無同學作答。</p>'}</section>`;
+    if(!game.revealed)return '';
+    const q=question(game),entries=teacherVotes[game.questionIndex]||{};
+    const names=Object.entries(entries).filter(([,v])=>!v.pending && (v.choice==='yes')===q.answer && ['yes','no'].includes(v.choice)).map(([uid,v])=>app.registeredStudents?.[uid]?.name||v.name||'同學');
+    return `<section class="dilemma-ranking"><h3>🎉 本題答對名單（${names.length} 人）</h3><p>${names.length?names.map(escape).join('、'):'目前沒有同學答對。'}</p></section>`;
   }
+  function celebrate(){
+    if(!state?.game.revealed || celebrated===state.key)return;
+    celebrated=state.key;const {app,game}=state,q=question(game);
+    if(app.isAdmin || (mine?.choice && !mine.pending))app.playFocusSound?.(app.isAdmin?(q.answer?'correct':'wrong'):((mine.choice==='yes')===q.answer?'correct':'wrong'));
+    const layer=document.createElement('div');layer.className='dilemma-fireworks';layer.setAttribute('aria-hidden','true');
+    for(let i=0;i<48;i++){const dot=document.createElement('i');dot.style.setProperty('--x',`${(i%8)*12+8}%`);dot.style.setProperty('--y',`${Math.floor(i/8)*13+10}%`);dot.style.setProperty('--delay',`${(i%6)*.14}s`);layer.append(dot);}
+    (document.fullscreenElement||document.body).append(layer);setTimeout(()=>layer.remove(),2400);
+  }
+
   function view(){
     if(!state)return;const {app,game}=state;const q=question(game),grid=document.getElementById('focusGameGrid');if(!q||!grid)return;
     const isTeacher=!!app.isAdmin, canSee=isTeacher || (!!mine?.choice && !mine.pending), revealed=game.revealed===true;
+    const wait=Math.max(0,Math.ceil(((Number(game.opensAt)||0)-(Date.now()+(Number(app.serverTimeOffset)||0)))/1000));
     const selected=mine?.choice, remaining=selected && !mine?.changes;
     const note=isTeacher?'請等同學選擇後公布答案或切換下一題。':!selected?'請選擇「對」或「錯」；作答後會顯示人數。':mine.pending?'正在同步統計，請稍候。':remaining?'您還有一次改選機會。':'已使用改選機會。';
-    const button=(side,label,symbol)=>`<button type="button" class="dilemma-choice ${side} ${selected===side?'selected':''}" ${isTeacher||revealed||busy||mine?.pending||(selected && !remaining)?'disabled':''} onclick="window.dilemmaGame.vote('${side}')"><span aria-hidden="true">${symbol}</span><strong>${label}</strong><small>${canSee?`${counts[side] || 0} 人選擇`:'選答後顯示人數'}</small></button>`;
-    grid.innerHTML=`<div class="dilemma-board"><div class="dilemma-meta">⚖️ ${escape(q.subject)} · ${escape(q.level)} · 第 ${Number(game.questionIndex)+1} / ${game.questions.length} 題</div><p class="dilemma-note" role="status">${escape(note)}</p><div class="dilemma-layout">${button('yes','對','○')}<div class="dilemma-question">${escape(q.text)}</div>${button('no','錯','×')}</div>${revealed?`<p class="dilemma-reveal">答案：${q.answer?'對':'錯'}<br><a class="dilemma-reference" href="https://www.google.com/search?q=${encodeURIComponent(q.text)}" target="_blank" rel="noopener noreferrer">🔎 用題目搜尋 Google 參考資料</a></p>`:''}${mine?.pending?'<button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.retry()">重新同步統計</button>':''}${isTeacher?`<div class="dilemma-controls"><button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.reveal()" ${revealed?'disabled':''}>公布答案</button><button type="button" class="presentation-tool-btn active" onclick="window.dilemmaGame.next()">${Number(game.questionIndex)+1>=game.questions.length?'結束活動':'下一題'}</button></div>`:''}${isTeacher?leaderboard(app,game):''}</div>`;
+    const button=(side,label,symbol)=>`<button type="button" class="dilemma-choice ${side} ${selected===side?'selected':''}" ${isTeacher||wait>0||revealed||busy||mine?.pending||(selected && !remaining)?'disabled':''} onclick="window.dilemmaGame.vote('${side}')"><span aria-hidden="true">${symbol}</span><strong>${label}</strong><small>${canSee?`${counts[side] || 0}`:'—'}</small></button>`;
+    grid.innerHTML=`<div class="dilemma-board"><div class="dilemma-meta">⚖️ ${escape(q.subject)} · ${escape(q.level)} · 第 ${Number(game.questionIndex)+1} / ${game.questions.length} 題</div><p class="dilemma-note" role="status">${wait>0?`準備開始：${wait} 秒`:escape(note)}</p><div class="dilemma-layout">${button('yes','對','○')}<div class="dilemma-question">${escape(q.text)}</div>${button('no','錯','×')}</div>${!isTeacher&&game.allowHint&&!revealed&&wait===0?`<div class="dilemma-hint"><button class="presentation-tool-btn" onclick="window.dilemmaGame.hint()">💡 提示</button>${hintOpen?`<p>${escape(q.hint||'留意題目中的條件與「所有、一定、永遠」等字眼，想想是否存在反例，再判斷。')}</p>`:''}</div>`:''}${revealed?`<p class="dilemma-reveal">答案：${q.answer?'對':'錯'}<br><a class="dilemma-reference" href="https://www.google.com/search?q=${encodeURIComponent(q.text)}" target="_blank" rel="noopener noreferrer">🔎 用題目搜尋 Google 參考資料</a></p>`:''}${mine?.pending?'<button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.retry()">重新同步統計</button>':''}${isTeacher?`<div class="dilemma-controls"><button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.reveal()" ${revealed||wait>0?'disabled':''}>公布答案</button><button type="button" class="presentation-tool-btn active" onclick="window.dilemmaGame.next()" ${wait>0?'disabled':''}>${Number(game.questionIndex)+1>=game.questions.length?'結束活動':'下一題'}</button></div>`:''}${isTeacher?leaderboard(app,game):''}</div>`;celebrate();
   }
   async function settle(refPath,uid,pending){
     // 將每次操作的序號與人數一起交易，重試時不重複累加。
@@ -69,6 +72,7 @@
   }
   window.dilemmaGame={
     detach,
+    hint(){if(!state||state.app.isAdmin||!state.game.allowHint)return;hintOpen=!hintOpen;view();},
     updateCountMode(){const select=document.getElementById('dilemmaCount'),custom=document.getElementById('dilemmaCustomCount');if(custom)custom.hidden=select?.value!=='custom';},
     async start(app){
       if(!app.isAdmin)return;const level=document.getElementById('dilemmaLevel').value,subjects=[...document.querySelectorAll('.dilemma-subject:checked')].map(e=>e.value);
@@ -80,7 +84,7 @@
       if(count>qs.length){app.showNotification('題目數量不足',`目前難度及領域只有 ${qs.length} 題，請減少題數或增加出題範圍。`);return;}
       for(let i=qs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qs[i],qs[j]]=[qs[j],qs[i]];}
       const sessionId='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-      try {app.resetFocusGameLocalState();await Promise.all([root().ref('quiz/buzzGame').set(null),root().ref('quiz/current').update({active:false})]);app.previewStudentActivity('gameFocus');await root().ref('quiz/focusGame').set({status:'playing',gameType:'dilemma',sessionId,questionIndex:0,revealed:false,level,subjects,questions:qs.slice(0,count),startTime:Date.now()});}
+      try {app.resetFocusGameLocalState();await Promise.all([root().ref('quiz/buzzGame').set(null),root().ref('quiz/current').update({active:false})]);app.previewStudentActivity('gameFocus');await root().ref('quiz/focusGame').set({status:'playing',gameType:'dilemma',sessionId,questionIndex:0,revealed:false,level,subjects,questions:qs.slice(0,count),startTime:Date.now(),allowHint:!!document.getElementById('focusGameAllowHint')?.checked,opensAt:Date.now()+(Number(app.serverTimeOffset)||0)+Math.max(0,Number(document.getElementById('focusGameCountdown')?.value)||0)*1000});}
       catch(e){app.showNotification('發起失敗',e.message||'請檢查連線後重試。');}
     },
     render(app,game){
@@ -95,10 +99,10 @@
         if(!app.isAdmin){const uid=app.getUserId();listen(base.child('votes').child(uid),snap=>{mine=snap.val()||null;view()});}
       } else {state.app=app;state.game=game;}
       document.getElementById('focusGameOverlay')?.classList.add('dilemma-active');
-      if(app.isAdmin)ensureTeacherVotes(game);view();
+      if(app.isAdmin)ensureTeacherVotes(game);view();if(!ticker && Date.now()+(Number(app.serverTimeOffset)||0)<Number(game.opensAt)+1000)ticker=setInterval(()=>{if(state && Date.now()+(Number(app.serverTimeOffset)||0)<Number(state.game.opensAt)+1000)view();else{clearInterval(ticker);ticker=null;}},250);
     },
     async vote(choice){
-      if(!state || state.app.isAdmin || state.game.revealed || busy || !['yes','no'].includes(choice))return;
+      if(!state || state.app.isAdmin || state.game.revealed || Date.now()+(Number(state.app.serverTimeOffset)||0)<Number(state.game.opensAt) || busy || !['yes','no'].includes(choice))return;
       const {app,game}=state, uid=app.getUserId(),basePath=path(game),voteRef=root().ref(`${basePath}/votes/${uid}`);busy=true;view();
       try {
         const result=await voteRef.transaction(current=>{
@@ -110,7 +114,7 @@
       finally {busy=false;view();}
     },
     async retry(){if(!state || state.app.isAdmin || !mine?.pending || busy)return;busy=true;view();try{await settle(path(state.game),state.app.getUserId(),mine.pending)}catch(e){state.app.showNotification('同步失敗','請檢查連線後再試。')}finally{busy=false;view()}},
-    async reveal(){if(!state?.app.isAdmin)return;try{await root().ref('quiz/focusGame').update({revealed:true})}catch(e){state.app.showNotification('操作失敗','請檢查網路連線。')}},
-    async next(){if(!state?.app.isAdmin)return;const {app,game}=state;try{if(Number(game.questionIndex)+1>=game.questions.length){await root().ref('quiz/focusGame').update({status:'idle'});return;}await root().ref('quiz/focusGame').update({questionIndex:Number(game.questionIndex)+1,revealed:false});}catch(e){app.showNotification('操作失敗','請檢查網路連線。')}}
+    async reveal(){if(!state?.app.isAdmin || Date.now()+(Number(state.app.serverTimeOffset)||0)<Number(state.game.opensAt))return;try{await root().ref('quiz/focusGame').update({revealed:true})}catch(e){state.app.showNotification('操作失敗','請檢查網路連線。')}},
+    async next(){if(!state?.app.isAdmin || Date.now()+(Number(state.app.serverTimeOffset)||0)<Number(state.game.opensAt))return;const {app,game}=state;try{if(Number(game.questionIndex)+1>=game.questions.length){await root().ref('quiz/focusGame').update({status:'idle'});return;}await root().ref('quiz/focusGame').update({questionIndex:Number(game.questionIndex)+1,revealed:false});}catch(e){app.showNotification('操作失敗','請檢查網路連線。')}}
   };
 })();

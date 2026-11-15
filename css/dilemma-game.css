@@ -34,3 +34,12 @@
 .dilemma-bank-dialog::backdrop { background:color-mix(in srgb,var(--bg-primary) 65%,transparent); }.dilemma-bank-header { display:flex; justify-content:space-between; align-items:center; gap:10px; }.dilemma-bank-header h2 { font-size:20px; }.dilemma-bank-dialog p { color:var(--text-secondary); }
 .dilemma-bank-list { max-height:40vh; overflow:auto; }.dilemma-bank-item { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px; border-bottom:1px solid var(--border-color); }.dilemma-bank-item strong,.dilemma-bank-item span { display:block; overflow-wrap:anywhere; }.dilemma-bank-item span { color:var(--text-secondary); font-size:14px; margin-top:4px; }
 .dilemma-bank-form { display:grid; gap:8px; margin-top:16px; padding:14px; border:1px solid var(--border-color); border-radius:12px; background:var(--bg-input); }.dilemma-bank-form h3 { margin:0; font-size:16px; }.dilemma-bank-form label { display:grid; gap:4px; font-size:14px; }.dilemma-bank-form textarea { width:100%; box-sizing:border-box; }
+
+.dilemma-choice span {font-size:clamp(128px,16vw,200px);}
+.dilemma-choice small {font-size:30px;font-weight:800;}
+.dilemma-hint {text-align:center;font-size:16px;color:var(--text-secondary);}
+.dilemma-fireworks {position:fixed;inset:0;pointer-events:none;z-index:25000;overflow:hidden;}
+.dilemma-fireworks i {position:absolute;left:var(--x);top:var(--y);width:12px;height:12px;border-radius:50%;background:var(--accent-color);box-shadow:24px 12px var(--success-color),-22px 18px var(--danger-color),8px -24px var(--accent-color);animation:dilemma-burst 1.5s var(--delay) both;}
+@keyframes dilemma-burst {0%{transform:scale(0);opacity:0;}25%{opacity:1;}100%{transform:scale(2.5) translateY(35px);opacity:0;}}
+@media(max-width:600px){.dilemma-choice span{font-size:128px;}.dilemma-choice{padding:8px;}}
+@media(prefers-reduced-motion:reduce){.dilemma-fireworks{display:none;}}
