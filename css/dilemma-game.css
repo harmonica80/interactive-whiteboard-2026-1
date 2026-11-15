@@ -50,3 +50,5 @@
 
 .focus-reward-actions {display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin:0 0 12px;font-size:14px;}
 .focus-reward-actions .presentation-tool-btn {font-size:14px;}
+
+.dilemma-choice.selected {background:color-mix(in srgb,var(--success-color) 30%,var(--bg-card));border-color:var(--success-color);box-shadow:0 0 0 2px var(--success-color);}
