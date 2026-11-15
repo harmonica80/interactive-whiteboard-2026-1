@@ -38,8 +38,12 @@
 .dilemma-choice span {font-size:clamp(128px,16vw,200px);}
 .dilemma-choice small {font-size:30px;font-weight:800;}
 .dilemma-hint {text-align:center;font-size:16px;color:var(--text-secondary);}
-.dilemma-fireworks {position:fixed;inset:0;pointer-events:none;z-index:25000;overflow:hidden;}
-.dilemma-fireworks i {position:absolute;left:var(--x);top:var(--y);width:12px;height:12px;border-radius:50%;background:var(--accent-color);box-shadow:24px 12px var(--success-color),-22px 18px var(--danger-color),8px -24px var(--accent-color);animation:dilemma-burst 1.5s var(--delay) both;}
-@keyframes dilemma-burst {0%{transform:scale(0);opacity:0;}25%{opacity:1;}100%{transform:scale(2.5) translateY(35px);opacity:0;}}
+.dilemma-answer-note {margin:20px auto 12px;padding:14px 20px;border:2px solid var(--accent-color);border-radius:12px;background:color-mix(in srgb,var(--accent-color) 12%,var(--bg-card));color:var(--accent-color);font-size:clamp(22px,3vw,30px);font-weight:800;text-align:center;}
+.dilemma-countdown {position:fixed;inset:0;z-index:21000;display:flex;align-items:center;justify-content:center;text-align:center;background:var(--bg-card);color:var(--danger-color);pointer-events:none;}
+.dilemma-countdown p {font-size:clamp(28px,5vw,48px);font-weight:800;margin:0;}
+.dilemma-countdown strong {display:block;font-size:clamp(120px,25vw,240px);line-height:1.2;font-weight:900;}
+.dilemma-confetti {position:fixed;inset:0;pointer-events:none;z-index:25000;overflow:hidden;}
+.dilemma-confetti i {position:absolute;left:var(--x);top:-24px;width:9px;height:16px;background:var(--paper-color);animation:dilemma-paper-fall var(--duration) var(--delay) linear both;}
+@keyframes dilemma-paper-fall {0%{transform:translate3d(0,-30px,0) rotate(0);opacity:0;}5%{opacity:1;}90%{opacity:1;}100%{transform:translate3d(var(--drift),110vh,0) rotate(var(--spin));opacity:0;}}
 @media(max-width:600px){.dilemma-choice span{font-size:128px;}.dilemma-choice{padding:8px;}}
-@media(prefers-reduced-motion:reduce){.dilemma-fireworks{display:none;}}
+@media(prefers-reduced-motion:reduce){.dilemma-confetti{display:none;}}

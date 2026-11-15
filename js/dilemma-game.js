@@ -4,7 +4,7 @@
   let teacherRefs=[], teacherVotes={}, teacherSession=null;
   const root=()=>window.app?.db;
   function detach(preserveTeacher=false){
-    clearInterval(ticker);ticker=null;hintOpen=false;document.querySelectorAll(".dilemma-fireworks").forEach(el=>el.remove());
+    clearInterval(ticker);ticker=null;hintOpen=false;document.querySelectorAll(".dilemma-confetti").forEach(el=>el.remove());
     for(const [ref,fn] of refs)ref.off('value',fn);refs=[];state=null;counts={yes:0,no:0};mine=null;busy=false;
     if(!preserveTeacher){celebrated=null;for(const [ref,event,fn] of teacherRefs)ref.off(event,fn);teacherRefs=[];teacherVotes={};teacherSession=null;document.getElementById('focusGameOverlay')?.classList.remove('dilemma-active');}
   }
@@ -34,19 +34,20 @@
     if(!state?.game.revealed || celebrated===state.key)return;
     celebrated=state.key;const {app,game}=state,q=question(game);
     if(app.isAdmin || (mine?.choice && !mine.pending))app.playFocusSound?.(app.isAdmin?(q.answer?'correct':'wrong'):((mine.choice==='yes')===q.answer?'correct':'wrong'));
-    const layer=document.createElement('div');layer.className='dilemma-fireworks';layer.setAttribute('aria-hidden','true');
-    for(let i=0;i<48;i++){const dot=document.createElement('i');dot.style.setProperty('--x',`${(i%8)*12+8}%`);dot.style.setProperty('--y',`${Math.floor(i/8)*13+10}%`);dot.style.setProperty('--delay',`${(i%6)*.14}s`);layer.append(dot);}
-    (document.fullscreenElement||document.body).append(layer);setTimeout(()=>layer.remove(),2400);
+    const layer=document.createElement('div');layer.className='dilemma-confetti';layer.setAttribute('aria-hidden','true');
+    for(let i=0;i<90;i++){const dot=document.createElement('i');dot.style.setProperty('--x',`${Math.random()*100}%`);dot.style.setProperty('--drift',`${Math.random()*240-120}px`);dot.style.setProperty('--spin',`${Math.random()*1080-540}deg`);dot.style.setProperty('--delay',`${Math.random()*.7}s`);dot.style.setProperty('--duration',`${2+Math.random()}s`);dot.style.setProperty('--paper-color',['var(--accent-color)','var(--success-color)','var(--danger-color)'][i%3]);layer.append(dot);}
+    (document.fullscreenElement||document.body).append(layer);setTimeout(()=>layer.remove(),4000);
   }
 
   function view(){
     if(!state)return;const {app,game}=state;const q=question(game),grid=document.getElementById('focusGameGrid');if(!q||!grid)return;
     const isTeacher=!!app.isAdmin, canSee=isTeacher || (!!mine?.choice && !mine.pending), revealed=game.revealed===true;
     const wait=Math.max(0,Math.ceil(((Number(game.opensAt)||0)-(Date.now()+(Number(app.serverTimeOffset)||0)))/1000));
+    if(wait>0){grid.innerHTML=`<div class="dilemma-countdown" role="status" aria-label="準備倒數"><div><p>準備開始</p><strong>${wait}</strong></div></div>`;return;}
     const selected=mine?.choice, remaining=selected && !mine?.changes;
     const note=isTeacher?'請等同學選擇後公布答案或切換下一題。':!selected?'請選擇「對」或「錯」；作答後會顯示人數。':mine.pending?'正在同步統計，請稍候。':remaining?'您還有一次改選機會。':'已使用改選機會。';
     const button=(side,label,symbol)=>`<button type="button" class="dilemma-choice ${side} ${selected===side?'selected':''}" ${isTeacher||wait>0||revealed||busy||mine?.pending||(selected && !remaining)?'disabled':''} onclick="window.dilemmaGame.vote('${side}')"><span aria-hidden="true">${symbol}</span><strong>${label}</strong><small>${canSee?`${counts[side] || 0}`:'—'}</small></button>`;
-    grid.innerHTML=`<div class="dilemma-board"><div class="dilemma-meta">⚖️ ${escape(q.subject)} · ${escape(q.level)} · 第 ${Number(game.questionIndex)+1} / ${game.questions.length} 題</div><p class="dilemma-note" role="status">${wait>0?`準備開始：${wait} 秒`:escape(note)}</p><div class="dilemma-layout">${button('yes','對','○')}<div class="dilemma-question">${escape(q.text)}</div>${button('no','錯','×')}</div>${!isTeacher&&game.allowHint&&!revealed&&wait===0?`<div class="dilemma-hint"><button class="presentation-tool-btn" onclick="window.dilemmaGame.hint()">💡 提示</button>${hintOpen?`<p>${escape(q.hint||'留意題目中的條件與「所有、一定、永遠」等字眼，想想是否存在反例，再判斷。')}</p>`:''}</div>`:''}${revealed?`<p class="dilemma-reveal">答案：${q.answer?'對':'錯'}<br><a class="dilemma-reference" href="https://www.google.com/search?q=${encodeURIComponent(q.text)}" target="_blank" rel="noopener noreferrer">🔎 用題目搜尋 Google 參考資料</a></p>`:''}${mine?.pending?'<button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.retry()">重新同步統計</button>':''}${isTeacher?`<div class="dilemma-controls"><button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.reveal()" ${revealed||wait>0?'disabled':''}>公布答案</button><button type="button" class="presentation-tool-btn active" onclick="window.dilemmaGame.next()" ${wait>0?'disabled':''}>${Number(game.questionIndex)+1>=game.questions.length?'結束活動':'下一題'}</button></div>`:''}${isTeacher?leaderboard(app,game):''}</div>`;celebrate();
+    grid.innerHTML=`<div class="dilemma-board"><div class="dilemma-meta">⚖️ ${escape(q.subject)} · ${escape(q.level)} · 第 ${Number(game.questionIndex)+1} / ${game.questions.length} 題</div>${isTeacher?`<p class="dilemma-note" role="status">${escape(note)}</p>`:''}<div class="dilemma-layout">${button('yes','對','○')}<div class="dilemma-question">${escape(q.text)}</div>${button('no','錯','×')}</div>${!isTeacher?`<p class="dilemma-answer-note" role="status">${escape(note)}</p>`:''}${!isTeacher&&game.allowHint&&!revealed&&wait===0?`<div class="dilemma-hint"><button class="presentation-tool-btn" onclick="window.dilemmaGame.hint()">💡 提示</button>${hintOpen?`<p>${escape(q.hint||'留意題目中的條件與「所有、一定、永遠」等字眼，想想是否存在反例，再判斷。')}</p>`:''}</div>`:''}${revealed?`<p class="dilemma-reveal">答案：${q.answer?'對':'錯'}<br><a class="dilemma-reference" href="https://www.google.com/search?q=${encodeURIComponent(q.text)}" target="_blank" rel="noopener noreferrer">🔎 用題目搜尋 Google 參考資料</a></p>`:''}${mine?.pending?'<button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.retry()">重新同步統計</button>':''}${isTeacher?`<div class="dilemma-controls"><button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.reveal()" ${revealed||wait>0?'disabled':''}>公布答案</button><button type="button" class="presentation-tool-btn active" onclick="window.dilemmaGame.next()" ${wait>0?'disabled':''}>${Number(game.questionIndex)+1>=game.questions.length?'結束活動':'下一題'}</button></div>`:''}${isTeacher?leaderboard(app,game):''}</div>`;celebrate();
   }
   async function settle(refPath,uid,pending){
     // 將每次操作的序號與人數一起交易，重試時不重複累加。
