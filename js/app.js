@@ -15578,7 +15578,22 @@ class App {
     });
   }
 
+  renderFocusRewardActions(listContainerId, results) {
+    const list=document.getElementById(listContainerId);if(!list)return;
+    const actionId=listContainerId+'RewardActions';let toolbar=document.getElementById(actionId);
+    const allowed=this.isAdmin && listContainerId!=='adminFocusGameRankList' && results && Object.keys(results).length>0;
+    if(!allowed){toolbar?.remove();return;}
+    if(toolbar)return;
+    toolbar=document.createElement('div');toolbar.id=actionId;toolbar.className='focus-reward-actions';toolbar.setAttribute('aria-label','教師排行榜獎勵');
+    for(const [label,target] of [['🏆 獎勵前三名','top3'],['🎁 獎勵全部完賽／答對','all_qualified']]){
+      const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn';button.textContent=label;
+      button.addEventListener('click',async()=>{if(!this.isAdmin||button.disabled)return;const buttons=[...toolbar.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);try{await this.rewardFocusGameBatch(target);}finally{buttons.forEach(b=>b.disabled=false);}});toolbar.append(button);
+    }
+    list.before(toolbar);
+  }
+
   renderFocusGameLeaderboard(listContainerId, results) {
+    this.renderFocusRewardActions(listContainerId,results);
     const list = document.getElementById(listContainerId);
     if (!list) return;
 

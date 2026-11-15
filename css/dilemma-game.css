@@ -47,3 +47,6 @@
 @keyframes dilemma-paper-fall {0%{transform:translate3d(0,-30px,0) rotate(0);opacity:0;}5%{opacity:1;}90%{opacity:1;}100%{transform:translate3d(var(--drift),110vh,0) rotate(var(--spin));opacity:0;}}
 @media(max-width:600px){.dilemma-choice span{font-size:128px;}.dilemma-choice{padding:8px;}}
 @media(prefers-reduced-motion:reduce){.dilemma-confetti{display:none;}}
+
+.focus-reward-actions {display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin:0 0 12px;font-size:14px;}
+.focus-reward-actions .presentation-tool-btn {font-size:14px;}
