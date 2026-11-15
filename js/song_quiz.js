@@ -1013,6 +1013,7 @@
                 ⏭️ 跳題
               </button>
             ` : ''}
+            ${roundStatus!=='answered_correct' && roundStatus!=='revealed' ? `<button type="button" class="presentation-tool-btn" onclick="window.app.replaceBuzzerSong()">🔄 更換歌曲</button>` : ''}
           </div>
         </div>
       `;
@@ -1349,6 +1350,34 @@
     }
   };
 
+  App.prototype.replaceBuzzerSong = async function replaceBuzzerSong() {
+    if(!this.isAdmin||this.replacingBuzzerSong)return;
+    const game=this.focusGame;if(game?.gameType!=='songQuiz'||game.playMode!=='buzzer')return;
+    const index=Number(game.currentQuestionIndex||0),current=game.questions?.[index];if(!current||['answered_correct','revealed','finished'].includes(game.buzzerRound?.status))return;
+    const tags=game.songQuizTags || (game.selectedTag && game.selectedTag!=='all'?game.selectedTag.split('、'):[]);
+    const raw=window.focusQB?window.focusQB.getPool('songQuiz'):(window.DEFAULT_SONG_QUIZ_POOL||[]);
+    const key=q=>q.youtubeId||q.youtubeUrl||q.id||q.title;
+    const used=new Set([...(game.questions||[]).map(key),...(game.replacedSongKeys||[])]);
+    const pool=raw.map(q=>window.focusQB?window.focusQB.normalizeItem('songQuiz',q):q).filter(q=>!used.has(key(q)) && (!tags.length || (q.tags||String(q.tag||'').split(/[,，、/|]+/)).some(t=>tags.includes(t.trim()))));
+    if(!pool.length){this.showNotification('沒有可替補歌曲','原篩選條件中已沒有未使用的歌曲，請調整歌單或題數後重新開始。');return;}
+    const replacement={...pool[Math.floor(Math.random()*pool.length)],duration:game.songDuration||current.duration||60};
+    if(Array.isArray(replacement.options)){replacement.options=[...replacement.options];for(let i=replacement.options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[replacement.options[i],replacement.options[j]]=[replacement.options[j],replacement.options[i]];}}
+    this.replacingBuzzerSong=true;
+    try{
+      await db.ref('quiz/focusGame').update({[`questions/${index}`]:replacement,replacedSongKeys:[...(game.replacedSongKeys||[]),key(current)],buzzerRound:{status:'waiting',audioAction:'init',audioSeekTime:Number(replacement.startTime)||0,playStartedAt:null,buzzedUser:null,eliminatedUsers:{},timestamp:Date.now()}});
+      this.showNotification('已更換歌曲','已依原歌單篩選條件抽出替補歌曲，請按「開始播放音樂」。');
+    }catch(e){this.showNotification('更換失敗','請檢查網路連線後再試。');}finally{this.replacingBuzzerSong=false;}
+  };
+
+  App.prototype.rewardSongBuzzerBatch = async function rewardSongBuzzerBatch(target='top3') {
+    if(!this.isAdmin||this.rewardingSongBuzzer||this.focusGame?.gameType!=='songQuiz'||this.focusGame.playMode!=='buzzer')return;
+    const entries=Object.entries(this.focusGame.buzzerScores||{}).map(([uid,r])=>({uid,name:r.name||'同學',score:Number(r.score)||0})).sort((a,b)=>b.score-a.score);
+    const selected=target==='top3' && entries.length>3?entries.filter(e=>e.score>=entries[2].score):entries;
+    this.rewardingSongBuzzer=true;
+    const buttons=[...document.querySelectorAll('[data-song-buzzer-reward]')];buttons.forEach(b=>b.disabled=true);
+    try{await this.rewardBatchTargets(selected,target==='top3'?'聽歌搶答前三名獎勵':'聽歌搶答全部答對同學獎勵');}finally{this.rewardingSongBuzzer=false;buttons.forEach(b=>b.disabled=false);}
+  };
+
   // 渲染全班搶答最終排行榜與頒獎
   App.prototype.renderBuzzerFinalLeaderboard = function renderBuzzerFinalLeaderboard(game) {
     const grid = document.getElementById('focusGameGrid');
@@ -1388,6 +1417,7 @@
         <div style="font-size:14px; color:var(--text-secondary); margin-top:6px;">全部歌曲搶答完畢！以下為全班同學的搶答戰績與榮譽榜：</div>
       </div>
 
+      ${this.isAdmin ? `<div class="focus-reward-actions"><button type="button" class="presentation-tool-btn" data-song-buzzer-reward onclick="window.app.rewardSongBuzzerBatch('top3')">🏆 獎勵前三名</button><button type="button" class="presentation-tool-btn" data-song-buzzer-reward onclick="window.app.rewardSongBuzzerBatch('all')">🎁 獎勵全部完賽／答對</button></div>` : ''}
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
         ${rankedEntries.length === 0 ? `
           <div style="padding:24px; text-align:center; color:var(--text-muted); background:var(--bg-card); border-radius:12px; border:1px solid var(--border-color);">

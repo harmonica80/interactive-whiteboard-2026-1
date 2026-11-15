@@ -13777,6 +13777,7 @@ class App {
           return sel.join('、');
         })()
       ) : null,
+      songQuizTags: gameType === 'songQuiz' ? this.getSelectedSongQuizTags() : null,
       songDuration: gameType === 'songQuiz' ? (parseInt(document.getElementById('focusSongQuizDuration')?.value) || 60) : null,
       classicsQuestionCount: gameType === 'classicsQuiz' ? classicsQuestionCount : null,
       characterTestCount: gameType === 'characterTest' ? characterTestCount : null,
