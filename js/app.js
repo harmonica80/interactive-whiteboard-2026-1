@@ -16083,6 +16083,11 @@ class App {
     
     // 團結一詞自動校對是否正確
     let autoStatus = 'pending';
+    if(isCrossword){
+      const correctChar=String(questions[0]?.char||'').trim().normalize('NFC');
+      if(!correctChar){this.showNotification('題目設定不完整','本題缺少標準答案，請老師檢查題庫後重新出題。');return;}
+      autoStatus=String(answers[0]||'').trim().normalize('NFC')===correctChar?'correct':'incorrect';
+    }
     if (isUnitedWords && questions.length > 0) {
       const isCorrect = questions.every((q, idx) => {
         const userAns = answers[idx];
@@ -16110,7 +16115,7 @@ class App {
     }).then(() => {
       if (autoStatus === 'correct') {
         this.playFocusSound('correct');
-        this.showNotification('太棒了！', '恭喜答對！完成團結一詞！');
+        this.showNotification('太棒了！', isCrossword?'恭喜答對！完成十字選字！':'恭喜答對！完成團結一詞！');
       } else if (autoStatus === 'incorrect') {
         this.playFocusSound('wrong');
         this.showNotification('提示', '答案未完全吻合，可於上方查看並再次重試！');
@@ -16313,14 +16318,8 @@ class App {
           </div>
         `;
       } else if (isCrossword) {
-        const correctChar = q.char || '';
-        const answerBlock = !isPending
-          ? `<div style="text-align: center; font-size: 16px; color: #167a31; margin-top: 10px; font-weight: bold; background: rgba(52, 199, 89, 0.12); padding: 8px 12px; border-radius: 8px; border: 1px solid #34c759;">
-               💡 關鍵正解：<span style="font-size: 24px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; font-weight: 900; color: #167a31;">${this.escapeHtml(correctChar)}</span>
-             </div>`
-          : `<div style="text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 10px;">
-               ⏳ 答案已送出，請靜候老師評分
-             </div>`;
+        // 前台僅顯示評分與本人作答，避免透露關鍵正解。
+        const answerBlock = '';
 
         html += `
           <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.95;">
@@ -16533,10 +16532,10 @@ class App {
       let color = 'var(--text-secondary)';
       if (status === 'correct') {
         statusIcon = '🥇 全部答對';
-        color = '#28a745';
+        color = 'var(--success-color)';
       } else if (status === 'incorrect') {
         statusIcon = '❌ 答錯了';
-        color = '#dc3545';
+        color = 'var(--danger-color)';
       }
       
       const helpNote = res.helpCount ? `，提示 ${res.helpCount} 次` : '';
