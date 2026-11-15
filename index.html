@@ -6737,9 +6737,9 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/song_quiz.js?v=c4"></script>
-  <script type="application/x-board-script" data-src="js/dilemma-question-bank.js?v=c2"></script>
-  <script type="application/x-board-script" data-src="js/dilemma-bank-manager.js?v=c1"></script>
-  <script type="application/x-board-script" data-src="js/dilemma-game.js?v=c4"></script>
+  <script type="application/x-board-script" data-src="js/dilemma-question-bank.js?v=c3"></script>
+  <script type="application/x-board-script" data-src="js/dilemma-bank-manager.js?v=c2"></script>
+  <script type="application/x-board-script" data-src="js/dilemma-game.js?v=c5"></script>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/word_cloud.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/presentation-draft.js?v=c1"></script>
@@ -7045,7 +7045,7 @@ Python</pre>
     <p>題庫保存在目前瀏覽器；匯入採新增方式，可匯出 CSV 備份或分享至其他裝置。</p>
     <div class="dilemma-bank-actions"><input id="dilemmaBankSearch" class="question-input" type="search" placeholder="搜尋題目" aria-label="搜尋題目" oninput="window.dilemmaBank.render()"><select id="dilemmaBankSubjectFilter" class="question-input" aria-label="篩選領域" onchange="window.dilemmaBank.render()"><option value="">全部領域</option></select><select id="dilemmaBankLevelFilter" class="question-input" aria-label="篩選難度" onchange="window.dilemmaBank.render()"><option value="">全部難度</option></select></div>
     <div id="dilemmaBankStatus" role="status"></div><div id="dilemmaBankList" class="dilemma-bank-list"></div>
-    <form id="dilemmaBankForm" class="dilemma-bank-form" onsubmit="event.preventDefault();window.dilemmaBank.save()"><h3 id="dilemmaBankFormTitle">新增題目</h3><input id="dilemmaBankEditId" type="hidden"><label>領域 <select id="dilemmaBankSubject" class="question-input" required></select></label><label>難度 <select id="dilemmaBankLevel" class="question-input" required></select></label><label>題目 <textarea id="dilemmaBankText" class="question-input" maxlength="300" rows="3" required></textarea></label><label>正確答案 <select id="dilemmaBankAnswer" class="question-input"><option value="true">對</option><option value="false">錯</option></select></label><div class="dilemma-bank-actions"><button type="submit" class="presentation-tool-btn active">💾 儲存題目</button><button type="button" class="presentation-tool-btn" onclick="window.dilemmaBank.clearForm()">取消編輯</button></div></form>
+    <form id="dilemmaBankForm" class="dilemma-bank-form" onsubmit="event.preventDefault();window.dilemmaBank.save()"><h3 id="dilemmaBankFormTitle">新增題目</h3><input id="dilemmaBankEditId" type="hidden"><label>領域 <select id="dilemmaBankSubject" class="question-input" required></select></label><label>難度 <select id="dilemmaBankLevel" class="question-input" required></select></label><label>題目 <textarea id="dilemmaBankText" class="question-input" maxlength="300" rows="3" required></textarea></label><label>提示（選填，最多 300 字）<textarea id="dilemmaBankHint" class="question-input" maxlength="300" rows="2" placeholder="提供思考線索，避免直接說出答案"></textarea></label><label>正確答案 <select id="dilemmaBankAnswer" class="question-input"><option value="true">對</option><option value="false">錯</option></select></label><div class="dilemma-bank-actions"><button type="submit" class="presentation-tool-btn active">💾 儲存題目</button><button type="button" class="presentation-tool-btn" onclick="window.dilemmaBank.clearForm()">取消編輯</button></div></form>
   </dialog>
   <dialog id="systemFaqViewer" class="system-faq-viewer" aria-labelledby="systemFaqViewerTitle">
     <div class="system-faq-viewer-header"><h2 id="systemFaqViewerTitle">❔ 常見問題 FAQ</h2><button type="button" class="presentation-tool-btn" onclick="document.getElementById('systemFaqViewer').close()" aria-label="關閉常見問題">✕</button></div>

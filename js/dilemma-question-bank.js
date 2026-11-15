@@ -1,1124 +1,1283 @@
-// 參考：https://www.cdc.gov/common-cold/treatment/index.html 、https://science.nasa.gov/venus/venus-facts/
-// 常識與易錯觀念題庫：每領域 20 題，各難度 5 題。
+// 每題包含獨立提示，供學生思考判斷依據。
 window.DILEMMA_QUESTION_BANK = [
   {
     "id": "0_00",
     "subject": "國文",
     "level": "國小",
     "text": "「再接再厲」的最後一字應寫作「勵」。",
-    "answer": false
+    "answer": false,
+    "hint": "這個成語與磨刀石、繼續磨練有關，不是鼓勵的「勵」。"
   },
   {
     "id": "0_01",
     "subject": "國文",
     "level": "國小",
     "text": "「迫不及待」的「及」可以改寫為「急」。",
-    "answer": false
+    "answer": false,
+    "hint": "分辨「等不及」與「急忙」使用的字。"
   },
   {
     "id": "0_02",
     "subject": "國文",
     "level": "國小",
     "text": "「按部就班」的「部」應寫成「步」。",
-    "answer": false
+    "answer": false,
+    "hint": "想想「部」可以指次序、部門，不只是走路的步伐。"
   },
   {
     "id": "0_03",
     "subject": "國文",
     "level": "國小",
     "text": "「一鼓作氣」的「作」是正確用字。",
-    "answer": true
+    "answer": true,
+    "hint": "這裡是第一次擊鼓時鼓起士氣，注意「作」與「做」的區別。"
   },
   {
     "id": "0_04",
     "subject": "國文",
     "level": "國小",
     "text": "「不脛而走」的「脛」與小腿有關。",
-    "answer": true
+    "answer": true,
+    "hint": "這個成語把消息比作沒有腳卻能跑動的東西。"
   },
   {
     "id": "0_05",
     "subject": "國文",
     "level": "國中",
     "text": "「罄竹難書」通常用來稱讚功勞很多。",
-    "answer": false
+    "answer": false,
+    "hint": "想想「難書」是指罪行寫不完，還是功勞寫不完。"
   },
   {
     "id": "0_06",
     "subject": "國文",
     "level": "國中",
     "text": "「首當其衝」就是第一個獲得好處。",
-    "answer": false
+    "answer": false,
+    "hint": "「衝」在這裡是衝擊、要衝，想想首先受到的是什麼。"
   },
   {
     "id": "0_07",
     "subject": "國文",
     "level": "國中",
     "text": "「差強人意」表示大致還能使人滿意。",
-    "answer": true
+    "answer": true,
+    "hint": "「差」在古文中可以表示稍微、大致，不一定表示很差。"
   },
   {
     "id": "0_08",
     "subject": "國文",
     "level": "國中",
     "text": "「炙手可熱」原本用來形容權勢很盛。",
-    "answer": true
+    "answer": true,
+    "hint": "想想靠近權勢者時，像手被燙到的比喻。"
   },
   {
     "id": "0_09",
     "subject": "國文",
     "level": "國中",
     "text": "「美輪美奐」原本主要形容建築華美。",
-    "answer": true
+    "answer": true,
+    "hint": "「輪」與「奐」的原義，可從房屋高大華麗想起。"
   },
   {
     "id": "0_10",
     "subject": "國文",
     "level": "高中",
     "text": "「七月流火」中的「火」指大火星，不是天氣炎熱。",
-    "answer": true
+    "answer": true,
+    "hint": "這句出自《詩經》，先想「流火」是星象還是火焰。"
   },
   {
     "id": "0_11",
     "subject": "國文",
     "level": "高中",
     "text": "「登堂入室」可以形容學問技藝由淺入深。",
-    "answer": true
+    "answer": true,
+    "hint": "堂與室有由外到內的層次，可以比喻學習進境。"
   },
   {
     "id": "0_12",
     "subject": "國文",
     "level": "高中",
     "text": "「不刊之論」指不能刊登的言論。",
-    "answer": false
+    "answer": false,
+    "hint": "「刊」在古文中可指削除、修改，不只是刊登。"
   },
   {
     "id": "0_13",
     "subject": "國文",
     "level": "高中",
     "text": "「文不加點」表示文章沒有標點符號。",
-    "answer": false
+    "answer": false,
+    "hint": "「點」在此可指刪改文字的筆畫，不是現代標點。"
   },
   {
     "id": "0_14",
     "subject": "國文",
     "level": "高中",
     "text": "「屢試不爽」的「爽」是差錯之意。",
-    "answer": true
+    "answer": true,
+    "hint": "想想「絲毫不爽」中的「爽」是否指心情愉快。"
   },
   {
     "id": "0_15",
     "subject": "國文",
     "level": "大學",
     "text": "「空穴來風」原義是事情的發生有其根據。",
-    "answer": true
+    "answer": true,
+    "hint": "原句將洞穴與風的出現相連，重點在是否有緣由。"
   },
   {
     "id": "0_16",
     "subject": "國文",
     "level": "大學",
     "text": "「曾幾何時」表示很久很久以前。",
-    "answer": false
+    "answer": false,
+    "hint": "把「幾何」理解為多少時間，再想整句是在感嘆久還是短。"
   },
   {
     "id": "0_17",
     "subject": "國文",
     "level": "大學",
     "text": "「明日黃花」常用來比喻過時的事物。",
-    "answer": true
+    "answer": true,
+    "hint": "菊花盛開的節令過後，花已錯過時機。"
   },
   {
     "id": "0_18",
     "subject": "國文",
     "level": "大學",
     "text": "「不以為然」與「不以為意」意思完全相同。",
-    "answer": false
+    "answer": false,
+    "hint": "分別考慮「認為不對」與「沒有放在心上」。"
   },
   {
     "id": "0_19",
     "subject": "國文",
     "level": "大學",
     "text": "「目無全牛」可以形容技藝純熟。",
-    "answer": true
+    "answer": true,
+    "hint": "這個成語出自庖丁解牛，想想熟練後看到的是整頭牛還是結構。"
   },
   {
     "id": "1_00",
     "subject": "數學",
     "level": "國小",
     "text": "0.5 乘以 0.5 的結果比 0.5 小。",
-    "answer": true
+    "answer": true,
+    "hint": "把一半再取一半，可以畫成正方形分割來比較。"
   },
   {
     "id": "1_01",
     "subject": "數學",
     "level": "國小",
     "text": "周長相同的長方形，面積一定相同。",
-    "answer": false
+    "answer": false,
+    "hint": "試比較長寬為 1、5 與 2、4 的長方形。"
   },
   {
     "id": "1_02",
     "subject": "數學",
     "level": "國小",
     "text": "一公斤棉花和一公斤鐵的質量相同。",
-    "answer": true
+    "answer": true,
+    "hint": "比較的是質量，不是體積或蓬鬆程度。"
   },
   {
     "id": "1_03",
     "subject": "數學",
     "level": "國小",
     "text": "把價格先加一成再減一成，會回到原價。",
-    "answer": false
+    "answer": false,
+    "hint": "第二次減價，是以增加後的價格為基準。"
   },
   {
     "id": "1_04",
     "subject": "數學",
     "level": "國小",
     "text": "0 除以任何非零數都等於 0。",
-    "answer": true
+    "answer": true,
+    "hint": "先分清「零當被除數」與「零當除數」。"
   },
   {
     "id": "1_05",
     "subject": "數學",
     "level": "國中",
     "text": "兩個質數相加，結果一定是偶數。",
-    "answer": false
+    "answer": false,
+    "hint": "別忘了質數中有一個偶數，可以拿它與 3 試算。"
   },
   {
     "id": "1_06",
     "subject": "數學",
     "level": "國中",
     "text": "負數的絕對值一定比正數的絕對值小。",
-    "answer": false
+    "answer": false,
+    "hint": "可用 -100 和 1 比較距離零點的遠近。"
   },
   {
     "id": "1_07",
     "subject": "數學",
     "level": "國中",
     "text": "平方等於 9 的實數只有 3。",
-    "answer": false
+    "answer": false,
+    "hint": "想想 -3 乘以 -3 的結果。"
   },
   {
     "id": "1_08",
     "subject": "數學",
     "level": "國中",
     "text": "正方形也是長方形。",
-    "answer": true
+    "answer": true,
+    "hint": "檢查長方形的定義是否要求兩組鄰邊不等長。"
   },
   {
     "id": "1_09",
     "subject": "數學",
     "level": "國中",
     "text": "兩個無理數相加一定是無理數。",
-    "answer": false
+    "answer": false,
+    "hint": "試著把根號 2 與負根號 2 相加。"
   },
   {
     "id": "1_10",
     "subject": "數學",
     "level": "高中",
     "text": "連續擲硬幣五次正面，第六次出反面的機率一定變大。",
-    "answer": false
+    "answer": false,
+    "hint": "若每次擲出結果互相獨立，先前結果不會改變下次機率。"
   },
   {
     "id": "1_11",
     "subject": "數學",
     "level": "高中",
     "text": "平均數相同的兩組資料，分散程度也一定相同。",
-    "answer": false
+    "answer": false,
+    "hint": "試比較 0、10 與 5、5 兩組數據。"
   },
   {
     "id": "1_12",
     "subject": "數學",
     "level": "高中",
     "text": "圓的半徑變成兩倍，面積變成四倍。",
-    "answer": true
+    "answer": true,
+    "hint": "面積公式中，半徑需要平方。"
   },
   {
     "id": "1_13",
     "subject": "數學",
     "level": "高中",
     "text": "機率為零的事件，在所有數學模型中都不可能發生。",
-    "answer": false
+    "answer": false,
+    "hint": "連續型機率模型與有限次擲骰的模型不完全相同。"
   },
   {
     "id": "1_14",
     "subject": "數學",
     "level": "高中",
     "text": "零的零次方在所有數學情境中都有相同定義。",
-    "answer": false
+    "answer": false,
+    "hint": "組合數學中的空積慣例，與極限中的不定型用法不同。"
   },
   {
     "id": "1_15",
     "subject": "數學",
     "level": "大學",
     "text": "可數無限集合的真子集合可能與原集合等勢。",
-    "answer": true
+    "answer": true,
+    "hint": "想想自然數與偶數能否一一配對。"
   },
   {
     "id": "1_16",
     "subject": "數學",
     "level": "大學",
     "text": "兩個事件互斥，就一定互相獨立。",
-    "answer": false
+    "answer": false,
+    "hint": "先檢查兩事件都具有正機率時，交集與機率乘積是否相同。"
   },
   {
     "id": "1_17",
     "subject": "數學",
     "level": "大學",
     "text": "相關係數為零，仍可能存在非線性關係。",
-    "answer": true
+    "answer": true,
+    "hint": "試想 X 與 X 的平方之間的關係。"
   },
   {
     "id": "1_18",
     "subject": "數學",
     "level": "大學",
     "text": "可微分的實函數必定連續。",
-    "answer": true
+    "answer": true,
+    "hint": "可以從微分係數的極限定義推想是否允許跳躍。"
   },
   {
     "id": "1_19",
     "subject": "數學",
     "level": "大學",
     "text": "連續的實函數必定可微分。",
-    "answer": false
+    "answer": false,
+    "hint": "想想絕對值函數在原點的折角。"
   },
   {
     "id": "2_00",
     "subject": "社會",
     "level": "國小",
     "text": "商品打八折後再打九折，等於原價的七二折。",
-    "answer": true
+    "answer": true,
+    "hint": "連續打折應把兩個折數相乘，不是直接相加。"
   },
   {
     "id": "2_01",
     "subject": "社會",
     "level": "國小",
     "text": "看到網路貼文被大量轉傳，就代表內容經過查證。",
-    "answer": false
+    "answer": false,
+    "hint": "轉傳次數是人氣指標，想想是否等於證據品質。"
   },
   {
     "id": "2_02",
     "subject": "社會",
     "level": "國小",
     "text": "廣告寫「天然」，就表示產品完全沒有風險。",
-    "answer": false
+    "answer": false,
+    "hint": "天然與否，和劑量、過敏及安全檢驗是不同問題。"
   },
   {
     "id": "2_03",
     "subject": "社會",
     "level": "國小",
     "text": "標價較低的包裝，每單位價格也一定較低。",
-    "answer": false
+    "answer": false,
+    "hint": "比較前，先把容量或重量換成相同單位。"
   },
   {
     "id": "2_04",
     "subject": "社會",
     "level": "國小",
     "text": "地圖沒有指北標示時，仍不能只靠紙張上方認定北方。",
-    "answer": true
+    "answer": true,
+    "hint": "想想地圖可不可以旋轉，及指北標示的功能。"
   },
   {
     "id": "2_05",
     "subject": "社會",
     "level": "國中",
     "text": "沉沒成本是已經付出、無法收回的成本。",
-    "answer": true
+    "answer": true,
+    "hint": "想想已付款且無法退費的費用，現在能否收回。"
   },
   {
     "id": "2_06",
     "subject": "社會",
     "level": "國中",
     "text": "免費參加活動，就一定沒有機會成本。",
-    "answer": false
+    "answer": false,
+    "hint": "參加活動仍會用掉時間，也會放棄其他活動。"
   },
   {
     "id": "2_07",
     "subject": "社會",
     "level": "國中",
     "text": "平均薪資增加，代表每個人的薪資都增加。",
-    "answer": false
+    "answer": false,
+    "hint": "把極少數人的高薪放入平均，觀察其影響。"
   },
   {
     "id": "2_08",
     "subject": "社會",
     "level": "國中",
     "text": "名目薪資增加，購買力仍可能下降。",
-    "answer": true
+    "answer": true,
+    "hint": "比較薪資成長速度與物價成長速度。"
   },
   {
     "id": "2_09",
     "subject": "社會",
     "level": "國中",
     "text": "調查人數多，就一定沒有抽樣偏誤。",
-    "answer": false
+    "answer": false,
+    "hint": "除了人數，也要檢查受訪者是怎麼被選出來的。"
   },
   {
     "id": "2_10",
     "subject": "社會",
     "level": "高中",
     "text": "以偏概全可能發生在只調查特定社群的問卷。",
-    "answer": true
+    "answer": true,
+    "hint": "某個社群的成員是否能代表整體人口？"
   },
   {
     "id": "2_11",
     "subject": "社會",
     "level": "高中",
     "text": "兩件事同時增加，就足以證明其中一件造成另一件。",
-    "answer": false
+    "answer": false,
+    "hint": "可能有第三個因素同時影響兩件事。"
   },
   {
     "id": "2_12",
     "subject": "社會",
     "level": "高中",
     "text": "機會成本是所放棄最佳替代方案的價值。",
-    "answer": true
+    "answer": true,
+    "hint": "放棄多個選項時，重點是其中最佳的替代選項。"
   },
   {
     "id": "2_13",
     "subject": "社會",
     "level": "高中",
     "text": "一件商品變貴，就足以證明整體發生通貨膨脹。",
-    "answer": false
+    "answer": false,
+    "hint": "整體物價與單一商品價格是不同層次。"
   },
   {
     "id": "2_14",
     "subject": "社會",
     "level": "高中",
     "text": "比例增加與百分點增加是完全相同的概念。",
-    "answer": false
+    "answer": false,
+    "hint": "從 10% 到 20%，分別計算百分比變化與百分點差。"
   },
   {
     "id": "2_15",
     "subject": "社會",
     "level": "大學",
     "text": "公共財的非競爭性，指一人使用不減少他人的可用量。",
-    "answer": true
+    "answer": true,
+    "hint": "想想一人看燈塔的光，會不會減少別人能看到的光。"
   },
   {
     "id": "2_16",
     "subject": "社會",
     "level": "大學",
     "text": "外部成本可能由交易雙方以外的人承擔。",
-    "answer": true
+    "answer": true,
+    "hint": "工廠排放對附近居民的影響，有沒有算進售價？"
   },
   {
     "id": "2_17",
     "subject": "社會",
     "level": "大學",
     "text": "倖存者偏誤可能來自只觀察成功案例。",
-    "answer": true
+    "answer": true,
+    "hint": "如果只研究存活企業，倒閉企業的資料去了哪裡？"
   },
   {
     "id": "2_18",
     "subject": "社會",
     "level": "大學",
     "text": "對樣本做隨機抽樣就能保證每次結果完全準確。",
-    "answer": false
+    "answer": false,
+    "hint": "隨機抽樣仍有抽樣誤差，不代表每次都抽中相同組成。"
   },
   {
     "id": "2_19",
     "subject": "社會",
     "level": "大學",
     "text": "中位數通常比平均數更不容易受極端值影響。",
-    "answer": true
+    "answer": true,
+    "hint": "把資料中的最大值大幅拉高，觀察排序中間值是否改變。"
   },
   {
     "id": "3_00",
     "subject": "音樂",
     "level": "國小",
     "text": "四分音符一定等於一秒。",
-    "answer": false
+    "answer": false,
+    "hint": "同一種音符，在不同速度設定下會有不同秒數。"
   },
   {
     "id": "3_01",
     "subject": "音樂",
     "level": "國小",
     "text": "鋼琴雖然有弦，發聲方式仍與琴槌敲擊有關。",
-    "answer": true
+    "answer": true,
+    "hint": "看鋼琴內部是用弓拉弦，還是由琴槌敲弦。"
   },
   {
     "id": "3_02",
     "subject": "音樂",
     "level": "國小",
     "text": "長笛屬於木管樂器，即使常見材質是金屬。",
-    "answer": true
+    "answer": true,
+    "hint": "樂器分類常看發聲原理，不只看外殼材質。"
   },
   {
     "id": "3_03",
     "subject": "音樂",
     "level": "國小",
     "text": "音量越大，音高一定越高。",
-    "answer": false
+    "answer": false,
+    "hint": "分開想音波的振幅與頻率。"
   },
   {
     "id": "3_04",
     "subject": "音樂",
     "level": "國小",
     "text": "休止符也具有時值。",
-    "answer": true
+    "answer": true,
+    "hint": "沒有發聲的一段時間，也需要依節拍計算。"
   },
   {
     "id": "3_05",
     "subject": "音樂",
     "level": "國中",
     "text": "薩克斯風在管弦樂器分類中屬於銅管。",
-    "answer": false
+    "answer": false,
+    "hint": "留意它使用簧片，與嘴唇在號嘴振動的差別。"
   },
   {
     "id": "3_06",
     "subject": "音樂",
     "level": "國中",
     "text": "節拍器每分鐘 60 拍時，每拍相隔一秒。",
-    "answer": true
+    "answer": true,
+    "hint": "把一分鐘的秒數除以拍數。"
   },
   {
     "id": "3_07",
     "subject": "音樂",
     "level": "國中",
     "text": "3/4 拍和 6/8 拍在重音分組上完全相同。",
-    "answer": false
+    "answer": false,
+    "hint": "留意三拍子與複拍子的分組重音。"
   },
   {
     "id": "3_08",
     "subject": "音樂",
     "level": "國中",
     "text": "升記號通常將音升高半音。",
-    "answer": true
+    "answer": true,
+    "hint": "想想五線譜中升記號對原音的作用。"
   },
   {
     "id": "3_09",
     "subject": "音樂",
     "level": "國中",
     "text": "大調音樂一定快樂，小調音樂一定悲傷。",
-    "answer": false
+    "answer": false,
+    "hint": "速度、節奏、音色與演奏方式也會影響情緒。"
   },
   {
     "id": "3_10",
     "subject": "音樂",
     "level": "高中",
     "text": "同一旋律移調後，音程關係可以保持不變。",
-    "answer": true
+    "answer": true,
+    "hint": "把所有音一起上移，觀察相鄰音的距離。"
   },
   {
     "id": "3_11",
     "subject": "音樂",
     "level": "高中",
     "text": "十二平均律的一個八度包含十二個半音。",
-    "answer": true
+    "answer": true,
+    "hint": "從鋼琴的一個 C 到下一個 C，計算黑白鍵之間的半音。"
   },
   {
     "id": "3_12",
     "subject": "音樂",
     "level": "高中",
     "text": "附點四分音符等於三個八分音符的時值。",
-    "answer": true
+    "answer": true,
+    "hint": "附點會增加原音符一半的時值。"
   },
   {
     "id": "3_13",
     "subject": "音樂",
     "level": "高中",
     "text": "還原記號表示把音降低半音，不論原本音高。",
-    "answer": false
+    "answer": false,
+    "hint": "還原是取消原先升降的作用，方向要看原音。"
   },
   {
     "id": "3_14",
     "subject": "音樂",
     "level": "高中",
     "text": "音高相同的兩種樂器仍可能有不同音色。",
-    "answer": true
+    "answer": true,
+    "hint": "比較鋼琴與小提琴演奏同一個音。"
   },
   {
     "id": "3_15",
     "subject": "音樂",
     "level": "大學",
     "text": "八度音程的較高音頻率約為較低音的兩倍。",
-    "answer": true
+    "answer": true,
+    "hint": "八度的頻率關係是比例，不是固定增加幾赫茲。"
   },
   {
     "id": "3_16",
     "subject": "音樂",
     "level": "大學",
     "text": "十二平均律中，每個半音的頻率差都相同。",
-    "answer": false
+    "answer": false,
+    "hint": "平均律的「平均」是頻率比相同，不是頻率差相同。"
   },
   {
     "id": "3_17",
     "subject": "音樂",
     "level": "大學",
     "text": "調號沒有升降記號的曲子一定是 C 大調。",
-    "answer": false
+    "answer": false,
+    "hint": "沒有升降調號時，也要考慮關係小調。"
   },
   {
     "id": "3_18",
     "subject": "音樂",
     "level": "大學",
     "text": "切分音可以改變原有節拍的重音感。",
-    "answer": true
+    "answer": true,
+    "hint": "把重音移到原本較弱的位置，聽感會如何變化？"
   },
   {
     "id": "3_19",
     "subject": "音樂",
     "level": "大學",
     "text": "樂譜上的強弱記號直接指定唯一的分貝數值。",
-    "answer": false
+    "answer": false,
+    "hint": "強弱通常是相對表情，還要考慮樂器與場地。"
   },
   {
     "id": "4_00",
     "subject": "健康",
     "level": "國小",
     "text": "流汗越多，就代表減掉越多脂肪。",
-    "answer": false
+    "answer": false,
+    "hint": "短時間體重變化可能主要來自水分，不等於脂肪消耗。"
   },
   {
     "id": "4_01",
     "subject": "健康",
     "level": "國小",
     "text": "沒有口渴感就代表身體一定不缺水。",
-    "answer": false
+    "answer": false,
+    "hint": "口渴感不是衡量水分狀態的唯一線索。"
   },
   {
     "id": "4_02",
     "subject": "健康",
     "level": "國小",
     "text": "水果汁可以在任何份量下完全取代完整水果。",
-    "answer": false
+    "answer": false,
+    "hint": "比較果汁與完整水果的纖維量及容易喝下的份量。"
   },
   {
     "id": "4_03",
     "subject": "健康",
     "level": "國小",
     "text": "聞起來正常的食物，仍可能有食安風險。",
-    "answer": true
+    "answer": true,
+    "hint": "有些致病微生物不會造成明顯氣味變化。"
   },
   {
     "id": "4_04",
     "subject": "健康",
     "level": "國小",
     "text": "運動後量到體重降低，可能包含水分流失。",
-    "answer": true
+    "answer": true,
+    "hint": "運動後的汗液流失，也會反映在體重計上。"
   },
   {
     "id": "4_05",
     "subject": "健康",
     "level": "國中",
     "text": "抗生素能直接治療一般病毒性普通感冒。",
-    "answer": false
+    "answer": false,
+    "hint": "先分清細菌與病毒，及抗生素針對的對象。"
   },
   {
     "id": "4_06",
     "subject": "健康",
     "level": "國中",
     "text": "防曬只在看得到陽光的晴天才需要考慮。",
-    "answer": false
+    "answer": false,
+    "hint": "雲層並不會阻擋所有紫外線。"
   },
   {
     "id": "4_07",
     "subject": "健康",
     "level": "國中",
     "text": "正常體重的人也可能有體脂過高的問題。",
-    "answer": true
+    "answer": true,
+    "hint": "體重計無法單獨告訴你脂肪與肌肉各占多少。"
   },
   {
     "id": "4_08",
     "subject": "健康",
     "level": "國中",
     "text": "睡眠不足可能影響反應速度。",
-    "answer": true
+    "answer": true,
+    "hint": "想想熬夜後做需要快速判斷的活動有何差異。"
   },
   {
     "id": "4_09",
     "subject": "健康",
     "level": "國中",
     "text": "沒有疼痛就表示牙齒一定沒有問題。",
-    "answer": false
+    "answer": false,
+    "hint": "早期牙齒問題可能沒有明顯症狀。"
   },
   {
     "id": "4_10",
     "subject": "健康",
     "level": "高中",
     "text": "身體質量指數無法直接區分肌肉與脂肪重量。",
-    "answer": true
+    "answer": true,
+    "hint": "身體質量指數公式只使用身高與體重。"
   },
   {
     "id": "4_11",
     "subject": "健康",
     "level": "高中",
     "text": "保健食品可以完全取代均衡飲食。",
-    "answer": false
+    "answer": false,
+    "hint": "食物還提供纖維與多種營養，單一產品未必涵蓋。"
   },
   {
     "id": "4_12",
     "subject": "健康",
     "level": "高中",
     "text": "食品的熱量相同，就代表營養組成完全相同。",
-    "answer": false
+    "answer": false,
+    "hint": "同樣熱量可以來自不同的糖、油脂及蛋白質比例。"
   },
   {
     "id": "4_13",
     "subject": "健康",
     "level": "高中",
     "text": "對某種食物過敏，少量接觸也可能引發嚴重反應。",
-    "answer": true
+    "answer": true,
+    "hint": "過敏反應與一般認為的「吃一點沒關係」並不相同。"
   },
   {
     "id": "4_14",
     "subject": "健康",
     "level": "高中",
     "text": "二手菸也可能影響未吸菸者的健康。",
-    "answer": true
+    "answer": true,
+    "hint": "想想未吸菸者是否也會吸入周圍的煙霧。"
   },
   {
     "id": "4_15",
     "subject": "健康",
     "level": "大學",
     "text": "冷藏能保證食物永久不變質。",
-    "answer": false
+    "answer": false,
+    "hint": "低溫能減慢部分微生物生長，不代表全部停止。"
   },
   {
     "id": "4_16",
     "subject": "健康",
     "level": "大學",
     "text": "疫苗可協助免疫系統建立對特定病原的防禦。",
-    "answer": true
+    "answer": true,
+    "hint": "疫苗讓免疫系統預先認識特定的病原特徵。"
   },
   {
     "id": "4_17",
     "subject": "健康",
     "level": "大學",
     "text": "酒精飲料能有效補充運動時流失的水分。",
-    "answer": false
+    "answer": false,
+    "hint": "考慮酒精對身體水分調節與判斷力的影響。"
   },
   {
     "id": "4_18",
     "subject": "健康",
     "level": "大學",
     "text": "生熟食交叉污染可能透過共用砧板發生。",
-    "answer": true
+    "answer": true,
+    "hint": "生食上的微生物可能藉刀具或砧板轉移到熟食。"
   },
   {
     "id": "4_19",
     "subject": "健康",
     "level": "大學",
     "text": "固定作息與足夠睡眠都有助於維持注意力。",
-    "answer": true
+    "answer": true,
+    "hint": "睡眠的時數與規律性，都和白天精神狀態有關。"
   },
   {
     "id": "5_00",
     "subject": "歷史",
     "level": "國小",
     "text": "西元前 100 年比西元前 200 年更早。",
-    "answer": false
+    "answer": false,
+    "hint": "在西元前年份中，數字越大，離西元一年越遠。"
   },
   {
     "id": "5_01",
     "subject": "歷史",
     "level": "國小",
     "text": "西元一世紀的最後一年是西元 100 年。",
-    "answer": true
+    "answer": true,
+    "hint": "把第一個一百年列出，看看起點是否有零年。"
   },
   {
     "id": "5_02",
     "subject": "歷史",
     "level": "國小",
     "text": "傳統西元紀年中，西元前一年之後直接接西元一年。",
-    "answer": true
+    "answer": true,
+    "hint": "傳統紀年與天文年份編號對零年的處理不同。"
   },
   {
     "id": "5_03",
     "subject": "歷史",
     "level": "國小",
     "text": "指南針發明以前，人類就已經進行航海。",
-    "answer": true
+    "answer": true,
+    "hint": "想想古人能否依星象、海岸與風向航行。"
   },
   {
     "id": "5_04",
     "subject": "歷史",
     "level": "國小",
     "text": "一張很古老的照片，就一定完整呈現當時事件的全貌。",
-    "answer": false
+    "answer": false,
+    "hint": "照片的取景、時間點與拍攝者選擇會影響內容。"
   },
   {
     "id": "5_05",
     "subject": "歷史",
     "level": "國中",
     "text": "秦朝與清朝雖然讀音相近，卻是不同朝代。",
-    "answer": true
+    "answer": true,
+    "hint": "比較兩個朝代的文字、年代與統治者。"
   },
   {
     "id": "5_06",
     "subject": "歷史",
     "level": "國中",
     "text": "鄭和下西洋發生在清朝。",
-    "answer": false
+    "answer": false,
+    "hint": "鄭和與明成祖的關係是辨認時代的線索。"
   },
   {
     "id": "5_07",
     "subject": "歷史",
     "level": "國中",
     "text": "紙張出現以前，人們已經用其他材料記錄文字。",
-    "answer": true
+    "answer": true,
+    "hint": "想想甲骨、竹簡與石刻的用途。"
   },
   {
     "id": "5_08",
     "subject": "歷史",
     "level": "國中",
     "text": "《史記》只記載司馬遷生活年代的事件。",
-    "answer": false
+    "answer": false,
+    "hint": "留意《史記》的體例與跨越的歷史年代。"
   },
   {
     "id": "5_09",
     "subject": "歷史",
     "level": "國中",
     "text": "口述歷史可以作為史料，但仍需交叉比對。",
-    "answer": true
+    "answer": true,
+    "hint": "回憶可能受時間與個人觀點影響。"
   },
   {
     "id": "5_10",
     "subject": "歷史",
     "level": "高中",
     "text": "法國大革命始於十八世紀。",
-    "answer": true
+    "answer": true,
+    "hint": "以 1789 年判斷它屬於第幾世紀。"
   },
   {
     "id": "5_11",
     "subject": "歷史",
     "level": "高中",
     "text": "工業革命初期以蒸汽動力的應用為重要特色。",
-    "answer": true
+    "answer": true,
+    "hint": "想想工廠機械的動力如何逐漸取代部分人力。"
   },
   {
     "id": "5_12",
     "subject": "歷史",
     "level": "高中",
     "text": "文藝復興發生在第一次世界大戰以後。",
-    "answer": false
+    "answer": false,
+    "hint": "先比較文藝復興與二十世紀戰爭的年代順序。"
   },
   {
     "id": "5_13",
     "subject": "歷史",
     "level": "高中",
     "text": "古埃及的象形文字與現代英文字母完全相同。",
-    "answer": false
+    "answer": false,
+    "hint": "比較圖像式符號與拼音字母的書寫系統。"
   },
   {
     "id": "5_14",
     "subject": "歷史",
     "level": "高中",
     "text": "羅馬數字中的 IX 表示 11。",
-    "answer": false
+    "answer": false,
+    "hint": "羅馬數字較小的符號放在較大的前面時，可以表示減法。"
   },
   {
     "id": "5_15",
     "subject": "歷史",
     "level": "大學",
     "text": "一手史料也可能包含作者的偏見。",
-    "answer": true
+    "answer": true,
+    "hint": "親歷事件並不代表沒有立場或記憶偏差。"
   },
   {
     "id": "5_16",
     "subject": "歷史",
     "level": "大學",
     "text": "歷史事件的因果關係通常只需要單一原因即可完整解釋。",
-    "answer": false
+    "answer": false,
+    "hint": "經濟、政治、社會與個人因素可能同時作用。"
   },
   {
     "id": "5_17",
     "subject": "歷史",
     "level": "大學",
     "text": "出土文物的位置與地層資訊能協助判讀年代。",
-    "answer": true
+    "answer": true,
+    "hint": "同一件遺物若離開出土脈絡，會少掉哪些資訊？"
   },
   {
     "id": "5_18",
     "subject": "歷史",
     "level": "大學",
     "text": "不同文化的曆法，對同一天可能使用不同日期名稱。",
-    "answer": true
+    "answer": true,
+    "hint": "不同曆法的年初、月份與計算方式不一定相同。"
   },
   {
     "id": "5_19",
     "subject": "歷史",
     "level": "大學",
     "text": "年代較早的史料，在任何問題上都一定比後來研究可信。",
-    "answer": false
+    "answer": false,
+    "hint": "史料可信度還要考慮來源、目的與其他證據。"
   },
   {
     "id": "6_00",
     "subject": "地理",
     "level": "國小",
     "text": "沙漠一定全年炎熱。",
-    "answer": false
+    "answer": false,
+    "hint": "沙漠的分類關鍵在降水少，不是一定高溫。"
   },
   {
     "id": "6_01",
     "subject": "地理",
     "level": "國小",
     "text": "地球上最大的沙漠若按乾燥程度分類，包含南極沙漠。",
-    "answer": true
+    "answer": true,
+    "hint": "想想南極的降水量，而不是地面有沒有積雪。"
   },
   {
     "id": "6_02",
     "subject": "地理",
     "level": "國小",
     "text": "所有河流都由北向南流。",
-    "answer": false
+    "answer": false,
+    "hint": "水流方向受地勢高低影響，不受地圖上下限制。"
   },
   {
     "id": "6_03",
     "subject": "地理",
     "level": "國小",
     "text": "地圖比例尺的分母越大，同樣紙面長度代表的實際距離越長。",
-    "answer": true
+    "answer": true,
+    "hint": "把比例尺看成「圖上距離除以實際距離」。"
   },
   {
     "id": "6_04",
     "subject": "地理",
     "level": "國小",
     "text": "南半球的季節與北半球大致相反。",
-    "answer": true
+    "answer": true,
+    "hint": "考慮地球自轉軸傾斜時，南北半球受光的差異。"
   },
   {
     "id": "6_05",
     "subject": "地理",
     "level": "國中",
     "text": "赤道上的白晝與黑夜長度在一年中大致接近。",
-    "answer": true
+    "answer": true,
+    "hint": "留意題目用了「大致」，不是每天精確各十二小時。"
   },
   {
     "id": "6_06",
     "subject": "地理",
     "level": "國中",
     "text": "經線在兩極相會。",
-    "answer": true
+    "answer": true,
+    "hint": "想像地球上的橘子瓣邊界，兩端會在哪裡相會。"
   },
   {
     "id": "6_07",
     "subject": "地理",
     "level": "國中",
     "text": "緯度相同的地方，全年氣候必定完全相同。",
-    "answer": false
+    "answer": false,
+    "hint": "海拔、海流與距海遠近都可能改變氣候。"
   },
   {
     "id": "6_08",
     "subject": "地理",
     "level": "國中",
     "text": "臺灣各地的日出時間每天都完全相同。",
-    "answer": false
+    "answer": false,
+    "hint": "東西位置與山脈遮蔽都會影響看到日出的時間。"
   },
   {
     "id": "6_09",
     "subject": "地理",
     "level": "國中",
     "text": "等高線越密集，通常表示坡度越陡。",
-    "answer": true
+    "answer": true,
+    "hint": "同樣高度差若擠在較短水平距離內，坡度如何？"
   },
   {
     "id": "6_10",
     "subject": "地理",
     "level": "高中",
     "text": "本初子午線與赤道都把地球分成南北半球。",
-    "answer": false
+    "answer": false,
+    "hint": "先分清經度與緯度的起算線。"
   },
   {
     "id": "6_11",
     "subject": "地理",
     "level": "高中",
     "text": "海拔較高時，水的沸點通常較低。",
-    "answer": true
+    "answer": true,
+    "hint": "高處氣壓較低，水沸騰所需溫度會如何改變？"
   },
   {
     "id": "6_12",
     "subject": "地理",
     "level": "高中",
     "text": "國際換日線完全沿著一條筆直經線。",
-    "answer": false
+    "answer": false,
+    "hint": "換日線會為了島嶼與行政邊界而彎曲。"
   },
   {
     "id": "6_13",
     "subject": "地理",
     "level": "高中",
     "text": "海流可能影響沿岸地區的氣候。",
-    "answer": true
+    "answer": true,
+    "hint": "暖流與寒流會帶來不同的溫度影響。"
   },
   {
     "id": "6_14",
     "subject": "地理",
     "level": "高中",
     "text": "地球儀上的最短路徑不一定在平面地圖上呈現直線。",
-    "answer": true
+    "answer": true,
+    "hint": "球面的大圓航線攤到平面上，可能出現彎曲。"
   },
   {
     "id": "6_15",
     "subject": "地理",
     "level": "大學",
     "text": "經度相差十五度的兩地，法定時間一定相差一小時。",
-    "answer": false
+    "answer": false,
+    "hint": "法定時區界線還會受國家及行政決定影響。"
   },
   {
     "id": "6_16",
     "subject": "地理",
     "level": "大學",
     "text": "相同經度的地點，當地正午的太陽高度一定相同。",
-    "answer": false
+    "answer": false,
+    "hint": "經度相同不代表緯度相同，太陽高度也和緯度有關。"
   },
   {
     "id": "6_17",
     "subject": "地理",
     "level": "大學",
     "text": "墨卡托投影會放大高緯度地區的面積。",
-    "answer": true
+    "answer": true,
+    "hint": "觀察世界地圖上的格陵蘭，與地球儀上的面積比較。"
   },
   {
     "id": "6_18",
     "subject": "地理",
     "level": "大學",
     "text": "氣候描述長期統計特徵，天氣描述較短期的大氣狀態。",
-    "answer": true
+    "answer": true,
+    "hint": "一次寒流是短期事件，長期平均才接近氣候概念。"
   },
   {
     "id": "6_19",
     "subject": "地理",
     "level": "大學",
     "text": "地球所有板塊交界都只有張裂作用。",
-    "answer": false
+    "answer": false,
+    "hint": "比較張裂、聚合與錯動三種板塊邊界。"
   },
   {
     "id": "7_00",
     "subject": "自然",
     "level": "國小",
     "text": "鯨魚是魚類，用鰓呼吸。",
-    "answer": false
+    "answer": false,
+    "hint": "想想鯨魚是否需要浮上海面，用肺換氣。"
   },
   {
     "id": "7_01",
     "subject": "自然",
     "level": "國小",
     "text": "蝙蝠是哺乳類，不是鳥類。",
-    "answer": true
+    "answer": true,
+    "hint": "比較蝙蝠的哺乳方式與鳥類產卵的特徵。"
   },
   {
     "id": "7_02",
     "subject": "自然",
     "level": "國小",
     "text": "蜘蛛有八隻腳，因此不屬於昆蟲。",
-    "answer": true
+    "answer": true,
+    "hint": "昆蟲的足數與身體分節，是判斷分類的線索。"
   },
   {
     "id": "7_03",
     "subject": "自然",
     "level": "國小",
     "text": "月亮本身會像太陽一樣發出大量可見光。",
-    "answer": false
+    "answer": false,
+    "hint": "想想月光是否來自反射太陽光。"
   },
   {
     "id": "7_04",
     "subject": "自然",
     "level": "國小",
     "text": "植物在沒有光照時仍可能進行呼吸作用。",
-    "answer": true
+    "answer": true,
+    "hint": "呼吸作用與光合作用是不同的生理過程。"
   },
   {
     "id": "7_05",
     "subject": "自然",
     "level": "國中",
     "text": "聲音可以在完全真空中傳播。",
-    "answer": false
+    "answer": false,
+    "hint": "聲波需要介質傳遞，想想真空中缺少什麼。"
   },
   {
     "id": "7_06",
     "subject": "自然",
     "level": "國中",
     "text": "月球總以大致同一面朝向地球，所以月球完全不自轉。",
-    "answer": false
+    "answer": false,
+    "hint": "拿一枚硬幣繞另一枚轉動，試著一直讓同一面朝內。"
   },
   {
     "id": "7_07",
     "subject": "自然",
     "level": "國中",
     "text": "四季主要由地球自轉軸傾斜與公轉共同造成。",
-    "answer": true
+    "answer": true,
+    "hint": "比較一年中太陽直射位置與日照時間的變化。"
   },
   {
     "id": "7_08",
     "subject": "自然",
     "level": "國中",
     "text": "水結冰時，在一般條件下體積會增加。",
-    "answer": true
+    "answer": true,
+    "hint": "想想裝滿水的密封容器結冰後為何可能裂開。"
   },
   {
     "id": "7_09",
     "subject": "自然",
     "level": "國中",
     "text": "所有金屬在常見室溫下都是固體。",
-    "answer": false
+    "answer": false,
+    "hint": "溫度計曾使用的水銀，是常見的反例線索。"
   },
   {
     "id": "7_10",
     "subject": "自然",
     "level": "高中",
     "text": "物體質量相同，在月球與地球的重量仍可能不同。",
-    "answer": true
+    "answer": true,
+    "hint": "重量與當地重力有關，質量與物質的量有關。"
   },
   {
     "id": "7_11",
     "subject": "自然",
     "level": "高中",
     "text": "章魚屬於軟體動物，不是魚類。",
-    "answer": true
+    "answer": true,
+    "hint": "章魚沒有魚類那樣的骨骼，還有腕足與吸盤。"
   },
   {
     "id": "7_12",
     "subject": "自然",
     "level": "高中",
     "text": "閃電和雷聲的先後感受與傳播速度差異有關。",
-    "answer": true
+    "answer": true,
+    "hint": "在同一距離，比較光與聲音到達的時間。"
   },
   {
     "id": "7_13",
     "subject": "自然",
     "level": "高中",
     "text": "月相主要是地球的影子遮住月球造成。",
-    "answer": false
+    "answer": false,
+    "hint": "分辨日常月相與月食，兩者原因不同。"
   },
   {
     "id": "7_14",
     "subject": "自然",
     "level": "高中",
     "text": "光合作用中的氧氣全部直接來自二氧化碳。",
-    "answer": false
+    "answer": false,
+    "hint": "想想光合作用中，水分解時會釋放什麼。"
   },
   {
     "id": "7_15",
     "subject": "自然",
     "level": "大學",
     "text": "金星的恆星自轉週期比它的公轉週期長。",
-    "answer": true
+    "answer": true,
+    "hint": "留意題目說的是相對恆星的自轉，不是太陽日。"
   },
   {
     "id": "7_16",
     "subject": "自然",
     "level": "大學",
     "text": "太空人失重表示地球引力在軌道上完全消失。",
-    "answer": false
+    "answer": false,
+    "hint": "軌道運動可視為持續自由落下，不是完全沒有重力。"
   },
   {
     "id": "7_17",
     "subject": "自然",
     "level": "大學",
     "text": "真菌與植物都屬於同一個生物界。",
-    "answer": false
+    "answer": false,
+    "hint": "真菌的營養方式與細胞特徵和植物不同。"
   },
   {
     "id": "7_18",
     "subject": "自然",
     "level": "大學",
     "text": "同位素具有相同質子數，但中子數可能不同。",
-    "answer": true
+    "answer": true,
+    "hint": "元素種類由質子數決定，同位素的差異在另一種粒子。"
   },
   {
     "id": "7_19",
     "subject": "自然",
     "level": "大學",
     "text": "海水結冰時形成的冰，鹽度通常比原海水低。",
-    "answer": true
+    "answer": true,
+    "hint": "結冰時，鹽分不容易進入純冰晶的結構。"
   }
 ];
