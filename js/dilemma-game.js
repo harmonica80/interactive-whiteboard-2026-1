@@ -1,5 +1,6 @@
 (() => {
   let state=null, refs=[], counts={yes:0,no:0}, mine=null, busy=false;
+  let finishing=false;
   let ticker=null, celebrated=null, hintOpen=false;
   let teacherRefs=[], teacherVotes={}, teacherSession=null;
   const root=()=>window.app?.db;
@@ -33,7 +34,7 @@
   function celebrate(){
     if(!state?.game.revealed || celebrated===state.key)return;
     celebrated=state.key;const {app,game}=state,q=question(game);
-    if(app.isAdmin || (mine?.choice && !mine.pending))app.playFocusSound?.(app.isAdmin?(q.answer?'correct':'wrong'):((mine.choice==='yes')===q.answer?'correct':'wrong'));
+    if(app.isAdmin)app.playFocusSound?.(q.answer?'correct':'wrong');
     const layer=document.createElement('div');layer.className='dilemma-confetti';layer.setAttribute('aria-hidden','true');
     for(let i=0;i<90;i++){const dot=document.createElement('i');dot.style.setProperty('--x',`${Math.random()*100}%`);dot.style.setProperty('--drift',`${Math.random()*240-120}px`);dot.style.setProperty('--spin',`${Math.random()*1080-540}deg`);dot.style.setProperty('--delay',`${Math.random()*.7}s`);dot.style.setProperty('--duration',`${2+Math.random()}s`);dot.style.setProperty('--paper-color',['var(--accent-color)','var(--success-color)','var(--danger-color)'][i%3]);layer.append(dot);}
     (document.fullscreenElement||document.body).append(layer);setTimeout(()=>layer.remove(),4000);
@@ -46,7 +47,7 @@
     if(wait>0){grid.innerHTML=`<div class="dilemma-countdown" role="status" aria-label="準備倒數"><div><p>準備開始</p><strong>${wait}</strong></div></div>`;return;}
     const selected=mine?.choice, remaining=selected && !mine?.changes;
     const note=isTeacher?'請等同學選擇後公布答案或切換下一題。':!selected?'請選擇「對」或「錯」；作答後會顯示人數。':mine.pending?'正在同步統計，請稍候。':remaining?'您還有一次改選機會。':'已使用改選機會。';
-    const button=(side,label,symbol)=>`<button type="button" class="dilemma-choice ${side} ${selected===side?'selected':''}" ${isTeacher||wait>0||revealed||busy||mine?.pending||(selected && !remaining)?'disabled':''} onclick="window.dilemmaGame.vote('${side}')"><span aria-hidden="true">${symbol}</span><strong>${label}</strong><small>${canSee?`${counts[side] || 0}`:'—'}</small></button>`;
+    const button=(side,label,symbol)=>`<button type="button" class="dilemma-choice ${side} ${selected===side?'selected':''}" ${isTeacher||game.finishing||wait>0||revealed||busy||mine?.pending||(selected && !remaining)?'disabled':''} onclick="window.dilemmaGame.vote('${side}')"><span aria-hidden="true">${symbol}</span><strong>${label}</strong><small>${canSee?`${counts[side] || 0}`:'—'}</small></button>`;
     grid.innerHTML=`<div class="dilemma-board"><div class="dilemma-meta">⚖️ ${escape(q.subject)} · ${escape(q.level)} · 第 ${Number(game.questionIndex)+1} / ${game.questions.length} 題</div>${isTeacher?`<p class="dilemma-note" role="status">${escape(note)}</p>`:''}<div class="dilemma-layout">${button('yes','對','○')}<div class="dilemma-question">${escape(q.text)}</div>${button('no','錯','×')}</div>${!isTeacher?`<p class="dilemma-answer-note" role="status">${escape(note)}</p>`:''}${!isTeacher&&game.allowHint&&q.hint&&!revealed&&wait===0?`<div class="dilemma-hint"><button class="presentation-tool-btn" onclick="window.dilemmaGame.hint()">💡 提示</button>${hintOpen?`<p>${escape(q.hint)}</p>`:''}</div>`:''}${revealed?`<p class="dilemma-reveal">答案：${q.answer?'對':'錯'}<br><a class="dilemma-reference" href="https://www.google.com/search?q=${encodeURIComponent(q.text)}" target="_blank" rel="noopener noreferrer">🔎 用題目搜尋 Google 參考資料</a></p>`:''}${mine?.pending?'<button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.retry()">重新同步統計</button>':''}${isTeacher?`<div class="dilemma-controls"><button type="button" class="presentation-tool-btn" onclick="window.dilemmaGame.reveal()" ${revealed||wait>0?'disabled':''}>公布答案</button>${revealed?`<button type="button" class="presentation-tool-btn active" onclick="window.dilemmaGame.next()" ${wait>0?'disabled':''}>${Number(game.questionIndex)+1>=game.questions.length?'結束活動':'下一題'}</button>`:''}</div>`:''}${isTeacher?leaderboard(app,game):''}</div>`;celebrate();
   }
   async function settle(refPath,uid,pending){
@@ -103,7 +104,7 @@
       if(app.isAdmin)ensureTeacherVotes(game);view();if(!ticker && Date.now()+(Number(app.serverTimeOffset)||0)<Number(game.opensAt)+1000)ticker=setInterval(()=>{if(state && Date.now()+(Number(app.serverTimeOffset)||0)<Number(state.game.opensAt)+1000)view();else{clearInterval(ticker);ticker=null;}},250);
     },
     async vote(choice){
-      if(!state || state.app.isAdmin || state.game.revealed || Date.now()+(Number(state.app.serverTimeOffset)||0)<Number(state.game.opensAt) || busy || !['yes','no'].includes(choice))return;
+      if(!state || state.app.isAdmin || state.game.revealed || state.game.finishing || Date.now()+(Number(state.app.serverTimeOffset)||0)<Number(state.game.opensAt) || busy || !['yes','no'].includes(choice))return;
       const {app,game}=state, uid=app.getUserId(),basePath=path(game),voteRef=root().ref(`${basePath}/votes/${uid}`);busy=true;view();
       try {
         const result=await voteRef.transaction(current=>{
@@ -116,6 +117,22 @@
     },
     async retry(){if(!state || state.app.isAdmin || !mine?.pending || busy)return;busy=true;view();try{await settle(path(state.game),state.app.getUserId(),mine.pending)}catch(e){state.app.showNotification('同步失敗','請檢查連線後再試。')}finally{busy=false;view()}},
     async reveal(){if(!state?.app.isAdmin || Date.now()+(Number(state.app.serverTimeOffset)||0)<Number(state.game.opensAt))return;try{await root().ref('quiz/focusGame').update({revealed:true})}catch(e){state.app.showNotification('操作失敗','請檢查網路連線。')}},
-    async next(){if(!state?.app.isAdmin || Date.now()+(Number(state.app.serverTimeOffset)||0)<Number(state.game.opensAt))return;const {app,game}=state;try{if(Number(game.questionIndex)+1>=game.questions.length){await root().ref('quiz/focusGame').update({status:'idle'});return;}await root().ref('quiz/focusGame').update({questionIndex:Number(game.questionIndex)+1,revealed:false});}catch(e){app.showNotification('操作失敗','請檢查網路連線。')}}
+    async finish(app=state?.app){
+      if(!app?.isAdmin||finishing)return;const game=state?.game||app.focusGame;if(!game||game.gameType!=='dilemma'||game.status==='idle')return;
+      finishing=true;const gameRef=app.db.ref('quiz/focusGame');
+      try{
+        await gameRef.update({finishing:true,revealed:true});
+        const snapshots=await Promise.all(game.questions.slice(0,Number(game.questionIndex)+1).map((q,index)=>app.db.ref(`quiz/dilemmaVotes/${game.sessionId}/${index}/votes`).once('value')));
+        const results={};const completedAt=Date.now();
+        snapshots.forEach((snapshot,index)=>{for(const [uid,vote] of Object.entries(snapshot.val()||{})){
+          const choice=vote?.pending?vote.pending.from:vote?.choice;if(!['yes','no'].includes(choice))continue;
+          const entry=results[uid]||(results[uid]={userName:String(vote.name||'同學').slice(0,40),gameType:'dilemma',score:0,totalQuestions:Number(game.questionIndex)+1,answered:0,completedAt,timeSpent:0});
+          entry.answered++;if((choice==='yes')===game.questions[index].answer)entry.score++;
+        }});
+        await gameRef.update({status:'idle',finishing:false,results,endedAt:completedAt});
+      }catch(e){await gameRef.update({finishing:false}).catch(()=>{});app.showNotification('結算失敗','成績尚未完成保存，請檢查連線後再次結束活動。');}
+      finally{finishing=false;}
+    },
+    async next(){if(!state?.app.isAdmin || Date.now()+(Number(state.app.serverTimeOffset)||0)<Number(state.game.opensAt))return;const {app,game}=state;try{if(Number(game.questionIndex)+1>=game.questions.length){await window.dilemmaGame.finish(app);return;}await root().ref('quiz/focusGame').update({questionIndex:Number(game.questionIndex)+1,revealed:false});}catch(e){app.showNotification('操作失敗','請檢查網路連線。')}}
   };
 })();

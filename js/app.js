@@ -14065,6 +14065,7 @@ class App {
 
   endFocusGame() {
     if (!this.isAdmin) return;
+    if(this.focusGame?.gameType==='dilemma' && this.focusGame.status!=='idle'){this.showConfirmModal('🧠','確定要結束左右為難嗎？','將結算目前作答並保存排行榜。',()=>window.dilemmaGame?.finish(this));return;}
     
     this.showConfirmModal(
       '🧠',
@@ -20892,6 +20893,7 @@ class App {
   }
 
   async rewardFocusGameBatch(targetType = 'top3') {
+    if(!this.isAdmin)return;
     const results = (this.focusGame && this.focusGame.results) || {};
     const entries = Object.entries(results).map(([uid, r]) => ({
       uid,
@@ -20908,7 +20910,7 @@ class App {
 
     const gameType = (this.focusGame && this.focusGame.gameType) || 'numberGrid';
     const isCharGame = ['characterTest', 'characterCrossword', 'characterUnitedWords'].includes(gameType);
-    const isQuizGame = ['songQuiz', 'classicsQuiz'].includes(gameType);
+    const isQuizGame = ['songQuiz', 'classicsQuiz', 'dilemma'].includes(gameType);
 
     let qualified = entries;
     if (isCharGame) {
@@ -20928,7 +20930,7 @@ class App {
       return a.timeSpent - b.timeSpent;
     });
 
-    const selected = targetType === 'top3' ? qualified.slice(0, 3) : qualified;
+    const selected = targetType === 'top3' ? (gameType==='dilemma' && qualified.length>3 ? qualified.filter(e=>e.score>=qualified[2].score) : qualified.slice(0, 3)) : qualified;
     const reason = targetType === 'top3' ? '專注力測驗前三名獎勵' : '專注力測驗完賽/答對獎勵';
     await this.rewardBatchTargets(selected, reason);
   }
