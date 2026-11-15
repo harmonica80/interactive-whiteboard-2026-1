@@ -25,7 +25,7 @@
     if (!container) {
       container = document.createElement('div');
       container.id = 'songQuizAudioWrapper';
-      container.style.cssText = 'position:fixed; bottom:0; right:0; width:200px; height:200px; opacity:0.01; z-index:-999; pointer-events:none; overflow:hidden;';
+      container.className='song-player-shell';
       document.body.appendChild(container);
     }
     return container;
@@ -255,6 +255,7 @@
           </button>
         </div>
 
+        <div id="songAudioStatus" role="status" class="song-audio-status"></div>
         <div class="song-quiz-options-list">
           ${optionsHtml}
         </div>
@@ -269,110 +270,87 @@
         }
       </style>
     `;
+    if(this.songAudioStatus)this.setSongAudioStatus(this.songAudioStatus.message,this.songAudioStatus.retry);
   };
 
-  // 播放歌曲音訊片段
-  App.prototype.playSongQuizAudio = function playSongQuizAudio(question, customStartTime) {
-    const state = this.songQuizState;
-    if (!question) return;
-
-    // 全班同步搶答模式下：若當前為學生端，除非明確啟用全班發聲 'all'，否則嚴禁播放音訊
-    if (this.focusGame && this.focusGame.playMode === 'buzzer' && !this.isAdmin) {
-      if (this.focusGame.audioMode !== 'all') {
-        this.stopSongQuizAudio();
-        return;
-      }
-    }
-
-    this.stopSongQuizAudio();
-
-    const baseDuration = Math.max(5, Math.min(120, parseInt(question.duration) || 60));
-    const questionStart = Math.max(0, parseInt(question.startTime) || 0);
-    const startTime = typeof customStartTime === 'number' ? Math.max(0, customStartTime) : questionStart;
-    const youtubeId = question.youtubeId || (this.parseYoutubeUrl ? this.parseYoutubeUrl(question.youtubeUrl).videoId : 'bv_cEeDlop0');
-
-    // 計算自題目設定起點以來的偏移秒數，以及本段音訊剩餘可播放秒數
-    const elapsedFromStart = Math.max(0, startTime - questionStart);
-    const remainingDuration = Math.max(3, baseDuration - elapsedFromStart);
-
-    const wrapper = getHiddenPlayerContainer();
-    const originParam = (typeof window !== 'undefined' && window.location && window.location.origin) ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
-    // 使用 YouTube Iframe 播放，加入完整 allow 權限支援現代瀏覽器自動播放
-    wrapper.innerHTML = `
-      <iframe id="songQuizHiddenIframe" width="200" height="200" src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&start=${startTime}&enablejsapi=1&controls=0${originParam}" allow="autoplay; encrypted-media; picture-in-picture" style="border:none;"></iframe>
-    `;
-
-    if (state) {
-      state.isPlayingAudio = true;
-      state.audioRemainingSeconds = remainingDuration;
-      state.audioTimerInterval = setInterval(() => {
-        state.audioRemainingSeconds--;
-        if (state.audioRemainingSeconds <= 0) {
-          this.stopSongQuizAudio();
-          if (this.renderSongQuizQuestion) this.renderSongQuizQuestion();
-        } else {
-          const textEl = document.querySelector('#focusGameGrid strong');
-          if (textEl && state.isPlayingAudio) {
-            textEl.textContent = state.audioRemainingSeconds;
-          }
+  let youtubeReadyPromise=null;
+  function youtubeReady(){
+    if(global.YT?.Player)return Promise.resolve();
+    if(youtubeReadyPromise)return youtubeReadyPromise;
+    youtubeReadyPromise=new Promise((resolve,reject)=>{
+      const timeout=setTimeout(()=>{youtubeReadyPromise=null;reject(new Error('YouTube 播放服務載入逾時'));},15000);
+      const previous=global.onYouTubeIframeAPIReady;
+      global.onYouTubeIframeAPIReady=()=>{try{previous?.();}finally{clearTimeout(timeout);resolve();}};
+      if(!document.querySelector('script[src*="youtube.com/iframe_api"]')){const script=document.createElement('script');script.src='https://www.youtube.com/iframe_api';script.onerror=()=>{clearTimeout(timeout);script.remove();youtubeReadyPromise=null;reject(new Error('無法載入 YouTube 播放服務'));};document.head.append(script);}
+    });return youtubeReadyPromise;
+  }
+  App.prototype.setSongAudioStatus=function setSongAudioStatus(message,retry=false){
+    this.songAudioStatus={message,retry};const el=document.getElementById('songAudioStatus');if(!el)return;
+    el.replaceChildren();const label=document.createElement('span');label.textContent=message;el.append(label);
+    if(retry){const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn';button.textContent='🔊 點此重試播放';button.onclick=()=>this.retrySongAudio();el.append(button);const show=document.createElement('button');show.type='button';show.className='presentation-tool-btn';show.textContent='顯示播放器／廣告狀態';show.onclick=()=>{const wrapper=getHiddenPlayerContainer();(document.fullscreenElement||document.body).append(wrapper);wrapper.classList.add('is-song-player-visible');};el.append(show);}
+  };
+  App.prototype.ensureSongAudioPlayer=function ensureSongAudioPlayer(){
+    if(this.songAudioPlayerReady)return this.songAudioPlayerReady;
+    this.songAudioPlayerReady=youtubeReady().then(()=>new Promise((resolve,reject)=>{
+      const wrapper=getHiddenPlayerContainer();const mount=document.createElement('div');mount.id='songQuizHiddenIframe';const close=document.createElement('button');close.type='button';close.className='presentation-tool-btn song-player-close';close.textContent='✕ 關閉播放器';close.onclick=()=>wrapper.classList.remove('is-song-player-visible');wrapper.replaceChildren(close,mount);
+      const timeout=setTimeout(()=>{this.songAudioPlayer?.destroy?.();this.songAudioPlayer=null;this.songAudioReady=false;this.songAudioPlayerReady=null;reject(new Error('播放器尚未就緒，請重試'));},15000);
+      this.songAudioPlayer=new global.YT.Player(mount,{width:200,height:200,playerVars:{autoplay:0,controls:1,playsinline:1,origin:location.origin},events:{
+        onReady:()=>{clearTimeout(timeout);this.songAudioReady=true;resolve(this.songAudioPlayer);},
+        onAutoplayBlocked:()=>{if(this.songAudioRequest)this.setSongAudioStatus('瀏覽器尚未允許播放聲音，請點選重試。',true);},
+        onError:event=>{if(this.songAudioRequest)this.setSongAudioStatus(`歌曲無法播放（代碼 ${event.data}），請重試或更換歌曲。`,true);},
+        onStateChange:event=>{
+          const request=this.songAudioRequest;if(!request)return;
+          if(event.data===1){clearTimeout(this.songAudioWatchdog);this.setSongAudioStatus('🎵 音樂播放中');
+            if(!request.started){request.started=true;request.lastTime=performance.now();
+              if(this.isAdmin && this.focusGame?.playMode==='buzzer' && this.focusGame.buzzerRound?.status==='playing')db.ref('quiz/focusGame/buzzerRound').update({playStartedAt:Date.now()}).catch(()=>{});
+            }
+          }else if(event.data===3)this.setSongAudioStatus('正在緩衝音樂，請稍候…');
+          else if(event.data===0){this.stopSongQuizAudio();this.setSongAudioStatus('本段音樂已結束');}
         }
-      }, 1000);
-    } else {
-      // 全班同步搶答模式：若無人搶答，於剩餘播放長度到達後自動停止音訊
-      if (this.buzzerAudioTimeout) clearTimeout(this.buzzerAudioTimeout);
-      this.buzzerAudioTimeout = setTimeout(() => {
-        this.stopSongQuizAudio();
-      }, remainingDuration * 1000);
-    }
+      }});
+    })).catch(error=>{this.songAudioPlayerReady=null;throw error;});return this.songAudioPlayerReady;
   };
-
-  // 停止歌曲播放
-  App.prototype.stopSongQuizAudio = function stopSongQuizAudio() {
-    if (this.buzzerAudioTimeout) {
-      clearTimeout(this.buzzerAudioTimeout);
-      this.buzzerAudioTimeout = null;
-    }
-    const state = this.songQuizState;
-    if (state) {
-      state.isPlayingAudio = false;
-      if (state.audioTimerInterval) {
-        clearInterval(state.audioTimerInterval);
-        state.audioTimerInterval = null;
-      }
-    }
-
-    // 強制停止並立即銷毀所有 YouTube Iframe 音訊，杜絕在背景繼續播放
-    const iframes = document.querySelectorAll('#songQuizHiddenIframe, #songQuizAudioWrapper iframe');
-    iframes.forEach(iframe => {
-      try {
-        iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-        iframe.contentWindow.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
-        iframe.src = 'about:blank';
-      } catch (e) {}
-      try { iframe.remove(); } catch (e) {}
-    });
-
-    const wrapper = document.getElementById('songQuizAudioWrapper');
-    if (wrapper) {
-      wrapper.innerHTML = '';
-    }
-
-    if (this.songQuizAudio) {
-      try {
-        this.songQuizAudio.pause();
-        this.songQuizAudio.currentTime = 0;
-        this.songQuizAudio.src = '';
-      } catch (e) {}
-      this.songQuizAudio = null;
-    }
-    if (this.songQuizBuzzerAudio) {
-      try {
-        this.songQuizBuzzerAudio.pause();
-        this.songQuizBuzzerAudio.currentTime = 0;
-        this.songQuizBuzzerAudio.src = '';
-      } catch (e) {}
-      this.songQuizBuzzerAudio = null;
-    }
+  App.prototype.prepareSongAudio=function prepareSongAudio(question){
+    if(!question || (!this.isAdmin && this.focusGame?.playMode==='buzzer' && this.focusGame.audioMode!=='all'))return;
+    const videoId=question.youtubeId||this.parseYoutubeUrl?.(question.youtubeUrl)?.videoId;if(!videoId)return;
+    const generation=this.songAudioGeneration||0;
+    this.ensureSongAudioPlayer().then(player=>{if(this.songAudioRequest||generation!==(this.songAudioGeneration||0))return;if(this.songAudioVideoId!==videoId){player.cueVideoById({videoId,startSeconds:Number(question.startTime)||0});this.songAudioVideoId=videoId;}this.setSongAudioStatus('音樂已準備，請按開始播放。');}).catch(error=>this.setSongAudioStatus(error.message,true));
+  };
+  App.prototype.playSongQuizAudio=function playSongQuizAudio(question,customStartTime){
+    if(!question)return;
+    if(this.focusGame?.playMode==='buzzer'&&!this.isAdmin&&this.focusGame.audioMode!=='all'){this.stopSongQuizAudio();return;}
+    this.stopSongQuizAudio();const generation=this.songAudioGeneration;
+    const videoId=question.youtubeId||this.parseYoutubeUrl?.(question.youtubeUrl)?.videoId;
+    if(!videoId){this.setSongAudioStatus('歌曲缺少影片網址，請更換歌曲。');return;}
+    const start=typeof customStartTime==='number'?Math.max(0,customStartTime):Math.max(0,Number(question.startTime)||0);
+    const duration=Math.max(3,Math.min(120,Number(question.duration)||60)-Math.max(0,start-(Number(question.startTime)||0)));
+    const request={question,start,videoId,remaining:duration,started:false};this.songAudioRequest=request;
+    this.setSongAudioStatus('正在載入音樂，請稍候…');
+    const begin=player=>{if(generation!==this.songAudioGeneration||this.songAudioRequest!==request)return;
+      player.unMute();player.setVolume(100);
+      if(this.songAudioVideoId===videoId){player.seekTo(start,true);player.playVideo();}else{player.loadVideoById({videoId,startSeconds:start});this.songAudioVideoId=videoId;}
+      this.songAudioWatchdog=setTimeout(()=>{if(this.songAudioRequest===request&&!request.started)this.setSongAudioStatus('YouTube 尚未開始歌曲，可能正在載入、播放廣告或播放被阻擋；可查看播放器或點選重試。',true);},8000);
+      this.songAudioTick=setInterval(()=>{if(this.songAudioRequest!==request)return;const now=performance.now();if(player.getPlayerState()===1){if(request.lastTime)request.remaining-=Math.max(0,now-request.lastTime)/1000;request.lastTime=now;}else request.lastTime=now;
+        if(this.songQuizState){this.songQuizState.isPlayingAudio=player.getPlayerState()===1;this.songQuizState.audioRemainingSeconds=Math.max(0,Math.ceil(request.remaining));}
+        if(request.remaining<=0){this.stopSongQuizAudio();this.setSongAudioStatus('本段音樂已結束');}
+      },250);
+    };
+    // 播放器已就緒時直接在點擊事件中啟動，保留瀏覽器的使用者操作授權。
+    if(this.songAudioReady && this.songAudioPlayer)begin(this.songAudioPlayer);
+    else this.ensureSongAudioPlayer().then(begin).catch(error=>{if(this.songAudioRequest===request)this.setSongAudioStatus(error.message,true);});
+  };
+  App.prototype.retrySongAudio=function retrySongAudio(){
+    if(this.focusGame?.playMode==='buzzer'){
+      if(this.isAdmin){const round=this.focusGame.buzzerRound||{};this.teacherBuzzerAction(round.status==='playing'?'restart':round.status==='answered_wrong'?'resume':'play');}
+      else if(this.focusGame.audioMode==='all')this.playSongQuizAudio(this.focusGame.questions?.[this.focusGame.currentQuestionIndex||0],Number(this.focusGame.buzzerRound?.audioSeekTime)||0);
+    }else if(this.songQuizState)this.playSongQuizAudio(this.focusGame?.questions?.[this.songQuizState.index]);
+  };
+  App.prototype.stopSongQuizAudio=function stopSongQuizAudio(){
+    this.songAudioGeneration=(this.songAudioGeneration||0)+1;this.songAudioRequest=null;document.getElementById('songQuizAudioWrapper')?.classList.remove('is-song-player-visible');
+    clearTimeout(this.songAudioWatchdog);clearInterval(this.songAudioTick);clearTimeout(this.buzzerAudioTimeout);this.buzzerAudioTimeout=null;
+    if(this.songQuizState){this.songQuizState.isPlayingAudio=false;clearInterval(this.songQuizState.audioTimerInterval);this.songQuizState.audioTimerInterval=null;}
+    try{this.songAudioPlayer?.pauseVideo?.();}catch(e){}
+    for(const key of ['songQuizAudio','songQuizBuzzerAudio']){try{this[key]?.pause();}catch(e){}this[key]=null;}
   };
 
   // 重播歌曲片段
@@ -1015,6 +993,7 @@
             ` : ''}
             ${roundStatus!=='answered_correct' && roundStatus!=='revealed' ? `<button type="button" class="presentation-tool-btn" onclick="window.app.replaceBuzzerSong()">🔄 更換歌曲</button>` : ''}
           </div>
+          <div id="songAudioStatus" role="status" class="song-audio-status"></div>
         </div>
       `;
     }
@@ -1071,6 +1050,7 @@
         }
       </style>
     `;
+    if(this.songAudioStatus)this.setSongAudioStatus(this.songAudioStatus.message,this.songAudioStatus.retry);
   };
 
   // 處理全班音訊同步播放 / 暫停
@@ -1098,7 +1078,9 @@
       // 非播放狀態 (buzzed, answered_wrong, answered_correct, waiting, revealed)：立即停止/暫停音訊
       this.lastBuzzerAudioKey = null;
       this.stopSongQuizAudio();
+      if(roundStatus==='waiting')this.prepareSongAudio(question);
     }
+    if(this.songAudioStatus)this.setSongAudioStatus(this.songAudioStatus.message,this.songAudioStatus.retry);
   };
 
   // 學生按下「⚡ 按我搶答！」
@@ -1260,6 +1242,7 @@
       // 開始播放：若之前有暫停進度則從暫停點播放，否則從題目起點播放
       const now = Date.now();
       const startSeek = Number(round.audioSeekTime != null ? round.audioSeekTime : (question?.startTime || 0));
+      this.lastBuzzerAudioKey=`${question.id}_${now}_${startSeek}`;this.playSongQuizAudio(question,startSeek);
       db.ref('quiz/focusGame/buzzerRound').update({
         status: 'playing',
         audioAction: 'play',
@@ -1286,6 +1269,7 @@
       // 繼續播放 (答錯後讓其他同學繼續搶)：從剛才暫停的時間點開始續播
       const now = Date.now();
       const currentSeek = Number(round.audioSeekTime != null ? round.audioSeekTime : (question?.startTime || 0));
+      this.lastBuzzerAudioKey=`${question.id}_${now}_${currentSeek}`;this.playSongQuizAudio(question,currentSeek);
       db.ref('quiz/focusGame/buzzerRound').update({
         status: 'playing',
         audioAction: 'resume',
@@ -1299,6 +1283,7 @@
       // 從頭重播本題
       const now = Date.now();
       const initialStart = Number(question?.startTime || 0);
+      this.lastBuzzerAudioKey=`${question.id}_${now}_${initialStart}`;this.playSongQuizAudio(question,initialStart);
       db.ref('quiz/focusGame/buzzerRound').update({
         status: 'playing',
         audioAction: 'play',

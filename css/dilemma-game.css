@@ -52,3 +52,12 @@
 .focus-reward-actions .presentation-tool-btn {font-size:14px;}
 
 .dilemma-choice.selected {background:color-mix(in srgb,var(--success-color) 30%,var(--bg-card));border-color:var(--success-color);box-shadow:0 0 0 2px var(--success-color);}
+
+.song-audio-status {display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;margin:10px 0;padding:10px;color:var(--text-secondary);background:var(--bg-input);border:1px solid var(--border-color);border-radius:10px;font-size:14px;}
+.song-audio-status:empty {display:none;}
+
+.song-player-shell {position:fixed;bottom:18px;right:18px;width:320px;height:240px;max-width:calc(100vw - 36px);opacity:.01;z-index:-1;pointer-events:none;}
+.song-player-shell.is-song-player-visible {opacity:1;z-index:25001;pointer-events:auto;background:var(--bg-card);border:1px solid var(--border-color);box-shadow:var(--shadow);}
+.song-player-shell iframe {width:100%;height:100%;border:0;}
+.song-player-close {display:none;position:absolute;right:0;bottom:100%;background:var(--bg-card);color:var(--text-primary);font-size:14px;}
+.is-song-player-visible .song-player-close {display:block;}
