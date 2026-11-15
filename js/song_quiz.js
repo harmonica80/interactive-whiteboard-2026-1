@@ -284,10 +284,15 @@
       if(!document.querySelector('script[src*="youtube.com/iframe_api"]')){const script=document.createElement('script');script.src='https://www.youtube.com/iframe_api';script.onerror=()=>{clearTimeout(timeout);script.remove();youtubeReadyPromise=null;reject(new Error('無法載入 YouTube 播放服務'));};document.head.append(script);}
     });return youtubeReadyPromise;
   }
+  App.prototype.showSongAudioPlayer=function showSongAudioPlayer(){
+    const wrapper=getHiddenPlayerContainer();const parent=document.fullscreenElement||document.body;
+    if(wrapper.parentElement!==parent)parent.append(wrapper);
+    wrapper.classList.add('is-song-player-visible');
+  };
   App.prototype.setSongAudioStatus=function setSongAudioStatus(message,retry=false){
     this.songAudioStatus={message,retry};const el=document.getElementById('songAudioStatus');if(!el)return;
     el.replaceChildren();const label=document.createElement('span');label.textContent=message;el.append(label);
-    if(retry){const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn';button.textContent='🔊 點此重試播放';button.onclick=()=>this.retrySongAudio();el.append(button);const show=document.createElement('button');show.type='button';show.className='presentation-tool-btn';show.textContent='顯示播放器／廣告狀態';show.onclick=()=>{const wrapper=getHiddenPlayerContainer();(document.fullscreenElement||document.body).append(wrapper);wrapper.classList.add('is-song-player-visible');};el.append(show);}
+    if(retry){const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn';button.textContent='🔊 續播目前歌曲';button.onclick=()=>this.retrySongAudio();el.append(button);const show=document.createElement('button');show.type='button';show.className='presentation-tool-btn';show.textContent='顯示播放器／廣告狀態';show.onclick=()=>this.showSongAudioPlayer();el.append(show);}
   };
   App.prototype.ensureSongAudioPlayer=function ensureSongAudioPlayer(){
     if(this.songAudioPlayerReady)return this.songAudioPlayerReady;
@@ -296,7 +301,7 @@
       const timeout=setTimeout(()=>{this.songAudioPlayer?.destroy?.();this.songAudioPlayer=null;this.songAudioReady=false;this.songAudioPlayerReady=null;reject(new Error('播放器尚未就緒，請重試'));},15000);
       this.songAudioPlayer=new global.YT.Player(mount,{width:200,height:200,playerVars:{autoplay:0,controls:1,playsinline:1,origin:location.origin},events:{
         onReady:()=>{clearTimeout(timeout);this.songAudioReady=true;resolve(this.songAudioPlayer);},
-        onAutoplayBlocked:()=>{if(this.songAudioRequest)this.setSongAudioStatus('瀏覽器尚未允許播放聲音，請點選重試。',true);},
+        onAutoplayBlocked:()=>{if(this.songAudioRequest){this.showSongAudioPlayer();this.setSongAudioStatus('瀏覽器阻擋自動播放，請按原生播放器的播放鍵，或點選續播。',true);}},
         onError:event=>{if(this.songAudioRequest)this.setSongAudioStatus(`歌曲無法播放（代碼 ${event.data}），請重試或更換歌曲。`,true);},
         onStateChange:event=>{
           const request=this.songAudioRequest;if(!request)return;
@@ -314,7 +319,7 @@
     if(!question || (!this.isAdmin && this.focusGame?.playMode==='buzzer' && this.focusGame.audioMode!=='all'))return;
     const videoId=question.youtubeId||this.parseYoutubeUrl?.(question.youtubeUrl)?.videoId;if(!videoId)return;
     const generation=this.songAudioGeneration||0;
-    this.ensureSongAudioPlayer().then(player=>{if(this.songAudioRequest||generation!==(this.songAudioGeneration||0))return;if(this.songAudioVideoId!==videoId){player.cueVideoById({videoId,startSeconds:Number(question.startTime)||0});this.songAudioVideoId=videoId;}this.setSongAudioStatus('音樂已準備，請按開始播放。');}).catch(error=>this.setSongAudioStatus(error.message,true));
+    this.ensureSongAudioPlayer().then(player=>{if(this.songAudioRequest||generation!==(this.songAudioGeneration||0))return;if(this.songAudioVideoId!==videoId){player.cueVideoById({videoId,startSeconds:Number(question.startTime)||0});this.songAudioVideoId=videoId;this.songAudioPreparedStart=Number(question.startTime)||0;}this.setSongAudioStatus('音樂已準備，請按開始播放。');}).catch(error=>this.setSongAudioStatus(error.message,true));
   };
   App.prototype.playSongQuizAudio=function playSongQuizAudio(question,customStartTime){
     if(!question)return;
@@ -328,8 +333,8 @@
     this.setSongAudioStatus('正在載入音樂，請稍候…');
     const begin=player=>{if(generation!==this.songAudioGeneration||this.songAudioRequest!==request)return;
       player.unMute();player.setVolume(100);
-      if(this.songAudioVideoId===videoId){player.seekTo(start,true);player.playVideo();}else{player.loadVideoById({videoId,startSeconds:start});this.songAudioVideoId=videoId;}
-      this.songAudioWatchdog=setTimeout(()=>{if(this.songAudioRequest===request&&!request.started)this.setSongAudioStatus('YouTube 尚未開始歌曲，可能正在載入、播放廣告或播放被阻擋；可查看播放器或點選重試。',true);},8000);
+      if(this.songAudioVideoId===videoId){if(player.getPlayerState()!==5 || this.songAudioPreparedStart!==start)player.seekTo(start,true);player.playVideo();}else{player.loadVideoById({videoId,startSeconds:start});this.songAudioVideoId=videoId;}
+      this.songAudioWatchdog=setTimeout(()=>{if(this.songAudioRequest===request&&!request.started){this.showSongAudioPlayer();this.setSongAudioStatus('已開啟 YouTube 播放器：如有廣告，請使用原生略過按鈕；如顯示暫停，請按播放。',true);}},8000);
       this.songAudioTick=setInterval(()=>{if(this.songAudioRequest!==request)return;const now=performance.now();if(player.getPlayerState()===1){if(request.lastTime)request.remaining-=Math.max(0,now-request.lastTime)/1000;request.lastTime=now;}else request.lastTime=now;
         if(this.songQuizState){this.songQuizState.isPlayingAudio=player.getPlayerState()===1;this.songQuizState.audioRemainingSeconds=Math.max(0,Math.ceil(request.remaining));}
         if(request.remaining<=0){this.stopSongQuizAudio();this.setSongAudioStatus('本段音樂已結束');}
@@ -340,6 +345,10 @@
     else this.ensureSongAudioPlayer().then(begin).catch(error=>{if(this.songAudioRequest===request)this.setSongAudioStatus(error.message,true);});
   };
   App.prototype.retrySongAudio=function retrySongAudio(){
+    if(this.focusGame?.playMode==='buzzer'&&!this.isAdmin&&this.focusGame.audioMode!=='all')return;
+    if(this.songAudioRequest && this.songAudioReady && this.songAudioPlayer){
+      this.showSongAudioPlayer();this.setSongAudioStatus('已送出續播指令；如有廣告或播放限制，請直接操作 YouTube 播放器。',true);this.songAudioPlayer.unMute();this.songAudioPlayer.setVolume(100);this.songAudioPlayer.playVideo();return;
+    }
     if(this.focusGame?.playMode==='buzzer'){
       if(this.isAdmin){const round=this.focusGame.buzzerRound||{};this.teacherBuzzerAction(round.status==='playing'?'restart':round.status==='answered_wrong'?'resume':'play');}
       else if(this.focusGame.audioMode==='all')this.playSongQuizAudio(this.focusGame.questions?.[this.focusGame.currentQuestionIndex||0],Number(this.focusGame.buzzerRound?.audioSeekTime)||0);
