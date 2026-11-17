@@ -3328,6 +3328,7 @@ class App {
       const row = document.createElement('div');
       row.className = 'reaction-custom-item-row';
       row.innerHTML = `
+        <button type="button" class="presentation-tool-btn reaction-drag-handle" aria-label="拖曳排序第 ${idx+1} 個按鈕" title="拖曳排序，也可用方向鍵調整位置">⠿</button>
         <span style="font-size:14px; font-weight:800; color:var(--text-secondary); min-width:22px;">#${idx + 1}</span>
         <button type="button" class="presentation-tool-btn reaction-emoji-picker-trigger" aria-label="選擇第 ${idx+1} 個按鈕的表情符號" onclick="window.app.openReactionEmojiPicker(${idx})">${this.escapeHtml(item.emoji||'✨')}</button>
         <input type="text" value="${this.escapeHtml(item.btnLabel || '')}" placeholder="按鈕文字(選填，如：贊成)" maxlength="10"
@@ -3336,8 +3337,21 @@ class App {
         <button type="button" onclick="window.app.removeCustomReactionItem(${idx})" title="刪除此按鈕"
           style="background:rgba(239,68,68,0.12); color:#ef4444; border:none; border-radius:6px; width:28px; height:28px; cursor:pointer; font-weight:bold;">✕</button>
       `;
+      row.dataset.reactionIndex=String(idx);
+      const handle=row.querySelector('.reaction-drag-handle');let dragging=false,target=idx;
+      const clean=()=>{dragging=false;row.classList.remove('is-dragging');listEl.querySelectorAll('.is-drop-target').forEach(el=>el.classList.remove('is-drop-target'));};
+      handle.addEventListener('pointerdown',event=>{if(!this.isAdmin||event.button!==0)return;event.preventDefault();dragging=true;target=idx;handle.setPointerCapture(event.pointerId);row.classList.add('is-dragging');});
+      handle.addEventListener('pointermove',event=>{if(!dragging)return;const hit=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-reaction-index]');listEl.querySelectorAll('.is-drop-target').forEach(el=>el.classList.remove('is-drop-target'));if(hit&&listEl.contains(hit)){target=Number(hit.dataset.reactionIndex);if(target!==idx)hit.classList.add('is-drop-target');}});
+      handle.addEventListener('pointerup',()=>{if(!dragging)return;const destination=target;clean();this.moveCustomReactionItem(idx,destination);});
+      handle.addEventListener('pointercancel',clean);
+      handle.addEventListener('keydown',event=>{if(['ArrowLeft','ArrowUp','ArrowRight','ArrowDown'].includes(event.key)){event.preventDefault();const to=idx+(['ArrowLeft','ArrowUp'].includes(event.key)?-1:1);this.moveCustomReactionItem(idx,to);listEl.querySelectorAll('.reaction-drag-handle')[Math.max(0,Math.min(to,this._editingCustomReactions.length-1))]?.focus();}});
       listEl.appendChild(row);
     });
+  }
+
+  moveCustomReactionItem(from,to){
+    if(!this.isAdmin||!Array.isArray(this._editingCustomReactions)||!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=this._editingCustomReactions.length||to>=this._editingCustomReactions.length||from===to)return;
+    const [item]=this._editingCustomReactions.splice(from,1);this._editingCustomReactions.splice(to,0,item);this.renderCustomReactionEditorList();
   }
 
   openReactionEmojiPicker(index){
@@ -3346,8 +3360,26 @@ class App {
     const dialog=document.createElement('dialog');dialog.id='reactionEmojiDialog';dialog.className='reaction-emoji-dialog';dialog.setAttribute('aria-label','選擇表情符號');
     const heading=document.createElement('h3');heading.textContent='選擇表情符號';dialog.append(heading);
     const choose=value=>{if(!this.isAdmin)return;const emoji=value.trim();if(!emoji)return;this.updateCustomReactionDraft(index,'emoji',emoji.slice(0,16));this.renderCustomReactionEditorList();dialog.close();};
-    const grid=document.createElement('div');grid.className='reaction-emoji-grid';
-    for(const emoji of ['🙋','👍','👎','👏','🤔','😍','😀','😁','😂','😊','🥰','😎','🤩','🥳','😅','😢','😭','😡','😱','😴','😮','😕','😐','🙌','🤝','👌','✌️','💪','❤️','💛','💚','💙','💜','✨','⭐','🌟','🔥','💡','🎉','🎯','🏆','🎵','📚','✏️','✅','❌','❓','❗','🔴','🟡','🟢','🔵','1️⃣','2️⃣','3️⃣','4️⃣']){const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn';button.textContent=emoji;button.setAttribute('aria-label',emoji);button.onclick=()=>choose(emoji);grid.append(button);}dialog.append(grid);
+    const categories=[
+      ['表情', '😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🥸 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫢 🤭 🫣 🤫 🤥 😶 🫥 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 👻 💀 ☠️ 👽 🤖 💩 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾'],
+      ['手勢與人物', '🙋 🙋‍♀️ 🙋‍♂️ 👍 👎 👏 🙌 👐 🤲 🤝 🙏 ✍️ 💅 🤳 💪 🦾 🦵 🦿 🦶 👂 🦻 👃 🧠 🫀 🫁 🦷 🦴 👀 👁️ 👅 👄 🫦 👋 🤚 🖐️ ✋ 🖖 🫱 🫲 🫳 🫴 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ 🫵 ✊ 👊 🤛 🤜 🫶 👶 🧒 👦 👧 🧑 👨 👩 🧓 👴 👵 👮 👷 💂 🕵️ 👩‍🏫 👨‍🏫 👩‍🎓 👨‍🎓 👩‍⚕️ 👨‍⚕️ 🧑‍🚀 🧙 🧚 🦸 🦹 🧜 🧝 🧛 🧟'],
+      ['動物與自然', '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐻‍❄️ 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🙈 🙉 🙊 🐔 🐧 🐦 🐤 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🪲 🐛 🦋 🐌 🐞 🐜 🦟 🦗 🕷️ 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦞 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🦭 🐊 🦓 🦒 🦘 🐘 🦏 🦛 🐪 🐫 🦙 🐑 🐐 🦌 🐕 🐈 🐓 🦃 🦚 🦜 🦢 🦩 🕊️ 🐇 🦝 🦨 🦡 🦫 🦦 🦥 🐁 🐿️ 🦔 🌵 🎄 🌲 🌳 🌴 🌱 🌿 ☘️ 🍀 🍃 🍂 🍁 🍄 🌾 💐 🌷 🌹 🥀 🌺 🌸 🌼 🌻 🌞 🌝 🌛 🌜 🌚 🌕 🌙 ⭐ 🌟 ✨ ⚡ ☄️ 💥 🔥 🌈 ☀️ 🌤️ ⛅ 🌥️ ☁️ 🌧️ ⛈️ 🌩️ ❄️ ☃️ ⛄ 🌬️ 💨 🌪️ 🌫️ 🌊 💧'],
+      ['食物與活動', '🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍈 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥬 🥒 🌶️ 🫑 🌽 🥕 🧄 🧅 🥔 🍠 🥐 🥯 🍞 🥖 🥨 🧀 🥚 🍳 🧈 🥞 🧇 🥓 🍗 🍖 🌭 🍔 🍟 🍕 🫓 🥪 🌮 🌯 🥙 🧆 🥗 🥘 🫕 🥫 🍝 🍜 🍲 🍛 🍣 🍱 🥟 🦪 🍤 🍙 🍚 🍘 🍥 🥠 🥮 🍢 🍡 🍧 🍨 🍦 🥧 🧁 🍰 🎂 🍮 🍭 🍬 🍫 🍿 🍩 🍪 🥛 ☕ 🍵 🧃 🥤 🧋 🧉 ⚽ 🏀 🏈 ⚾ 🥎 🎾 🏐 🏉 🥏 🎱 🪀 🏓 🏸 🏒 🏑 🥍 🏏 🥅 ⛳ 🏹 🎣 🤿 🥊 🥋 🎽 🛹 🛼 🛷 ⛸️ 🥌 🎿 🏂 🏋️ 🤸 🤼 🤾 🏌️ 🏄 🏊 🤽 🚣 🧗 🚴 🎯 🎮 🎲 🧩 ♟️ 🎨 🎭 🎪 🎤 🎧 🎼 🎹 🥁 🎷 🎺 🎸 🎻'],
+      ['物品與學習', '📱 💻 ⌨️ 🖥️ 🖨️ 🖱️ 💽 💾 💿 📀 📷 📸 📹 🎥 📽️ 🎞️ 📞 ☎️ 📟 📠 📺 📻 🎙️ 🎚️ 🎛️ 🧭 ⏱️ ⏲️ ⏰ 🕰️ ⌛ ⏳ 🔋 🔌 💡 🔦 🕯️ 🧯 🛢️ 💸 💵 💰 🪙 💎 ⚖️ 🪜 🧰 🔧 🔨 ⚒️ 🛠️ ⛏️ 🔩 ⚙️ 🧱 🔗 🧲 🔬 🔭 🧪 🧫 🧬 🩺 💊 💉 🩹 🩼 🧹 🧺 🧻 🪣 🧼 🪥 🧽 🧴 🔑 🗝️ 🚪 🪑 🛋️ 🛏️ 🖼️ 🪞 🎁 🎈 🎏 🎀 🎊 🎉 🧧 🏆 🥇 🥈 🥉 🏅 🎖️ 📚 📖 📕 📗 📘 📙 📓 📔 📒 📃 📜 📄 📰 🗞️ 📑 🔖 🏷️ ✉️ 📧 📩 📨 📮 📥 📤 📦 🗳️ 🗂️ 📁 📂 📅 📆 🗒️ 🗓️ 📇 📈 📉 📊 📋 📌 📍 📎 🖇️ 📏 📐 ✂️ 🖊️ 🖋️ ✒️ 🖌️ 🖍️ 📝 ✏️ 🔍 🔎 🔒 🔓 📣 📢 🔔 🔕'],
+      ['符號與交通', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ☮️ ✝️ ☯️ ☪️ ☸️ 🕉️ ✡️ 🔯 🕎 ☦️ 🛐 ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ 🆔 ⚠️ 🚸 ⛔ 🚫 🔞 ❌ ✅ ✔️ ✖️ ➕ ➖ ➗ 🟰 ❓ ❔ ❕ ❗ ‼️ ⁉️ 💯 🔅 🔆 ♻️ 🔱 ⚜️ 🔰 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟤 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜ 🟫 🔺 🔻 🔸 🔹 🔶 🔷 🔳 🔲 ⭕ 🔘 🔁 🔂 🔄 🔃 ➡️ ⬅️ ⬆️ ⬇️ ↗️ ↘️ ↙️ ↖️ ↔️ ↕️ 🔙 🔚 🔛 🔜 🔝 ▶️ ⏸️ ⏹️ ⏺️ ⏭️ ⏮️ ⏩ ⏪ 🔀 🔼 🔽 0️⃣ 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ 6️⃣ 7️⃣ 8️⃣ 9️⃣ 🔟 🅰️ 🅱️ 🆎 🅾️ 🆗 🆕 🆙 🆒 🆓 🆘 🏁 🚩 🎌 🏳️ 🏴 🏳️‍🌈 🚗 🚕 🚙 🚌 🚎 🏎️ 🚓 🚑 🚒 🚐 🛻 🚚 🚛 🚜 🛵 🏍️ 🚲 🛴 🚂 🚆 🚇 🚊 🚉 ✈️ 🛫 🛬 🚀 🛸 🚁 🚢 ⛵ 🛶 🏠 🏫 🏥 🏦 🏪 🏨 🏭 🏛️ ⛪ 🕌 🛕 🕍 🗼 🗽 🌍 🌎 🌏']
+    ].map(([name,text])=>({name,items:[...new Set(text.split(' '))]}));
+    let selectedCategory=0,page=0;const pageSize=35;
+    const tabs=document.createElement('div');tabs.className='reaction-emoji-tabs';tabs.setAttribute('aria-label','表情分類');dialog.append(tabs);
+    const grid=document.createElement('div');grid.className='reaction-emoji-grid';dialog.append(grid);
+    const pages=document.createElement('div');pages.className='reaction-emoji-pages';pages.setAttribute('aria-label','表情分頁');dialog.append(pages);
+    const draw=()=>{
+      tabs.replaceChildren();categories.forEach((cat,i)=>{const tab=document.createElement('button');tab.type='button';tab.className='presentation-tool-btn'+(i===selectedCategory?' active':'');tab.textContent=cat.name;tab.setAttribute('aria-pressed',String(i===selectedCategory));tab.onclick=()=>{selectedCategory=i;page=0;draw();};tabs.append(tab);});
+      grid.replaceChildren();const items=categories[selectedCategory].items,total=Math.ceil(items.length/pageSize);
+      for(const emoji of items.slice(page*pageSize,(page+1)*pageSize)){const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn';button.textContent=emoji;button.setAttribute('aria-label',emoji);button.onclick=()=>choose(emoji);grid.append(button);}
+      pages.replaceChildren();const change=(label,to,disabled=false)=>{const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn'+(to===page&&!disabled?' active':'');button.textContent=label;button.disabled=disabled;button.onclick=()=>{page=to;draw();};pages.append(button);};
+      change('上一頁',page-1,page===0);for(let i=0;i<total;i++)change(String(i+1),i);change('下一頁',page+1,page===total-1);
+      const info=document.createElement('span');info.className='reaction-emoji-page-status';info.setAttribute('role','status');info.textContent=`第 ${page+1}／${total} 頁，共 ${items.length} 個`;pages.append(info);
+    };draw();
     const input=document.createElement('input');input.className='question-input';input.placeholder='也可貼上其他表情符號';input.maxLength=16;input.setAttribute('aria-label','自訂表情符號');dialog.append(input);
     for(const [label,action] of [['使用輸入的表情',()=>choose(input.value)],['關閉',()=>dialog.close()]]){const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn';button.textContent=label;button.onclick=action;dialog.append(button);}
     dialog.addEventListener('close',()=>dialog.remove());dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}});

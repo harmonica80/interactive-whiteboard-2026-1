@@ -80,3 +80,10 @@
 .reaction-emoji-grid button {font-size:24px;justify-content:center;padding:6px;min-width:0;}
 .reaction-emoji-dialog::backdrop {background:color-mix(in srgb,var(--bg-primary) 70%,transparent);}
 .reaction-emoji-dialog>button {margin:10px 6px 0 0;font-size:14px;}
+
+.reaction-emoji-tabs,.reaction-emoji-pages {display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0;}
+.reaction-emoji-tabs button,.reaction-emoji-pages button,.reaction-emoji-page-status {font-size:14px;}
+.reaction-emoji-page-status {width:100%;color:var(--text-secondary);}
+.reaction-drag-handle {touch-action:none;cursor:grab;min-width:28px;padding:4px;font-size:22px;flex-shrink:0;}
+.reaction-custom-item-row.is-dragging {opacity:.65;}
+.reaction-custom-item-row.is-drop-target {outline:3px solid var(--accent-color);outline-offset:2px;}
