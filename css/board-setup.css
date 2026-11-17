@@ -165,7 +165,6 @@
 
 .board-loading-room {margin-bottom:18px;padding:12px;border:1px solid var(--border-color);border-radius:12px;background:var(--bg-input);color:var(--accent-color);font-size:20px;font-weight:800;line-height:1.5;overflow-wrap:anywhere;}
 
-.board-entered-class {position:fixed;top:max(18px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);box-sizing:border-box;width:min(520px,calc(100% - 28px));z-index:25000;background:var(--bg-card);color:var(--text-primary);border:2px solid var(--accent-color);border-radius:14px;box-shadow:var(--shadow-hover);padding:18px 22px;text-align:center;overflow-wrap:anywhere;}
-.board-entered-class h3 {margin:0 0 10px;font-size:22px;color:var(--accent-color);}
-.board-entered-class p {margin:6px 0;font-size:18px;font-weight:700;line-height:1.5;}
-.board-entered-class button {margin-top:12px;font-size:14px;}
+
+#boardConnectionStatus.is-success .board-loading-spinner,#boardConnectionStatus.is-success .board-loading-progress,#boardConnectionStatus.is-success .board-loading-percent {display:none;}
+#boardConnectionStatus.is-success h2 {color:var(--accent-color);}
