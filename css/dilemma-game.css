@@ -72,3 +72,11 @@
 
 .reaction-scenario-tools {display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:14px;color:var(--text-primary);}
 .reaction-scenario-tools label,.reaction-scenario-tools button {font-size:14px;}
+
+.reaction-emoji-picker-trigger {min-width:52px;font-size:24px;}
+.reaction-emoji-dialog {box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(460px,calc(100% - 24px));max-height:85vh;overflow:auto;padding:20px;background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color);border-radius:14px;box-shadow:var(--shadow);font-size:14px;z-index:25000;}
+.reaction-emoji-dialog h3 {font-size:20px;}
+.reaction-emoji-grid {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:12px 0;}
+.reaction-emoji-grid button {font-size:24px;justify-content:center;padding:6px;min-width:0;}
+.reaction-emoji-dialog::backdrop {background:color-mix(in srgb,var(--bg-primary) 70%,transparent);}
+.reaction-emoji-dialog>button {margin:10px 6px 0 0;font-size:14px;}

@@ -3186,8 +3186,9 @@ class App {
     // 渲染情境分類與選擇卡片（每張卡片皆內建專屬「1 秒最多可按幾個」設定選單）
     const container = document.getElementById('reactionPresetsContainer');
     if (container) {
-      const catalog = this.getReactionPresetsCatalog();
-      const categories = [];
+      const all=this.getReactionPresetsCatalog();
+      const catalog=[...all.filter(p=>!this.reactionSettings?.disabledPresets?.[p.key]),...all.filter(p=>this.reactionSettings?.disabledPresets?.[p.key]).map(p=>({...p,category:'未啟用情境'}))];
+      const categories = ['🛠️ 教師自訂專屬情境'];
       catalog.forEach(p => {
         if (!categories.includes(p.category)) categories.push(p.category);
       });
@@ -3238,7 +3239,7 @@ class App {
             <div>
               <div class="reaction-preset-card-top">
                 <div class="reaction-preset-card-title">${this.escapeHtml(preset.title)}</div>
-                <span class="reaction-preset-check">${isSelected ? '✓ 使用中' : '點擊套用'}</span>
+                <span class="reaction-preset-check">${this.reactionSettings?.disabledPresets?.[preset.key]?'未啟用':isSelected ? '✓ 使用中' : '點擊套用'}</span>
               </div>
               <div class="reaction-preset-card-desc">${this.escapeHtml(preset.desc)}</div>
             </div>
@@ -3328,9 +3329,7 @@ class App {
       row.className = 'reaction-custom-item-row';
       row.innerHTML = `
         <span style="font-size:14px; font-weight:800; color:var(--text-secondary); min-width:22px;">#${idx + 1}</span>
-        <input type="text" value="${this.escapeHtml(item.emoji || '')}" placeholder="表情" maxlength="8"
-          style="width:52px; text-align:center; font-size:18px; padding:5px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-input); color:var(--text-primary);"
-          oninput="window.app.updateCustomReactionDraft(${idx}, 'emoji', this.value)">
+        <button type="button" class="presentation-tool-btn reaction-emoji-picker-trigger" aria-label="選擇第 ${idx+1} 個按鈕的表情符號" onclick="window.app.openReactionEmojiPicker(${idx})">${this.escapeHtml(item.emoji||'✨')}</button>
         <input type="text" value="${this.escapeHtml(item.btnLabel || '')}" placeholder="按鈕文字(選填，如：贊成)" maxlength="10"
           style="flex:1; min-width:80px; font-size:14px; padding:6px 8px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-input); color:var(--text-primary);"
           oninput="window.app.updateCustomReactionDraft(${idx}, 'btnLabel', this.value)">
@@ -3339,6 +3338,20 @@ class App {
       `;
       listEl.appendChild(row);
     });
+  }
+
+  openReactionEmojiPicker(index){
+    if(!this.isAdmin||!this._editingCustomReactions?.[index])return;
+    document.getElementById('reactionEmojiDialog')?.remove();
+    const dialog=document.createElement('dialog');dialog.id='reactionEmojiDialog';dialog.className='reaction-emoji-dialog';dialog.setAttribute('aria-label','選擇表情符號');
+    const heading=document.createElement('h3');heading.textContent='選擇表情符號';dialog.append(heading);
+    const choose=value=>{if(!this.isAdmin)return;const emoji=value.trim();if(!emoji)return;this.updateCustomReactionDraft(index,'emoji',emoji.slice(0,16));this.renderCustomReactionEditorList();dialog.close();};
+    const grid=document.createElement('div');grid.className='reaction-emoji-grid';
+    for(const emoji of ['🙋','👍','👎','👏','🤔','😍','😀','😁','😂','😊','🥰','😎','🤩','🥳','😅','😢','😭','😡','😱','😴','😮','😕','😐','🙌','🤝','👌','✌️','💪','❤️','💛','💚','💙','💜','✨','⭐','🌟','🔥','💡','🎉','🎯','🏆','🎵','📚','✏️','✅','❌','❓','❗','🔴','🟡','🟢','🔵','1️⃣','2️⃣','3️⃣','4️⃣']){const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn';button.textContent=emoji;button.setAttribute('aria-label',emoji);button.onclick=()=>choose(emoji);grid.append(button);}dialog.append(grid);
+    const input=document.createElement('input');input.className='question-input';input.placeholder='也可貼上其他表情符號';input.maxLength=16;input.setAttribute('aria-label','自訂表情符號');dialog.append(input);
+    for(const [label,action] of [['使用輸入的表情',()=>choose(input.value)],['關閉',()=>dialog.close()]]){const button=document.createElement('button');button.type='button';button.className='presentation-tool-btn';button.textContent=label;button.onclick=action;dialog.append(button);}
+    dialog.addEventListener('close',()=>dialog.remove());dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}});
+    (document.fullscreenElement||document.body).append(dialog);dialog.showModal();
   }
 
   updateCustomReactionDraft(index, field, value) {

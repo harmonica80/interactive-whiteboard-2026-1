@@ -1,6 +1,5 @@
 (() => {
   const key = 'classroom_practice_presets_v1';
-  const reactionKey = 'classroom_reaction_presets_v1';
   const initialPresets = [1,2,3,5,10,20,30].map(n=>({name:n+' 分鐘',seconds:n*60}));
   const animations = {hourglass:'images/timer/hourglass.gif',clock:'images/timer/clock.gif',candle:'images/timer/candle.gif'};
   const allowed = () => Boolean(window.app && window.app.isAdmin);
@@ -89,15 +88,9 @@
       } catch (_) { alert('無法開啟置頂視窗，請確認瀏覽器允許畫中畫視窗。'); }
     }
   };
-  const reactions = {
-    refresh() { const select=$('savedReactionSelect'); if (!select) return; select.replaceChildren(new Option('選擇已儲存情境','')); read(reactionKey).forEach((item,i)=>select.add(new Option(item.name,String(i)))); },
-    save() { if (!allowed()) return; const name=$('savedReactionName').value.trim(), items=window.app._editingCustomReactions; if (!name || !Array.isArray(items) || items.length < 2) { alert('請輸入情境名稱，並設定至少 2 個互動按鈕。'); return; } const list=read(reactionKey), idx=list.findIndex(x=>x.name===name), item={name,items:JSON.parse(JSON.stringify(items)),rate:window.app.getPresetMaxReactionsPerSec('custom')}; if(idx<0)list.push(item);else list[idx]=item; if(write(reactionKey,list))this.refresh(); },
-    apply() { if (!allowed()) return; const val=$('savedReactionSelect').value, item=read(reactionKey)[Number(val)]; if(val==='' || !item)return; const app=window.app; app._editingCustomReactions=JSON.parse(JSON.stringify(item.items)); app.reactionSettings.customItems=JSON.parse(JSON.stringify(item.items)); app.reactionSettings.activePreset='custom'; app.reactionSettings.presetMaxPerSec=app.reactionSettings.presetMaxPerSec||{}; app.reactionSettings.presetMaxPerSec.custom=item.rate||3; $('savedReactionName').value=item.name; app.renderCustomReactionEditorList(); app.renderLiveReactionDock(); app.updateReactionSettingsUI(); app.saveReactionSettings(); },
-    remove() { if (!allowed()) return; const val=$('savedReactionSelect').value, list=read(reactionKey); if(val==='' || !list[Number(val)])return; if(!confirm(`刪除自訂情境「${list[Number(val)].name}」？`))return; list.splice(Number(val),1); if(write(reactionKey,list))this.refresh(); }
-  };
-  window.classroomPracticeTimer=timer; window.savedReactionScenarios=reactions;
+  window.classroomPracticeTimer=timer;
   document.addEventListener('board-ready', () => {
-    syncPresets(); reactions.refresh(); attachStudentTimer();
+    syncPresets(); attachStudentTimer();
     for(const id of ['practiceTimerMinutes','practiceTimerSeconds']) { const field=$(id); field.addEventListener('input',()=>{if(mode!=='idle' && mode!=='finished')return; mode='idle'; const m=Number($('practiceTimerMinutes').value),sec=Number($('practiceTimerSeconds').value);if(m>=0&&m<=180&&sec>=0&&sec<=59){configured=m*60+sec; $('practiceTimerState').textContent='尚未開始'; update();}});field.addEventListener('blur',()=>{if(field.value!=='')field.value=String(Number(field.value)).padStart(2,'0');}); }
     try { const value=store().getItem('classroom_timer_animation'); if(value && allowed())timer.setAnimation(value); } catch (_) {}
     const dialog=$('practiceTimerModal');
