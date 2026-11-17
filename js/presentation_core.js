@@ -476,8 +476,8 @@
 
       window.addEventListener('resize', () => {
         if (this.els.panel && (this.els.panel.classList.contains('active') || this.els.panel.style.display !== 'none')) {
+          // 手機鍵盤會改變可視高度；尺寸更新不可重建正在輸入的作答欄位。
           this.updateCanvasDimensions();
-          this.render();
         }
       });
 
@@ -1852,10 +1852,9 @@
     renderStudentInteraction() {
       const area = this.els.studentInteractionArea;
       if (!area) return;
-      area.innerHTML = '';
 
       const slide = this.getCurrentSlide();
-      if (!slide) return;
+      if (!slide) {area.replaceChildren();this._studentInteractionKey=null;this._studentImeTarget=null;return;}
 
       const questions = Array.isArray(slide.questions) ? slide.questions : [];
       const mode = slide.displayMode || 'step';
@@ -1871,6 +1870,17 @@
       } else if (this.studentCanUsePresentation) {
         isAllowedToAnswer = this.isRemoteBroadcastingActive || Boolean(slide.allowAsyncAnswer);
       }
+
+      if(!Number.isInteger(this.currentStudentQuestionIndex)||this.currentStudentQuestionIndex<0||this.currentStudentQuestionIndex>=questions.length)this.currentStudentQuestionIndex=0;
+      const userId=this.getUserInfo().uid;
+      const submitted=Boolean(this.submissions[slide.id]?.[userId]);
+      const viewKey=JSON.stringify([slide.id,questions,mode,slide.floatingEmojis||[],isTeacherUser,isAllowedToAnswer,this.studentCanUsePresentation,isTeacherUser?this.isTeacherCollapsed:this.isStudentCollapsed,this.currentStudentQuestionIndex||0,submitted,userId]);
+      const focused=document.activeElement;
+      const isEditing=area.contains(focused)&&focused.matches('textarea,input,[contenteditable="true"]');
+      const isComposing=this._studentImeTarget?.isConnected&&area.contains(this._studentImeTarget);
+      if(this._studentInteractionKey===viewKey&&this._studentRenderedAnswers===this.myAnswers&&(isEditing||isComposing))return;
+      this._studentInteractionKey=viewKey;this._studentRenderedAnswers=this.myAnswers;this._studentImeTarget=null;
+      area.replaceChildren();
 
       // 若不允許作答
       if (!isAllowedToAnswer) {
@@ -2125,6 +2135,8 @@
           textarea.className = 'presentation-text-answer-input';
           textarea.placeholder = '請在此輸入您的想法或回答...';
           textarea.value = this.myAnswers[q.id] || '';
+          textarea.oncompositionstart=()=>{this._studentImeTarget=textarea;};
+          textarea.oncompositionend=()=>{this.myAnswers[q.id]=textarea.value;if(this._studentImeTarget===textarea)this._studentImeTarget=null;};
           textarea.oninput = (e) => {
             this.myAnswers[q.id] = e.target.value;
           };
