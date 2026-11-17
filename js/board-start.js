@@ -32,6 +32,10 @@
     }
     button.hidden = false;
   }
+  const roomInfo=document.createElement('div');roomInfo.className='board-loading-room';roomInfo.setAttribute('aria-live','polite');
+  const roomName=document.createElement('div'),roomCode=document.createElement('div');roomInfo.append(roomName,roomCode);status.prepend(roomInfo);
+  function showRoom(code,info){roomName.textContent='教室名稱：'+(code?(info?.name||'確認中…'):'一次性課堂');roomCode.textContent='班級代碼：'+(code||'無（公開空間）');}
+  const params=new URL(location.href).searchParams;showRoom(params.get('class')||params.get('room')||'');
   status.showModal();
   try {
     setProgress(5, '正在準備連線設定…');
@@ -60,6 +64,7 @@
       };
     }
     window.boardStorage = { local: scoped(localStorage), session: scoped(sessionStorage), prefix };
+    const requestedCode=ClassRoomManager.getActiveClassCode();showRoom(requestedCode);
     if (!parentPage && target.mode === 'secure') {
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -71,6 +76,7 @@
     }
     const database = parentPage ? parentPage.db : await BoardConnection.connect(target);
     bindBoardDatabase(database, parentPage);
+    showRoom(window.currentClassCode,parentPage?.boardVerifiedClassInfo);
     // 必須先確認班級，才載入 app.js 及其他會掛載資料監聽的模組。
     if (!parentPage && window.currentClassCode && scripts.some(source => source.dataset.src.includes('js/app.js'))) {
       const classCode = window.currentClassCode;
@@ -97,6 +103,7 @@
         return;
       }
       window.boardVerifiedClassCode = classCode;
+      showRoom(classCode,window.boardVerifiedClassInfo);
     }
     setProgress(40, '連線完成，正在載入白板功能…');
     let loadedScripts = 0;

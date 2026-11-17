@@ -2383,7 +2383,7 @@ class App {
   // ❤️ 即時互動回饋 (Live Floating Reactions)
   // ==========================================
   getReactionPresetsCatalog() {
-    return [
+    const catalog = [
       {
         key: 'classic',
         category: '😍 表情與課堂氛圍互動',
@@ -2579,6 +2579,8 @@ class App {
         items: []
       }
     ];
+    const custom=Object.entries(this.reactionSettings?.customScenarios||{}).filter(([key,value])=>/^custom_[a-z0-9_]+$/.test(key)&&value&&Array.isArray(value.items)).map(([key,value])=>({key,category:'🛠️ 教師自訂專屬情境',title:value.name||'自訂情境',shortTitle:value.name||'自訂情境',collapsedIcon:value.items[0]?.emoji||'✨',desc:'老師儲存的自訂互動情境。',showBtnLabel:true,items:value.items}));
+    return [...catalog.filter(p=>p.key==='custom'),...custom,...catalog.filter(p=>p.key!=='custom')];
   }
 
   getDefaultCustomReactionItems() {
@@ -2637,12 +2639,15 @@ class App {
     }
     this._reactionSettingsRef = this.db.ref('settings/liveReactions');
     this._reactionSettingsRef.on('value', (snap) => {
+      const previousPreset=this.reactionSettings?.activePreset;
       const val = snap.val();
       if (val && typeof val === 'object') {
         this.reactionSettings = {
           enabled: val.enabled !== false,
           showStudentName: val.showStudentName !== false,
           activePreset: val.activePreset || 'classic',
+          customScenarios: val.customScenarios||{},
+          disabledPresets: val.disabledPresets||{},
           presetMaxPerSec: (val.presetMaxPerSec && typeof val.presetMaxPerSec === 'object') ? val.presetMaxPerSec : {},
           customItems: Array.isArray(val.customItems) && val.customItems.length >= 2
             ? val.customItems
@@ -2657,13 +2662,14 @@ class App {
           customItems: this.getDefaultCustomReactionItems()
         };
       }
+      if(previousPreset!==this.reactionSettings.activePreset)this._editingCustomReactions=null;
       this.renderLiveReactionDock();
       this.updateReactionSettingsUI();
     });
   }
 
   getActiveReactionPresetData() {
-    const catalog = this.getReactionPresetsCatalog();
+    const catalog = this.getReactionPresetsCatalog().filter(p=>!this.reactionSettings?.disabledPresets?.[p.key]);
     const activeKey = (this.reactionSettings && this.reactionSettings.activePreset) || 'classic';
     if (activeKey === 'custom') {
       const customPreset = catalog.find(p => p.key === 'custom');
@@ -2791,7 +2797,7 @@ class App {
     const list = document.getElementById('reactionScenarioMenuList');
     if (!list) return;
 
-    const catalog = this.getReactionPresetsCatalog();
+    const catalog = this.getReactionPresetsCatalog().filter(p=>!this.reactionSettings?.disabledPresets?.[p.key]);
     const activeKey = (this.reactionSettings && this.reactionSettings.activePreset) || 'classic';
 
     list.innerHTML = '';
@@ -3196,7 +3202,9 @@ class App {
         { val: 10, label: '10 個 / 秒' }
       ];
 
+      const customEditor=document.getElementById('reactionCustomEditorCard');customEditor?.remove();
       container.innerHTML = '';
+      const add=document.createElement('button');add.type='button';add.className='presentation-tool-btn';add.textContent='＋ 新增自訂情境';add.onclick=()=>this.addReactionScenario();container.append(add);
       categories.forEach(catName => {
         const catHeader = document.createElement('div');
         catHeader.className = 'reaction-preset-cat-header';
@@ -3244,22 +3252,39 @@ class App {
               </div>
             </div>
           `;
-          grid.appendChild(card);
+          const tools=document.createElement('div');tools.className='reaction-scenario-tools';
+          const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=!this.reactionSettings?.disabledPresets?.[preset.key];label.append(check,document.createTextNode(' 啟用此情境'));label.onclick=e=>e.stopPropagation();check.onchange=()=>this.toggleReactionPresetAvailability(preset.key,check.checked);tools.append(label);
+          if(preset.key.startsWith('custom_')){for(const [text,action] of [['重新命名',()=>this.renameReactionScenario(preset.key)],['刪除',()=>this.deleteReactionScenario(preset.key)]]){const btn=document.createElement('button');btn.type='button';btn.className='presentation-tool-btn';btn.textContent=text;btn.onclick=e=>{e.stopPropagation();action();};tools.append(btn);}}
+          card.append(tools);grid.appendChild(card);
         });
 
         container.appendChild(grid);
+        if(catName==='🛠️ 教師自訂專屬情境'&&customEditor)container.appendChild(customEditor);
       });
     }
 
     // 自訂組合編輯器顯示與渲染
     const customCard = document.getElementById('reactionCustomEditorCard');
     if (customCard) {
-      const isCustom = (this.reactionSettings?.activePreset === 'custom');
+      const isCustom = this.reactionSettings?.activePreset === 'custom' || this.reactionSettings?.activePreset?.startsWith('custom_');
       customCard.style.display = isCustom ? 'block' : 'none';
       if (isCustom) {
         this.renderCustomReactionEditorList();
       }
     }
+  }
+
+  addReactionScenario(){
+    if(!this.isAdmin)return;const name=prompt('請輸入自訂情境名稱');if(!name?.trim())return;
+    this.reactionSettings.customScenarios ||= {};const key='custom_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+    this.reactionSettings.customScenarios[key]={name:name.trim().slice(0,40),items:this.getDefaultCustomReactionItems()};this.selectReactionPreset(key);
+  }
+  renameReactionScenario(key){if(!this.isAdmin)return;const item=this.reactionSettings.customScenarios?.[key];if(!item)return;const name=prompt('修改情境名稱',item.name);if(!name?.trim())return;item.name=name.trim().slice(0,40);this.updateReactionSettingsUI();this.renderLiveReactionDock();this.saveReactionSettings(true);}
+  deleteReactionScenario(key){if(!this.isAdmin||!confirm('確定刪除此自訂情境？'))return;delete this.reactionSettings.customScenarios[key];if(this.reactionSettings.activePreset===key){this.reactionSettings.activePreset='custom';delete this.reactionSettings.disabledPresets?.custom;this._editingCustomReactions=null;}this.updateReactionSettingsUI();this.renderLiveReactionDock();this.saveReactionSettings(true);}
+  toggleReactionPresetAvailability(key,enabled){
+    if(!this.isAdmin)return;const disabled=this.reactionSettings.disabledPresets ||= {};
+    if(enabled)delete disabled[key];else{const others=this.getReactionPresetsCatalog().filter(p=>p.key!==key&&!disabled[p.key]);if(!others.length){this.showNotification('請保留情境','至少需啟用一組情境。');this.updateReactionSettingsUI();return;}disabled[key]=true;if(this.reactionSettings.activePreset===key){this.reactionSettings.activePreset=others[0].key;this._editingCustomReactions=null;}}
+    this.renderLiveReactionDock();this.updateReactionSettingsUI();this.saveReactionSettings(true);
   }
 
   setPresetMaxPerSec(presetKey, val) {
@@ -3291,7 +3316,7 @@ class App {
     if (!listEl) return;
     if (!this._editingCustomReactions) {
       this._editingCustomReactions = JSON.parse(JSON.stringify(
-        (this.reactionSettings && Array.isArray(this.reactionSettings.customItems) && this.reactionSettings.customItems.length >= 2)
+        (this.reactionSettings?.activePreset?.startsWith('custom_')) ? this.getActiveReactionPresetData().items : (this.reactionSettings && Array.isArray(this.reactionSettings.customItems) && this.reactionSettings.customItems.length >= 2)
           ? this.reactionSettings.customItems
           : this.getDefaultCustomReactionItems()
       ));
@@ -3302,12 +3327,12 @@ class App {
       const row = document.createElement('div');
       row.className = 'reaction-custom-item-row';
       row.innerHTML = `
-        <span style="font-size:12px; font-weight:800; color:var(--text-secondary); min-width:22px;">#${idx + 1}</span>
+        <span style="font-size:14px; font-weight:800; color:var(--text-secondary); min-width:22px;">#${idx + 1}</span>
         <input type="text" value="${this.escapeHtml(item.emoji || '')}" placeholder="表情" maxlength="8"
           style="width:52px; text-align:center; font-size:18px; padding:5px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-input); color:var(--text-primary);"
           oninput="window.app.updateCustomReactionDraft(${idx}, 'emoji', this.value)">
         <input type="text" value="${this.escapeHtml(item.btnLabel || '')}" placeholder="按鈕文字(選填，如：贊成)" maxlength="10"
-          style="flex:1; min-width:80px; font-size:13px; padding:6px 8px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-input); color:var(--text-primary);"
+          style="flex:1; min-width:80px; font-size:14px; padding:6px 8px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-input); color:var(--text-primary);"
           oninput="window.app.updateCustomReactionDraft(${idx}, 'btnLabel', this.value)">
         <button type="button" onclick="window.app.removeCustomReactionItem(${idx})" title="刪除此按鈕"
           style="background:rgba(239,68,68,0.12); color:#ef4444; border:none; border-radius:6px; width:28px; height:28px; cursor:pointer; font-weight:bold;">✕</button>
@@ -3367,12 +3392,13 @@ class App {
         title: lb || em
       };
     });
-    this.reactionSettings.customItems = cleaned;
-    this.reactionSettings.activePreset = 'custom';
+    if(this.reactionSettings.activePreset?.startsWith('custom_'))this.reactionSettings.customScenarios[this.reactionSettings.activePreset].items=cleaned;
+    else {this.reactionSettings.customItems = cleaned;this.reactionSettings.activePreset = 'custom';}
     this.saveReactionSettings();
   }
 
   selectReactionPreset(presetKey) {
+    if(!this.isAdmin||this.reactionSettings?.disabledPresets?.[presetKey])return;
     if (!this.reactionSettings) {
       this.reactionSettings = {
         enabled: true,
@@ -3382,6 +3408,7 @@ class App {
       };
     }
     this.reactionSettings.activePreset = presetKey;
+    if(presetKey.startsWith('custom_'))this._editingCustomReactions=JSON.parse(JSON.stringify(this.getActiveReactionPresetData().items));
     if (presetKey === 'custom') {
       this._editingCustomReactions = JSON.parse(JSON.stringify(
         this.reactionSettings.customItems || this.getDefaultCustomReactionItems()
@@ -3424,7 +3451,7 @@ class App {
   }
 
   saveReactionSettings(silent = false) {
-    if (!this.db || !this.reactionSettings) return;
+    if (!this.isAdmin || !this.db || !this.reactionSettings) return;
     const payload = {
       enabled: this.reactionSettings.enabled !== false,
       showStudentName: this.reactionSettings.showStudentName !== false,
@@ -3435,9 +3462,11 @@ class App {
       customItems: Array.isArray(this.reactionSettings.customItems)
         ? this.reactionSettings.customItems
         : this.getDefaultCustomReactionItems(),
+      customScenarios:this.reactionSettings.customScenarios||{},
+      disabledPresets:this.reactionSettings.disabledPresets||{},
       updatedAt: firebase.database.ServerValue.TIMESTAMP
     };
-    this.db.ref('settings/liveReactions').set(payload).then(() => {
+    this.db.ref('settings/liveReactions').update(payload).then(() => {
       const hint = document.getElementById('reactionSaveStatusHint');
       if (hint) {
         hint.style.opacity = '1';
@@ -22924,7 +22953,7 @@ class App {
           </div>
 
           <!-- 核心投影區：動態 4 位數驗證碼與倒數計時 -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: center;">
+          <div class="checkin-projection-grid">
             <!-- 左側：4 位數驗證碼 -->
             <div style="background: var(--bg-input); border: 2px solid var(--border-color); border-radius: 16px; padding: 18px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
               <div style="font-size: 15px; color: var(--text-secondary); font-weight: bold; margin-bottom: 6px;">
@@ -22938,6 +22967,7 @@ class App {
               </div>
             </div>
 
+            <div class="checkin-invite-card"><h4>📱 掃描加入本班教室</h4><div id="checkInInviteQr" aria-label="班級邀請連結 QR Code"></div><div id="checkInInviteCode"></div></div>
             <!-- 右側：倒數秒數與統計數字 -->
             <div style="display: flex; flex-direction: column; gap: 12px;">
               <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px; text-align: center;">
@@ -22997,6 +23027,10 @@ class App {
           </div>
         </div>
       `;
+      const invite=new URL(location.href);const classCode=window.ClassRoomManager?.getActiveClassCode?.()||window.currentClassCode||'';
+      if(classCode){invite.searchParams.set('class',classCode);invite.searchParams.delete('room');}
+      this.renderQrCodeTo(document.getElementById('checkInInviteQr'),invite.href,220);
+      document.getElementById('checkInInviteCode').textContent=classCode?'班級代碼：'+classCode:'一次性課堂';
       return;
     }
 

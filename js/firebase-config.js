@@ -129,6 +129,7 @@ window.ClassRoomManager = {
         const response = await fetch(url.toString(), { signal: abort.signal, cache: 'no-store', referrerPolicy: 'no-referrer' });
         if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? '資料庫權限不足或登入已失效' : `班級查詢失敗（HTTP ${response.status}）`);
         const value = await response.json();
+        window.boardVerifiedClassInfo=value!==null?{code:sanitized,name:String(value.name||sanitized)}:null;
         return value !== null;
       } catch (error) {
         lastError = error;

@@ -162,3 +162,5 @@
 #boardConnectionStatus.is-error .board-loading-spinner, #boardConnectionStatus.is-error .board-loading-progress, #boardConnectionStatus.is-error .board-loading-percent { display: none; }
 @keyframes board-loading-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .board-loading-spinner { animation: none; } .board-loading-progress-fill { transition: none; } }
+
+.board-loading-room {margin-bottom:18px;padding:12px;border:1px solid var(--border-color);border-radius:12px;background:var(--bg-input);color:var(--accent-color);font-size:20px;font-weight:800;line-height:1.5;overflow-wrap:anywhere;}

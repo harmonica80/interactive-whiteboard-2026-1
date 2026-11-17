@@ -1663,10 +1663,15 @@
         if (els.screenBg) {
           els.screenBg.style.display = 'block';
           if (slide.type === 'image' && slide.bgUrl) {
-            els.screenBg.style.backgroundImage = `url("${slide.bgUrl}")`;
+            els.screenBg.style.backgroundImage = 'none';
+            let image=els.screenBg.querySelector('.presentation-original-image');
+            if(!image){image=document.createElement('img');image.className='presentation-original-image';image.alt='簡報投影片';image.draggable=false;els.screenBg.append(image);}
+            if(image.getAttribute('src')!==slide.bgUrl)image.setAttribute('src',slide.bgUrl);
+            image.hidden=false;
             els.screenBg.style.backgroundColor = '#0f172a';
           } else {
             els.screenBg.style.backgroundImage = 'none';
+            const image=els.screenBg.querySelector('.presentation-original-image');if(image)image.hidden=true;
             els.screenBg.style.backgroundColor = slide.bgColor || '#1e293b';
           }
         }
