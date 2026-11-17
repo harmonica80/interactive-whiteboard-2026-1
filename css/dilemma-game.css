@@ -85,5 +85,8 @@
 .reaction-emoji-tabs button,.reaction-emoji-pages button,.reaction-emoji-page-status {font-size:14px;}
 .reaction-emoji-page-status {width:100%;color:var(--text-secondary);}
 .reaction-drag-handle {touch-action:none;cursor:grab;min-width:28px;padding:4px;font-size:22px;flex-shrink:0;}
-.reaction-custom-item-row.is-dragging {opacity:.65;}
+.reaction-custom-item-row.is-dragging {opacity:.25;border-style:dashed;}
 .reaction-custom-item-row.is-drop-target {outline:3px solid var(--accent-color);outline-offset:2px;}
+
+.reaction-custom-item-row.reaction-drag-preview {position:fixed;box-sizing:border-box;z-index:25000;pointer-events:none;margin:0;opacity:1;background:var(--bg-card);border:2px solid var(--accent-color);box-shadow:var(--shadow-hover);will-change:transform;cursor:grabbing;}
+.reaction-drag-preview * {pointer-events:none;}

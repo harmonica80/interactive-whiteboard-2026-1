@@ -3313,6 +3313,7 @@ class App {
   }
 
   renderCustomReactionEditorList() {
+    this._reactionDragCleanup?.();
     const listEl = document.getElementById('reactionCustomItemsList');
     if (!listEl) return;
     if (!this._editingCustomReactions) {
@@ -3338,12 +3339,22 @@ class App {
           style="background:rgba(239,68,68,0.12); color:#ef4444; border:none; border-radius:6px; width:28px; height:28px; cursor:pointer; font-weight:bold;">✕</button>
       `;
       row.dataset.reactionIndex=String(idx);
-      const handle=row.querySelector('.reaction-drag-handle');let dragging=false,target=idx;
-      const clean=()=>{dragging=false;row.classList.remove('is-dragging');listEl.querySelectorAll('.is-drop-target').forEach(el=>el.classList.remove('is-drop-target'));};
-      handle.addEventListener('pointerdown',event=>{if(!this.isAdmin||event.button!==0)return;event.preventDefault();dragging=true;target=idx;handle.setPointerCapture(event.pointerId);row.classList.add('is-dragging');});
-      handle.addEventListener('pointermove',event=>{if(!dragging)return;const hit=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-reaction-index]');listEl.querySelectorAll('.is-drop-target').forEach(el=>el.classList.remove('is-drop-target'));if(hit&&listEl.contains(hit)){target=Number(hit.dataset.reactionIndex);if(target!==idx)hit.classList.add('is-drop-target');}});
+      const handle=row.querySelector('.reaction-drag-handle');let dragging=false,target=idx,ghost=null,startX=0,startY=0;
+      const clean=()=>{dragging=false;ghost?.remove();ghost=null;row.classList.remove('is-dragging');listEl.querySelectorAll('.is-drop-target').forEach(el=>el.classList.remove('is-drop-target'));window.removeEventListener('blur',clean);if(this._reactionDragCleanup===clean)this._reactionDragCleanup=null;};
+      handle.addEventListener('pointerdown',event=>{
+        if(!this.isAdmin||event.button!==0)return;event.preventDefault();this._reactionDragCleanup?.();dragging=true;target=idx;startX=event.clientX;startY=event.clientY;
+        const rect=row.getBoundingClientRect();ghost=row.cloneNode(true);ghost.removeAttribute('data-reaction-index');ghost.classList.add('reaction-drag-preview');ghost.setAttribute('aria-hidden','true');ghost.inert=true;
+        ghost.style.left=rect.left+'px';ghost.style.top=rect.top+'px';ghost.style.width=rect.width+'px';ghost.style.height=rect.height+'px';
+        const inputs=row.querySelectorAll('input');ghost.querySelectorAll('input').forEach((input,i)=>input.value=inputs[i]?.value||'');
+        (document.fullscreenElement||document.body).append(ghost);handle.setPointerCapture(event.pointerId);row.classList.add('is-dragging');this._reactionDragCleanup=clean;window.addEventListener('blur',clean);
+      });
+      handle.addEventListener('pointermove',event=>{if(!dragging)return;
+        ghost.style.transform=`translate3d(${event.clientX-startX}px,${event.clientY-startY}px,0)`;
+        const hit=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-reaction-index]');listEl.querySelectorAll('.is-drop-target').forEach(el=>el.classList.remove('is-drop-target'));if(hit&&listEl.contains(hit)){target=Number(hit.dataset.reactionIndex);if(target!==idx)hit.classList.add('is-drop-target');}
+      });
       handle.addEventListener('pointerup',()=>{if(!dragging)return;const destination=target;clean();this.moveCustomReactionItem(idx,destination);});
       handle.addEventListener('pointercancel',clean);
+      handle.addEventListener('lostpointercapture',clean);
       handle.addEventListener('keydown',event=>{if(['ArrowLeft','ArrowUp','ArrowRight','ArrowDown'].includes(event.key)){event.preventDefault();const to=idx+(['ArrowLeft','ArrowUp'].includes(event.key)?-1:1);this.moveCustomReactionItem(idx,to);listEl.querySelectorAll('.reaction-drag-handle')[Math.max(0,Math.min(to,this._editingCustomReactions.length-1))]?.focus();}});
       listEl.appendChild(row);
     });
