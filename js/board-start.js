@@ -130,9 +130,13 @@
       showRoom(code,{name});
       status.classList.add('is-success');
       status.querySelector('h2').textContent='✅ 已進入教室';
-      message.textContent='教室資訊已確認，5 秒後自動關閉。';
+      const closeAt=Date.now()+5000;
       const close=document.createElement('button');close.type='button';close.className='presentation-tool-btn';close.textContent='開始使用';
-      const timer=setTimeout(()=>status.close(),5000);close.onclick=()=>{clearTimeout(timer);status.close();};status.append(close);
+      let countdown;
+      const finish=()=>{clearInterval(countdown);status.close();};
+      const tick=()=>{const remaining=Math.max(0,Math.ceil((closeAt-Date.now())/1000));if(remaining===0){finish();return;}message.textContent=`教室資訊已確認，${remaining} 秒後自動關閉。`;};
+      countdown=setInterval(tick,200);status.addEventListener('close',()=>clearInterval(countdown),{once:true});
+      tick();close.onclick=finish;status.append(close);
     }else status.close();
   } catch (error) {
     status.classList.add('is-error');
