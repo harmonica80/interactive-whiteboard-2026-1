@@ -124,6 +124,19 @@
     window.dispatchEvent(new Event('board-modules-started'));
     setProgress(100, '載入完成。');
     status.close();
+    if(scripts.some(source=>source.dataset.src.includes('js/app.js'))){
+      const code=window.currentClassCode||'';
+      const info=window.boardVerifiedClassInfo;
+      const name=code?(info?.code===code?info.name:code):'一次性課堂（公開空間）';
+      document.getElementById('boardEnteredClassInfo')?.remove();
+      const notice=document.createElement('section');notice.id='boardEnteredClassInfo';notice.className='board-entered-class';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
+      const title=document.createElement('h3');title.textContent='✅ 已進入教室';
+      const classroom=document.createElement('p');classroom.textContent='教室名稱：'+name;
+      const classCode=document.createElement('p');classCode.textContent='班級代碼：'+(code||'無（一次性課堂）');
+      const close=document.createElement('button');close.type='button';close.className='presentation-tool-btn';close.textContent='關閉';close.setAttribute('aria-label','關閉已進入教室提示');
+      const timer=setTimeout(()=>notice.remove(),10000);close.onclick=()=>{clearTimeout(timer);notice.remove();};
+      notice.append(title,classroom,classCode,close);document.body.append(notice);
+    }
   } catch (error) {
     status.classList.add('is-error');
     status.querySelector('h2').textContent = '白板載入失敗';
