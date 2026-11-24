@@ -13108,11 +13108,8 @@ class App {
         db.ref('whiteboard_archive_data').once('value')
       ]);
       
-      for (const [label, listSnap, dataSnap] of [['簡報教材', materialsSnap, materialDataSnap], ['白板歷程', archivesSnap, archiveDataSnap]]) {
-        const list = listSnap.val() || {}, data = dataSnap.val() || {};
-        const ids = Object.keys(list);
-        if (ids.length !== Object.keys(data).length || ids.some(id => typeof data[id] !== 'string' || !data[id])) throw new Error(`${label}清單與內容不一致，請重新整理後再匯出`);
-      }
+      const presentationMaterials=await BoardArchiveStore.normalizeExportPair(materialsSnap.val(),materialDataSnap.val(),'presentation');
+      const whiteboardArchives=await BoardArchiveStore.normalizeExportPair(archivesSnap.val(),archiveDataSnap.val(),'whiteboard');
       const quizData = quizSnap.val() || {};
       const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
         ? window.ClassRoomManager.getActiveClassCode()
@@ -13134,7 +13131,7 @@ class App {
         teacherShares: sharesSnap.val() || {},
         whiteboard: whiteboardSnap.val() || {},
         whiteboardV2: { canvases: canvasesSnap.val() || null, pages: pagesSnap.val() || null, settings: settingsSnap.val() || null },
-        courseMaterials: { version: 1, presentationDraft: draftSnap.val() || null, presentationMaterials: { list: materialsSnap.val() || {}, data: materialDataSnap.val() || {} }, whiteboardArchives: { list: archivesSnap.val() || {}, data: archiveDataSnap.val() || {} } },
+        courseMaterials: { version: 1, presentationDraft: draftSnap.val() || null, presentationMaterials, whiteboardArchives },
         quiz: {
           current: quizData.current || null,
           answers: quizData.answers || null,

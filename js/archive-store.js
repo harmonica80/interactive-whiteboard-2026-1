@@ -29,6 +29,37 @@
     if (!entry) throw new Error('歷程內容格式不正確');
     return JSON.parse(await entry.async('string'));
   }
+  // 僅在備份內轉換完整的內嵌教材，不變更資料庫中的原始記錄。
+  async function normalizeExportPair(listValue,dataValue,kind){
+    const map=value=>value&&typeof value==='object'&&!Array.isArray(value);
+    const list=listValue??{},data=dataValue??{};
+    const label=kind==='presentation'?'簡報教材':'白板歷程';
+    if(!map(list)||!map(data))throw new Error(`${label}資料格式不正確，無法完整匯出`);
+    const normalized={list:{},data:{}};
+    for(const id of Object.keys(data)){if(!Object.prototype.hasOwnProperty.call(list,id))throw new Error(`${label}存在未對應至清單的內容（${id}），請先確認資料完整性`);}
+    for(const [id,item] of Object.entries(list)){
+      if(!map(item))throw new Error(`${label}項目格式不正確（${id}）`);
+      const name=String(item.title||id);
+      if(item.format==='zip-json-v1'){
+        if(typeof data[id]!=='string'||!data[id])throw new Error(`${label}「${name}」缺少壓縮內容，請重新儲存此教材後再匯出`);
+        if(data[id].length>9*1024*1024)throw new Error(`${label}「${name}」壓縮內容過大，無法製作可還原的備份`);
+        normalized.list[id]={...item};normalized.data[id]=data[id];continue;
+      }
+      const inline=kind==='presentation'
+        ? Object.prototype.hasOwnProperty.call(item,'slides') && item.slides!==null && typeof item.slides==='object'
+        : map(item.canvases) && map(item.pages);
+      if(!inline)throw new Error(`${label}「${name}」缺少完整內容，請重新儲存此教材後再匯出`);
+      const metadata={...item};let content;
+      if(kind==='presentation'){
+        let slides=item.slides;if(!Array.isArray(slides)){const keys=Object.keys(slides);if(keys.some(key=>!/^\d+$/.test(key)))throw new Error(`${label}「${name}」的頁面順序格式不正確`);slides=keys.sort((a,b)=>Number(a)-Number(b)).map(key=>slides[key]);}
+        if(slides.some(slide=>!map(slide)))throw new Error(`${label}「${name}」包含不完整頁面`);
+        content={slides,annotations:item.annotations||{}};delete metadata.slides;delete metadata.annotations;
+      }
+      else{content={canvases:item.canvases,pages:item.pages};delete metadata.canvases;delete metadata.pages;}
+      const packed=await pack(content);normalized.list[id]={...metadata,format:'zip-json-v1',contentBytes:packed.length};normalized.data[id]=packed;
+    }
+    return normalized;
+  }
   window.BoardArchiveStore = {
     async save(root, listPath, dataPath, id, metadata, content) {
       const packed = await pack(content);
@@ -46,6 +77,6 @@
     async removeAll(root, listPath, dataPath) {
       await root.update({ [listPath]: null, [dataPath]: null });
     },
-    pack, unpack
+    normalizeExportPair, pack, unpack
   };
 })();
