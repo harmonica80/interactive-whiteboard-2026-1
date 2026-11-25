@@ -2966,12 +2966,18 @@
                   <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.refreshAdminStudentsList()" title="重新由雲端同步最新學生名冊" style="font-size: 14px; border-radius: 10px; padding: 6px 14px;">
                     🔄 重新整理
                   </button>
+                  <button type="button" class="presentation-tool-btn" onclick="if(window.app?.isAdmin)document.getElementById('studentRosterCsvFile').click()">📤 匯入名冊 CSV</button>
+                  <input type="file" id="studentRosterCsvFile" accept=".csv,text/csv" hidden onchange="window.app?.importStudentRosterCsv(this)">
+                  <button type="button" class="presentation-tool-btn" onclick="window.app?.downloadStudentRosterSample()">📄 下載 CSV 範例</button>
+                  <label style="font-size:14px"><input type="checkbox" id="allowStudentNicknameEdit" checked onchange="window.app?.saveStudentProfileSettings(this)"> 允許同學修改「姓名或暱稱」</label>
+                  <label style="font-size:14px"><input type="checkbox" id="allowStudentRealNameEdit" checked onchange="window.app?.saveStudentProfileSettings(this)"> 允許同學修改「真實姓名」</label>
                   <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.exportStudentsReportCsv()" title="匯出本班學生名冊與歷程統計為 CSV 檔" style="font-size: 14px; border-radius: 10px; padding: 6px 14px;">
                     📥 匯出名冊
                   </button>
                 </div>
               </div>
 
+              <p style="font-size:14px;color:var(--text-secondary)">CSV 格式：座號(或學號)、真實姓名(或備註)。請以 UTF-8 儲存，座號如 01 請保留前導 0。匯入後，同學需輸入對應座號／學號登入；再次匯入相同號碼會更新資料並保留點數與歷程。</p>
               <!-- 搜尋與排序過濾列 -->
               <div style="background: var(--bg-input); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
                 <div style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px;">
@@ -5224,7 +5230,8 @@
               🎲 隨機挑選
             </button>
           </div>
-          <div id="studentRealNameRow" hidden><label for="studentRealNameInput">真實姓名（必填）</label><input type="text" id="studentRealNameInput" class="question-input" autocomplete="name" maxlength="40" placeholder="請輸入真實姓名"></div>
+          <div id="studentNumberRow" hidden style="font-size:14px"><label for="studentNumberInput">座號或學號（必填）</label><input id="studentNumberInput" class="question-input" maxlength="40" autocomplete="off" placeholder="請輸入老師名冊中的座號或學號" oninput="window.app?.clearRosterLookup()" onblur="window.app?.lookupStudentRoster()"><p id="studentRosterLookupStatus" style="font-size:14px;color:var(--text-secondary)"></p></div>
+          <div id="studentRealNameRow" hidden><label for="studentRealNameInput">真實姓名（必填）</label><input type="text" id="studentRealNameInput" class="question-input" autocomplete="name" maxlength="100" placeholder="請輸入真實姓名"></div>
           <div id="studentNameModalError" style="display: none; margin-top: 6px; color: #ff3b30; font-size: 14px; font-weight: bold;"></div>
           <!-- 重複名稱提醒與確認本人登入 / 建議序號名稱區塊 -->
           <div id="studentNameDuplicateAlert" style="display: none; margin-top: 10px; padding: 12px 14px; border-radius: 12px; background: rgba(255,149,0,0.08); border: 1.5px solid rgba(255,149,0,0.35); text-align: left;">
@@ -6727,7 +6734,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c32"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c33"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
