@@ -6877,14 +6877,21 @@ Python</pre>
   </div>
   
   <div id="studentRosterImportModal" class="modal-overlay confirm-modal" role="dialog" aria-modal="true" aria-labelledby="studentRosterImportTitle" style="z-index:29950;transition:opacity 0.3s" onclick="if(event.target===this)window.app?.resolveStudentRosterImport(null)" onkeydown="if(event.key==='Escape')window.app?.resolveStudentRosterImport(null)">
-    <div class="modal-content"><div class="modal-body" style="font-size:14px">
-      <h3 id="studentRosterImportTitle" style="color:var(--text-primary)">📤 選擇名冊匯入方式</h3>
-      <p style="color:var(--text-secondary)">是否覆蓋目前同學名單（將清除現有同學的資料），或加入到現有名單中？</p>
-      <p style="color:var(--danger-color)">覆蓋會清除本教室現有名冊、點數、作答、學生分享及參與歷程，且無法復原；線上的同學需重新登入。教師題庫、教材與系統設定會保留。</p>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
-        <button type="button" id="studentRosterAppendBtn" class="presentation-tool-btn active" onclick="window.app?.resolveStudentRosterImport('append')">加入現有名單（保留資料）</button>
-        <button type="button" class="presentation-tool-btn" style="color:var(--danger-color);border-color:var(--danger-color)" onclick="window.app?.resolveStudentRosterImport('replace')">覆蓋目前名單（清除資料）</button>
-        <button type="button" class="presentation-tool-btn" onclick="window.app?.resolveStudentRosterImport(null)">取消</button>
+    <div class="modal-content" style="width:min(480px,calc(100vw - 32px));max-width:480px;max-height:90vh;overflow-y:auto"><div class="modal-body" style="font-size:14px;line-height:1.6">
+      <h3 id="studentRosterImportTitle" style="color:var(--text-primary);margin:0 0 1em">📤 選擇名冊匯入方式</h3>
+      <div style="text-align:left;color:var(--text-secondary)">
+        <p style="margin:0 0 1em">是否覆蓋目前同學名單（將清除現有同學的資料），或加入到現有名單中？</p>
+        <p style="margin:0">覆蓋目前名單會：</p>
+        <ol style="margin:8px 0 20px;padding-left:1.6em">
+          <li style="color:var(--danger-color);margin-bottom:8px">清除本教室現有名冊、點數、作答、學生分享及參與歷程，且無法復原</li>
+          <li style="color:var(--danger-color);margin-bottom:8px">線上的同學需重新登入</li>
+          <li>教師題庫、教材與系統設定不受影響，會繼續保留</li>
+        </ol>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;grid-auto-rows:1fr;gap:10px;width:100%">
+        <button type="button" id="studentRosterAppendBtn" class="presentation-tool-btn active" style="width:100%;min-height:44px;box-sizing:border-box;justify-content:center" onclick="window.app?.resolveStudentRosterImport('append')">加入現有名單（保留資料）</button>
+        <button type="button" class="presentation-tool-btn" style="width:100%;min-height:44px;box-sizing:border-box;justify-content:center;color:var(--danger-color);border-color:var(--danger-color)" onclick="window.app?.resolveStudentRosterImport('replace')">覆蓋目前名單（清除資料）</button>
+        <button type="button" class="presentation-tool-btn" style="width:100%;min-height:44px;box-sizing:border-box;justify-content:center" onclick="window.app?.resolveStudentRosterImport(null)">取消</button>
       </div>
     </div></div>
   </div>
