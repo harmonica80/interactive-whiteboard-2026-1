@@ -89,3 +89,36 @@ test('取消匯入不讀取或更動現有名單',async()=>{
 test('覆蓋寫入失敗時保留原名冊與歷程，不先清空',async()=>{
  const f=fixture();f.app.isAdmin=true;f.app.chooseStudentRosterImportMode=async()=> 'replace';f.put('quiz/students/u1',{points:10});f.put('quiz/answers/a1',{answer:'A'});f.fail();await f.app.importStudentRosterCsv({files:[{size:20,text:async()=> '座號,真實姓名\n01,王小明'}],value:'file'});assert.equal(f.get('quiz/students/u1/points'),10);assert.equal(f.get('quiz/answers/a1/answer'),'A');assert.equal(f.app.notice.title,'匯入失敗');
 });
+test('名單外加入的預設與教師設定儲存',async()=>{
+ const f=fixture();assert.equal(f.app.allowsOutsideStudentRoster(),true);f.app.studentProfileSettings={rosterEnabled:true};assert.equal(f.app.allowsOutsideStudentRoster(),false);f.app.isAdmin=true;await f.app.saveStudentProfileSettings({id:'allowOutsideRoster',checked:true});assert.equal(f.get('quiz/profileSettings/allowOutsideRoster'),true);assert.equal(f.app.allowsOutsideStudentRoster(),true);
+});
+test('關閉名單外加入會拒絕新姓名，既有姓名可以通過',async()=>{
+ const f=fixture();f.app.studentProfileSettings={allowOutsideRoster:false};f.fields.inputStudentModalName.value='新同學';assert.equal(await f.app.validateStudentRosterAdmission(),false);assert.equal(f.writes.length,0);f.app.registeredStudents={u1:{name:'王小明'}};f.fields.inputStudentModalName.value=' 王小明 ';assert.equal(await f.app.validateStudentRosterAdmission(),true);assert.equal(f.fields.inputStudentModalName.value,'王小明');
+});
+test('開放名單外加入時可留空座號；既有名冊姓名自動對應座號',async()=>{
+ const f=fixture();f.app.studentProfileSettings={rosterEnabled:true,allowOutsideRoster:true};f.fields.inputStudentModalName.value='新同學';assert.equal(await f.app.validateStudentRosterAdmission(),true);assert.equal(f.fields.studentNumberInput.value,'');f.app.registeredStudents={u1:{name:'小明',studentNumber:'01'}};f.fields.inputStudentModalName.value='小明';assert.equal(await f.app.validateStudentRosterAdmission(),true);assert.equal(f.fields.studentNumberInput.value,'01');
+});
+test('多位同名學生必須用座號識別，輸入姓名不會任意選取帳號',async()=>{
+ const f=fixture();f.app.studentProfileSettings={rosterEnabled:true,allowOutsideRoster:true};f.app.registeredStudents={a:{name:'小明',studentNumber:'01'},b:{name:'小明',studentNumber:'02'}};f.fields.inputStudentModalName.value='小明';assert.equal(await f.app.validateStudentRosterAdmission(),false);assert.equal(f.local.get('user_id'),undefined);f.fields.studentNumberInput.value='02';assert.equal(await f.app.validateStudentRosterAdmission(),true);
+});
+test('CSV 選填暱稱與重複項目比對，重新匯入同座號除外',()=>{
+ const f=fixture();const rows=f.app.parseStudentRosterCsv('座號,真實姓名,姓名或暱稱（選填）\n01,甲,同名\n02,乙,同名\n03,丙,獨特');assert.equal(rows[0].nickname,'同名');assert.deepEqual(f.app.findStudentRosterDuplicates(rows,{},{}).map(d=>d.index),[0,1]);const only=[rows[2]];assert.equal(f.app.findStudentRosterDuplicates(only,{old:{name:'獨特'}},{}).length,1);assert.equal(f.app.findStudentRosterDuplicates(only,{old:{name:'獨特',studentNumber:'03'}},{[only[0].key]:{uid:'old',label:'丙'}}).length,0);
+});
+test('教師勾選的重複項目才會匯入，同名核准只對指定名稱生效',async()=>{
+ const f=fixture();f.app.isAdmin=true;f.put('quiz/students/old',{name:'小明',points:12});let conflict=[];f.app.chooseStudentRosterDuplicates=async(rows,students,roster)=>{conflict=f.app.findStudentRosterDuplicates(rows,students,roster);return rows.filter((row,i)=>i!==0).map(row=>({...row,approvedDuplicate:true}))};await f.app.importStudentRosterCsv({files:[{size:20,text:async()=> '座號,真實姓名,姓名或暱稱\n01,甲,小明\n02,乙,小明'}],value:'file'});assert.equal(conflict.length,2);assert.equal(f.get('student_roster/'+f.app.studentRosterKey('01')),null);assert.equal(f.get('quiz/students/new1/name'),'小明');assert.equal(f.get('quiz/students/new1/approvedDuplicateName'),'小明');assert.equal(f.get('quiz/students/old/points'),12);
+});
+test('全部重複項目未勾選時，覆蓋模式仍不會清除舊名單',async()=>{
+ const f=fixture();f.app.isAdmin=true;f.app.chooseStudentRosterImportMode=async()=> 'replace';f.app.chooseStudentRosterDuplicates=async()=>[];f.put('quiz/students/old',{points:10});await f.app.importStudentRosterCsv({files:[{size:20,text:async()=> '座號,真實姓名\n01,甲'}],value:'file'});assert.equal(f.get('quiz/students/old/points'),10);assert.equal(f.writes.length,0);
+});
+test('實際送出會重讀名單外設定並擋下未登記者',async()=>{
+ const f=fixture();f.put('quiz/profileSettings',{allowOutsideRoster:false});f.fields.inputStudentModalName.value='新同學';await f.app.saveStudentNameFromModal();assert.equal(f.app.savedName,undefined);assert.equal(f.writes.length,0);assert(f.fields.studentNameModalError.textContent.includes('只允許名單內'));
+});
+test('同名核准僅允許老師核選的名稱，不可任意改成其他同學姓名',async()=>{
+ const f=fixture();roster(f);f.put('quiz/students/u1/approvedDuplicateName','核准同名');f.fields.inputStudentModalName.value='另一位同學';f.app.getTakenStudentNames=async()=>new Set(['另一位同學','核准同名']);await f.app.saveRosterStudentLogin();assert.equal(f.writes.length,0);f.fields.inputStudentModalName.value='核准同名';await f.app.saveRosterStudentLogin();assert.equal(f.get('quiz/students/u1/name'),'核准同名');
+});
+test('關閉名單外加入仍允許既有同學依姓名修改權限更名',async()=>{
+ const f=fixture();f.app.studentProfileSettings={allowOutsideRoster:false,allowNicknameEdit:true};f.app._studentOwnProfile={name:'原暱稱'};f.app.registeredStudents={old:{name:'原暱稱'}};f.fields.inputStudentModalName.value='新暱稱';assert.equal(await f.app.validateStudentRosterAdmission(),true);
+});
+test('老師預先匯入的暱稱在關閉修改時，首次登入也不能變更',async()=>{
+ const f=fixture();f.app.studentProfileSettings={rosterEnabled:true,allowNicknameEdit:false};f.app.syncStudentProfileFields({name:'老師指定名',studentNumber:'01',rosterPending:true,nicknamePreset:true},'王小明');assert.equal(f.fields.inputStudentModalName.readOnly,true);assert.equal(f.fields.inputStudentModalName.value,'老師指定名');
+});

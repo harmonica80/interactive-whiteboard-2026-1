@@ -378,7 +378,7 @@ class App {
     if (!name) return;
     let trimmed = name.trim();
     const ownProfile = this._studentOwnProfile || this.registeredStudents?.[this.getUserId()];
-    if (!this.isAdmin && this.studentProfileSettings?.allowNicknameEdit === false && ownProfile?.name && !ownProfile.rosterPending) trimmed = ownProfile.name;
+    if (!this.isAdmin && this.studentProfileSettings?.allowNicknameEdit === false && ownProfile?.name && (!ownProfile.rosterPending || ownProfile.nicknamePreset)) trimmed = ownProfile.name;
     if (window.ClassRoomManager && typeof window.ClassRoomManager.setUserName === 'function') {
       window.ClassRoomManager.setUserName(trimmed);
     }
@@ -389,6 +389,7 @@ class App {
     const avatarId = this.getCurrentUserAvatar();
 
     // 更新使用者名稱標籤與設定按鈕狀態
+    this._studentOwnProfile = { ...ownProfile, name: trimmed, avatar: avatarId, rosterPending: false };
     this.updateStudentNameUI();
 
     // 同步記錄至當前課堂學生名冊，方便防範重名與跨裝置顯示
@@ -874,6 +875,7 @@ class App {
     if(realInput)realInput.value=window.boardStorage.local.getItem('real_name:'+window.currentClassCode) || '';
     input.value = currentName || '';
     this.syncStudentProfileFields(this._studentOwnProfile, this._studentOwnRealName);
+    this.updateStudentRosterNameMatch();
     input.style.borderColor = '';
     if (err) {
       err.style.display = 'none';
@@ -1163,7 +1165,7 @@ class App {
   }
 
   closeStudentNameModal() {
-    if (!this.isAdmin && this.studentProfileSettings?.rosterEnabled && !this._studentOwnProfile?.studentNumber) { this.studentRosterError('請輸入座號或學號並完成登入。'); return; }
+    if (!this.isAdmin && !this.allowsOutsideStudentRoster() && !this._studentOwnProfile?.name) { this.studentRosterError('請使用名單內的姓名、座號或學號完成登入。'); return; }
     if (this.classRequiresRealName && !this.isAdmin && window.currentClassCode && !window.boardStorage.local.getItem('real_name:'+window.currentClassCode)) { const err=document.getElementById('studentNameModalError'); if(err){err.textContent='請先填寫真實姓名並完成設定。';err.style.display='block';} return; }
     this.hideAvatarHoverPreview();
     const modal = document.getElementById('studentNameModal');
@@ -1413,7 +1415,11 @@ class App {
 
   // 確認為原使用者本人：以原帳號 UID 與頭像身分登入
   async confirmSameStudentLogin() {
-    if (this.studentProfileSettings?.rosterEnabled && !this.isAdmin) return this.saveStudentNameFromModal();
+    try {
+      await this.loadStudentProfileSettings();
+      if (!this.isAdmin && !(await this.validateStudentRosterAdmission())) return;
+    } catch(e) { this.studentRosterError('無法確認名單設定，請檢查網路後重試。'); return; }
+    if (this.studentProfileSettings?.rosterEnabled && !this.isAdmin && this.matchedExistingStudent?.studentNumber) { const number = document.getElementById('studentNumberInput'); if (number) number.value = this.matchedExistingStudent.studentNumber; return this.saveStudentNameFromModal(); }
     const input = document.getElementById('inputStudentModalName');
     const name = (input ? input.value.trim() : '') || this.pendingDuplicateName || '';
     if (!name) return;
@@ -1440,6 +1446,7 @@ class App {
     }
 
     // 3. 設定姓名並同步至課堂名冊
+    this._studentOwnProfile = existingStudent || null;
     this.setUserName(existingStudent?.name || name);
 
     // 4. 更新線上連線狀態 presence
@@ -1477,7 +1484,8 @@ class App {
     this._savingRosterLogin = true;
     try {
       await this.loadStudentProfileSettings();
-      if (!this.isAdmin && this.studentProfileSettings?.rosterEnabled) { await this.saveRosterStudentLogin(); return; }
+      if (!this.isAdmin && !(await this.validateStudentRosterAdmission())) return;
+      if (!this.isAdmin && this.studentProfileSettings?.rosterEnabled && document.getElementById('studentNumberInput')?.value.trim()) { await this.saveRosterStudentLogin(); return; }
       this.syncStudentProfileFields(this._studentOwnProfile, this.studentProfileSettings.allowRealNameEdit === false ? this._studentOwnRealName : undefined);
       await this.saveStudentNameWithoutRoster();
     } catch(e) { this.studentRosterError(e.message || '儲存失敗，請檢查網路後再試。'); }
@@ -4227,6 +4235,7 @@ class App {
     const inputStudentName = document.getElementById('inputStudentModalName');
     if (inputStudentName) {
       inputStudentName.addEventListener('input', () => {
+        this.updateStudentRosterNameMatch();
         const err = document.getElementById('studentNameModalError');
         const dupAlert = document.getElementById('studentNameDuplicateAlert');
         if (err) {
@@ -18882,7 +18891,7 @@ class App {
         this.updateStudentNameUI();
         try { const config=await rawRef(`registered_classes/${code}/requireRealName`).once('value'); this.classRequiresRealName=config.val()===true; }
         catch(e) { this.classRequiresRealName=false; this.showNotification('無法讀取班級設定','請檢查連線後重新整理。'); return; }
-        const missingRealName=(this.classRequiresRealName && !window.boardStorage.local.getItem('real_name:'+code)) || (this.studentProfileSettings?.rosterEnabled && !this._studentOwnProfile?.studentNumber);
+        const missingRealName=(this.classRequiresRealName && !window.boardStorage.local.getItem('real_name:'+code)) || (!this.allowsOutsideStudentRoster() && !this._studentOwnProfile?.name);
         if (!userName || missingRealName) {
           // 進入班級課堂但未設定姓名或暱稱，非管理員主動跳出提示彈窗要求同學設定
           if (!this.isAdmin) {
@@ -18909,7 +18918,7 @@ class App {
 
       this.updateStudentNameUI();
 
-      if (!userName || (this.studentProfileSettings?.rosterEnabled && !this._studentOwnProfile?.studentNumber)) {
+      if (!userName || (!this.allowsOutsideStudentRoster() && !this._studentOwnProfile?.name)) {
         // 一次性課堂未設定姓名或暱稱，非管理員主動提示設定，以利互動與搶答辨識
         if (!this.isAdmin) {
           setTimeout(() => {
@@ -19172,6 +19181,96 @@ class App {
     };
   }
 
+  allowsOutsideStudentRoster() {
+    return this.studentProfileSettings?.allowOutsideRoster ?? !this.studentProfileSettings?.rosterEnabled;
+  }
+
+  normalizeStudentRosterName(name) {
+    return String(name || '').trim().normalize('NFKC').toLocaleLowerCase('zh-TW');
+  }
+
+  getStudentRosterNameMatches(name) {
+    const value = this.normalizeStudentRosterName(name);
+    if (!value) return [];
+    return Object.entries(this.registeredStudents || {}).filter(([, student]) => this.normalizeStudentRosterName(student?.name) === value).map(([uid, student]) => ({ uid, ...student }));
+  }
+
+  updateStudentRosterNameMatch() {
+    const status = document.getElementById('studentNameRosterStatus');
+    if (!status || this.isAdmin) return;
+    const value = document.getElementById('inputStudentModalName')?.value.trim();
+    status.hidden = !value;
+    if (!value) return;
+    const matches = this.getStudentRosterNameMatches(value);
+    status.textContent = matches.length > 1 ? '名單中有多位同名同學，請輸入座號或學號辨識。' : matches.length ? '名單中已有此姓名或暱稱；送出時會確認原有身分，避免重複建立帳號。' : this.allowsOutsideStudentRoster() ? '目前名單中沒有此姓名或暱稱，可作為新同學加入。' : '目前名單中沒有此姓名或暱稱，請確認座號／學號或向老師詢問。';
+  }
+
+  async validateStudentRosterAdmission() {
+    // 送出時重新確認名單；輸入期間只比對現有快取，避免每個按鍵都下載名冊。
+    await this.getTakenStudentNames();
+    const number = document.getElementById('studentNumberInput');
+    if (this.studentProfileSettings?.rosterEnabled && number?.value.trim()) return true;
+    const input = document.getElementById('inputStudentModalName');
+    const matches = this.getStudentRosterNameMatches(input?.value);
+    this.updateStudentRosterNameMatch();
+    if (matches.length > 1) { this.studentRosterError('名單中有多位同名同學，請輸入座號或學號登入。'); return false; }
+    if (matches.length === 1) {
+      input.value = matches[0].name;
+      if (this.studentProfileSettings?.rosterEnabled && matches[0].studentNumber && number) number.value = matches[0].studentNumber;
+      return true;
+    }
+    if (this._studentOwnProfile?.name && this.registeredStudents?.[this.getUserId()] && !this._studentOwnProfile.rosterPending) return true;
+    if (!this.allowsOutsideStudentRoster()) { this.studentRosterError('老師目前只允許名單內的同學加入，請確認姓名、座號／學號，或請老師加入名單。'); return false; }
+    return true;
+  }
+
+  findStudentRosterDuplicates(rows, students, roster) {
+    const groups = new Map();
+    rows.forEach((entry, index) => {
+      const name = this.normalizeStudentRosterName(entry.nickname || entry.label);
+      if (!groups.has(name)) groups.set(name, []);
+      groups.get(name).push(index);
+    });
+    return rows.flatMap((entry, index) => {
+      const value = this.normalizeStudentRosterName(entry.nickname || entry.label);
+      const previousUid = roster[entry.key]?.uid;
+      const existing = Object.entries(students).some(([uid, student]) => {
+        if (uid === previousUid || (student?.studentNumber && this.studentRosterKey(student.studentNumber) === entry.key)) return false;
+        return this.normalizeStudentRosterName(student?.name) === value || (!entry.nickname && this.normalizeStudentRosterName(student?.note) === value);
+      }) || Object.entries(roster).some(([key, record]) => key !== entry.key && this.normalizeStudentRosterName(record.label) === value);
+      const repeated = groups.get(value).length > 1;
+      return existing || repeated ? [{ index, entry, reason: [existing ? '與現有名單重複' : '', repeated ? '本次 CSV 有同名項目' : ''].filter(Boolean).join('；') }] : [];
+    });
+  }
+
+  chooseStudentRosterDuplicates(rows, students, roster) {
+    const duplicates = this.findStudentRosterDuplicates(rows, students, roster);
+    if (!duplicates.length) return Promise.resolve(rows);
+    const modal = document.getElementById('studentRosterDuplicatesModal');
+    const list = document.getElementById('studentRosterDuplicateRows');
+    if (!modal || !list || !this.isAdmin) return Promise.resolve(null);
+    list.innerHTML = duplicates.map(({ index, entry, reason }) => `<label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-input);color:var(--text-primary);font-size:14px"><input type="checkbox" data-roster-duplicate-index="${index}" style="margin-top:5px"><span>座號／學號：${this.escapeHtml(entry.studentNumber)}<br>姓名或暱稱：${this.escapeHtml(entry.nickname || entry.label)}<br><span style="color:var(--text-secondary)">${this.escapeHtml(reason)}</span></span></label>`).join('');
+    const fs = document.fullscreenElement, parent = fs && fs !== document.documentElement ? fs : document.body;
+    if (modal.parentElement !== parent) parent.appendChild(modal);
+    this._pendingRosterDuplicates = { rows, indexes: new Set(duplicates.map(d => d.index)), previousFocus: document.activeElement };
+    modal.style.display = 'flex'; modal.classList.add('active'); modal.querySelector('button')?.focus();
+    return new Promise(resolve => { this._resolveRosterDuplicates = resolve; });
+  }
+
+  resolveStudentRosterDuplicates(confirmed) {
+    const modal = document.getElementById('studentRosterDuplicatesModal'), pending = this._pendingRosterDuplicates;
+    let rows = null;
+    if (confirmed && pending && this.isAdmin) {
+      const selected = new Set(Array.from(modal?.querySelectorAll('input[data-roster-duplicate-index]:checked') || []).map(input => Number(input.dataset.rosterDuplicateIndex)));
+      rows = pending.rows.flatMap((row, index) => !pending.indexes.has(index) ? [row] : selected.has(index) ? [{ ...row, approvedDuplicate: true }] : []);
+    }
+    if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; }
+    pending?.previousFocus?.focus?.();
+    const resolve = this._resolveRosterDuplicates;
+    this._resolveRosterDuplicates = null; this._pendingRosterDuplicates = null;
+    resolve?.(rows);
+  }
+
   async loadStudentProfileSettings() {
     const classCode = window.currentClassCode || '';
     const snap = await db.ref('quiz/profileSettings').once('value');
@@ -19184,16 +19283,17 @@ class App {
       this._studentOwnProfile = profile.val();
       this._studentOwnRealName = realName.val() || '';
     }
-    for (const [id, key] of [['allowStudentNicknameEdit', 'allowNicknameEdit'], ['allowStudentRealNameEdit', 'allowRealNameEdit']]) {
+    for (const [id, key] of [['allowStudentNicknameEdit', 'allowNicknameEdit'], ['allowStudentRealNameEdit', 'allowRealNameEdit'], ['allowOutsideRoster', 'allowOutsideRoster']]) {
       const field = document.getElementById(id);
-      if (field) field.checked = this.studentProfileSettings[key] !== false;
+      if (field) field.checked = key === 'allowOutsideRoster' ? this.allowsOutsideStudentRoster() : this.studentProfileSettings[key] !== false;
     }
     return this.studentProfileSettings;
   }
 
   async saveStudentProfileSettings(field) {
     if (!this.isAdmin) return;
-    const key = field.id === 'allowStudentNicknameEdit' ? 'allowNicknameEdit' : 'allowRealNameEdit';
+    const key = { allowStudentNicknameEdit: 'allowNicknameEdit', allowStudentRealNameEdit: 'allowRealNameEdit', allowOutsideRoster: 'allowOutsideRoster' }[field.id];
+    if (!key) return;
     field.disabled = true;
     try {
       await db.ref('quiz/profileSettings').update({ [key]: field.checked });
@@ -19225,6 +19325,7 @@ class App {
     if (rows.length < 2) throw Error('請保留標題列，並至少填寫一位學生。');
     const header = rows.shift().map(s => s.replace(/[\s（）()／/]/g, ''));
     const numberIndex = header.findIndex(s => ['座號', '學號', '座號或學號', '座號學號'].includes(s));
+    const nicknameIndex = header.findIndex(s => ['姓名或暱稱', '姓名或暱稱選填', '學生姓名', '姓名', '暱稱'].includes(s));
     const labelIndex = header.findIndex(s => ['真實姓名', '備註', '真實姓名或備註', '真實姓名備註'].includes(s));
     if (numberIndex < 0 || labelIndex < 0 || numberIndex === labelIndex) throw Error('CSV 需有「座號(或學號)」及「真實姓名(或備註)」兩欄，請參考範例。');
     const seen = new Set();
@@ -19232,15 +19333,17 @@ class App {
     return rows.map((r, i) => {
       const studentNumber = r[numberIndex] || '', label = r[labelIndex] || '';
       if (r.length !== header.length || !studentNumber || !label || studentNumber.length > 40 || label.length > 100) throw Error(`第 ${i+2} 列格式不完整：座號／學號最多 40 字，真實姓名／備註最多 100 字。`);
+      const nickname = nicknameIndex >= 0 ? (r[nicknameIndex] || '') : '';
+      if (nickname.length > 20) throw Error(`第 ${i+2} 列的姓名或暱稱最多 20 字。`);
       const key = this.studentRosterKey(studentNumber);
       if (seen.has(key)) throw Error(`座號或學號「${studentNumber}」重複，請修正後再匯入。`);
-      seen.add(key); return { studentNumber, label, key };
+      seen.add(key); return { studentNumber, label, key, nickname };
     });
   }
 
   downloadStudentRosterSample() {
     if (!this.isAdmin) return;
-    const blob = new Blob(['\uFEFF座號(或學號),真實姓名(或備註)\r\n01,王小明\r\n02,林小華\r\nS003,陳同學\r\n'], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob(['\uFEFF座號(或學號),真實姓名(或備註),姓名或暱稱（選填）\r\n01,王小明,小明\r\n02,林小華,小華\r\nS003,陳同學,\r\n'], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob), a = document.createElement('a');
     a.href = url; a.download = '學生名冊匯入範例.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -19309,7 +19412,7 @@ class App {
     const classCode = window.currentClassCode || '';
     try {
       if (file.size > 1024 * 1024) throw Error('CSV 檔案過大，請控制在 1 MB 以內。');
-      const rows = this.parseStudentRosterCsv(await file.text());
+      let rows = this.parseStudentRosterCsv(await file.text());
       const mode = await this.chooseStudentRosterImportMode();
       if (!mode) return;
       if (!this.isAdmin || classCode !== (window.currentClassCode || '')) throw Error('教室或教師身分已切換，請重新匯入。');
@@ -19318,6 +19421,10 @@ class App {
       if (!this.isAdmin || classCode !== (window.currentClassCode || '')) throw Error('教室或教師身分已切換，請重新匯入。');
       const oldRoster = rosterSnap.val() || {}, oldStudents = studentsSnap.val() || {};
       const replacing = mode === 'replace';
+      rows = await this.chooseStudentRosterDuplicates(rows, replacing ? {} : oldStudents, replacing ? {} : oldRoster);
+      if (!rows) return;
+      if (!rows.length) { this.showNotification('未匯入名冊', '未勾選任何重複項目，沒有資料需要匯入。'); return; }
+      if (!this.isAdmin || classCode !== (window.currentClassCode || '')) throw Error('教室或教師身分已切換，未執行匯入。');
       const updates = replacing ? await this.buildStudentRosterReplacement(root, oldStudents, oldRoster) : {};
       const existing = replacing ? {} : oldRoster, students = replacing ? {} : oldStudents;
       for (const entry of rows) {
@@ -19330,8 +19437,10 @@ class App {
         updates[`quiz/students/${uid}/studentNumber`] = entry.studentNumber;
         updates[`quiz/students/${uid}/note`] = entry.label;
         updates[`student_real_names/${uid}`] = entry.label;
+        if (entry.approvedDuplicate) updates[`quiz/students/${uid}/approvedDuplicateName`] = entry.nickname || entry.label;
+        if (entry.nickname) { updates[`quiz/students/${uid}/name`] = entry.nickname; updates[`quiz/students/${uid}/nicknamePreset`] = true; }
         if (!student) {
-          updates[`quiz/students/${uid}/name`] = entry.studentNumber;
+          updates[`quiz/students/${uid}/name`] = entry.nickname || entry.studentNumber;
           updates[`quiz/students/${uid}/avatar`] = 0;
           updates[`quiz/students/${uid}/rosterPending`] = true;
         }
@@ -19359,15 +19468,17 @@ class App {
     const settings = this.studentProfileSettings || {}, student = !this.isAdmin;
     const numberRow = document.getElementById('studentNumberRow'), number = document.getElementById('studentNumberInput');
     if (numberRow) numberRow.hidden = !student || !settings.rosterEnabled;
+    const numberLabel = document.getElementById('studentNumberLabel');
+    if (numberLabel) numberLabel.textContent = this.allowsOutsideStudentRoster() ? '座號或學號（名單外同學可留空）' : '座號或學號（必填）';
     if (number && document.activeElement !== number) number.value = profile?.studentNumber || window.boardStorage.local.getItem('student_number:' + (window.currentClassCode || '')) || '';
     const input = document.getElementById('inputStudentModalName');
     if (input) {
-      input.readOnly = student && settings.allowNicknameEdit === false && !!profile?.name && !profile.rosterPending;
+      input.readOnly = student && settings.allowNicknameEdit === false && !!profile?.name && (!profile.rosterPending || profile.nicknamePreset);
       if (input.readOnly) input.value = profile.name;
       input.title = input.readOnly ? '老師已關閉姓名或暱稱修改' : '';
     }
     const realRow = document.getElementById('studentRealNameRow'), realInput = document.getElementById('studentRealNameInput');
-    if (realRow) realRow.hidden = !student || !(this.classRequiresRealName || settings.rosterEnabled);
+    if (realRow) realRow.hidden = !student || !(this.classRequiresRealName || (settings.rosterEnabled && (profile?.studentNumber || number?.value.trim())));
     if (realInput) {
       if (realName !== undefined) realInput.value = realName;
       realInput.readOnly = student && settings.allowRealNameEdit === false && !!realInput.value;
@@ -19388,7 +19499,7 @@ class App {
   async lookupStudentRoster() {
     if (this.isAdmin || !this.studentProfileSettings?.rosterEnabled) return null;
     const input = document.getElementById('studentNumberInput'), value = input?.value.trim();
-    if (!value) { this.studentRosterError('請輸入座號或學號。'); return null; }
+    if (!value) { if (!this.allowsOutsideStudentRoster()) this.studentRosterError('請輸入座號或學號。'); return null; }
     const classCode = window.currentClassCode || '';
     try {
       const snap = await db.ref('student_roster').child(this.studentRosterKey(value)).once('value'), entry = snap.val();
@@ -19414,13 +19525,13 @@ class App {
     const result = await this.lookupStudentRoster(); if (!result) return;
     const { entry, profile } = result;
     const nameInput = document.getElementById('inputStudentModalName');
-    const name = this.studentProfileSettings.allowNicknameEdit === false && !profile.rosterPending ? profile.name : nameInput.value.trim();
+    const name = this.studentProfileSettings.allowNicknameEdit === false && (!profile.rosterPending || profile.nicknamePreset) ? profile.name : nameInput.value.trim();
     const realName = this.studentProfileSettings.allowRealNameEdit === false ? document.getElementById('studentRealNameInput').value.trim() : (typedRealName || document.getElementById('studentRealNameInput').value.trim());
     if (!name) { this.studentRosterError('請輸入姓名或暱稱。'); return; }
     if (!realName) { this.studentRosterError('請輸入真實姓名。'); return; }
     const oldUid = this.getUserId();
     const taken = await this.getTakenStudentNames();
-    if (name !== profile.name && Array.from(taken).some(n => n.toLowerCase() === name.toLowerCase())) { this.studentRosterError('此姓名或暱稱已被使用，請選擇其他名稱。'); return; }
+    if (this.normalizeStudentRosterName(name) !== this.normalizeStudentRosterName(profile.approvedDuplicateName) && name !== profile.name && Array.from(taken).some(n => n.toLowerCase() === name.toLowerCase())) { this.studentRosterError('此姓名或暱稱已被使用，請選擇其他名稱。'); return; }
     const avatar = this.selectedAvatarId ?? profile.avatar ?? this.getCurrentUserAvatar();
     await db.ref().update({
       [`quiz/students/${entry.uid}/name`]: name,
