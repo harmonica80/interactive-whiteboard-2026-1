@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=502">
+  <link rel="stylesheet" href="css/style.css?v=503">
   <link rel="stylesheet" href="css/presentation.css?v=c1">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -5202,10 +5202,10 @@
 
   <!-- 學生姓名 / 暱稱與頭像設定對話框 (Student Name & Avatar Modal) -->
   <div id="studentNameModal" class="modal-overlay">
-    <div class="modal-content class-modal-card" style="max-width: 480px; width: 92%; border-radius: 20px; background: var(--bg-card); padding: 22px 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.25); position: relative; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto;">
+    <div class="modal-content class-modal-card student-name-card" style="max-width: 480px; width: 92%; border-radius: 20px; background: var(--bg-card); padding: 22px 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.25); position: relative; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto;">
       <button onclick="window.app.closeStudentNameModal()" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10;">✕</button>
 
-      <div style="text-align: center; margin-bottom: 14px;">
+      <div class="student-name-heading" style="text-align: center; margin-bottom: 14px;">
         <div style="display: flex; justify-content: center; margin-bottom: 8px;">
           <div id="studentModalAvatarPreviewWrapper" style="position: relative; width: 68px; height: 68px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, #007aff, #34c759); box-shadow: 0 4px 12px rgba(0,122,255,0.25);">
             <div id="studentModalAvatarPreview" style="width: 100%; height: 100%; border-radius: 50%; background-color: var(--bg-card); overflow: hidden; display: flex; align-items: center; justify-content: center;">
@@ -5222,7 +5222,7 @@
         </p>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="student-name-form" style="display: flex; flex-direction: column; gap: 12px;">
         <div>
           <label style="display: block; font-size: 14px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
             📝 您的姓名或暱稱 <span style="color: #ff3b30;">*</span>
@@ -5269,12 +5269,12 @@
         </div>
 
         <!-- 可愛頭像挑選區 (單張雪碧圖高效裁切載入，支援 240+ 款角色) -->
-        <div style="background: var(--bg-input); padding: 12px; border-radius: 14px; border: 1px solid var(--border-color);">
+        <div class="student-avatar-picker" style="background: var(--bg-input); padding: 12px; border-radius: 14px; border: 1px solid var(--border-color);">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
             <div style="font-size: 14px; font-weight: bold; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">
               <span id="txtAvatarTotalCountTitle">🐾 挑選可愛頭像 (共 240 款)：</span>
             </div>
-            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+            <div class="student-avatar-category-tabs" style="display: flex; gap: 4px; flex-wrap: wrap;">
               <button type="button" class="btn-avatar-tab" id="btnAvatarTab0" onclick="window.app.switchAvatarSheetTab(0)" style="display: none; padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-weight: bold;">🏫 班級專屬 (48)</button>
               <button type="button" class="btn-avatar-tab active" id="btnAvatarTab1" onclick="window.app.switchAvatarSheetTab(1)" style="padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--accent-color); color: #fff; cursor: pointer; font-weight: bold;">🐱 萌寵奇幻 (48)</button>
               <button type="button" class="btn-avatar-tab" id="btnAvatarTab2" onclick="window.app.switchAvatarSheetTab(2)" style="padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-weight: bold;">🦁 森林海洋 (48)</button>
@@ -5283,6 +5283,16 @@
               <button type="button" class="btn-avatar-tab" id="btnAvatarTab5" onclick="window.app.switchAvatarSheetTab(5)" style="padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-weight: bold;">🧋 台灣特色小吃 (48)</button>
             </div>
           </div>
+          <label class="student-avatar-category-mobile" for="studentAvatarCategorySelect">
+            <select id="studentAvatarCategorySelect" class="question-input" aria-label="頭像分類" onchange="window.app.switchAvatarSheetTab(Number(this.value))">
+              <option value="0" hidden disabled>🏫 班級專屬 (48)</option>
+              <option value="1" selected>🐱 萌寵奇幻 (48)</option>
+              <option value="2">🦁 森林海洋 (48)</option>
+              <option value="3">🥦 蔬菜水果 (48)</option>
+              <option value="4">🍔 食品零食 (48)</option>
+              <option value="5">🧋 台灣特色小吃 (48)</option>
+            </select>
+          </label>
           <!-- 8欄可捲動頭像格狀容器 -->
           <div id="avatarPickerGrid" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; max-height: 175px; overflow-y: auto; padding: 4px; border-radius: 8px; background: rgba(0,0,0,0.02);">
             <!-- 動態渲染頭像格 -->
@@ -5293,12 +5303,12 @@
           </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 2px;">
+      </div>
+        <div class="student-name-actions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
           <button type="button" class="ask-btn" onclick="window.app.saveStudentNameFromModal()" style="width: 100%; padding: 12px; font-size: 15px; font-weight: bold; justify-content: center; border-radius: 10px; cursor: pointer;">
             💾 儲存姓名與頭像並開始上課
           </button>
         </div>
-      </div>
     </div>
   </div>
 
@@ -6738,7 +6748,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c37"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c38"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>

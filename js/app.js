@@ -807,6 +807,8 @@ class App {
       }
     }
 
+    this.syncAvatarCategorySelect();
+
     // 動態更新頭像總數計算：基礎 240 款（5 大分類 × 48 款），若有班級專屬自訂則為 288 款
     const titleSpan = document.getElementById('txtAvatarTotalCountTitle');
     if (titleSpan) {
@@ -911,8 +913,7 @@ class App {
 
     modal.classList.add('active');
     setTimeout(() => {
-      input.focus();
-      input.select();
+      if (!window.matchMedia('(max-width: 600px)').matches) { input.focus(); input.select(); }
     }, 150);
   }
 
@@ -964,6 +965,18 @@ class App {
     }
   }
 
+  syncAvatarCategorySelect() {
+    const select = document.getElementById('studentAvatarCategorySelect');
+    if (!select) return;
+    const custom = select.querySelector('option[value="0"]');
+    const hasCustom = Boolean(this.currentClassCustomAvatars?.url);
+    if (custom) {
+      custom.hidden = !hasCustom; custom.disabled = !hasCustom;
+      custom.textContent = document.getElementById('btnAvatarTab0')?.textContent || '🏫 班級專屬 (48)';
+    }
+    select.value = String(this.currentAvatarTab ?? 1);
+  }
+
   switchAvatarSheetTab(tabNumber, updateActive = true) {
     this.currentAvatarTab = tabNumber;
     for (let i = 0; i <= 5; i++) {
@@ -980,6 +993,9 @@ class App {
     }
 
     this.renderAvatarPickerGrid(tabNumber);
+    this.syncAvatarCategorySelect();
+    const grid = document.getElementById('avatarPickerGrid');
+    if (grid) grid.scrollTop = 0;
   }
 
   renderAvatarPickerGrid(tabNumber) {
