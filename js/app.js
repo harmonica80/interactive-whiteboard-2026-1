@@ -4013,6 +4013,22 @@ class App {
       }
     });
 
+    let rosterResetReady = false, lastRosterReset = null;
+    db.ref('quiz/rosterResetAt').on('value', snapshot => {
+      const token = snapshot.val();
+      if (!rosterResetReady) { rosterResetReady = true; lastRosterReset = token; return; }
+      if (!token || token === lastRosterReset) return;
+      lastRosterReset = token;
+      if (this.isAdmin) return;
+      this._studentOwnProfile = null; this._rosterLookup = null;
+      const code = window.currentClassCode || '';
+      for (const key of ['user_nickname', 'user_name', 'comment_nickname', 'real_name:' + code, 'student_number:' + code]) window.boardStorage.local.removeItem(key);
+      this.currentUserName = '';
+      this.updateStudentNameUI();
+      this.myPresenceRef?.update({ userName: '' }).catch(() => {});
+      this.openStudentNameModal();
+    });
+
     // 監聽課堂重設廣播信號 (一次性課堂清除資料時連帶清除學生端已登入姓名，避免舊名稱累積佔用)
     let lastHandledResetTime = Date.now();
     db.ref('quiz/resetTimestamp').on('value', (snapshot) => {
@@ -19229,6 +19245,63 @@ class App {
     a.href = url; a.download = '學生名冊匯入範例.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  chooseStudentRosterImportMode() {
+    const modal = document.getElementById('studentRosterImportModal');
+    if (!modal || !this.isAdmin) return Promise.resolve(null);
+    const fs = document.fullscreenElement;
+    const parent = fs && fs !== document.documentElement ? fs : document.body;
+    if (modal.parentElement !== parent) parent.appendChild(modal);
+    this._rosterImportFocus = document.activeElement;
+    modal.style.display = 'flex'; modal.classList.add('active');
+    modal.querySelector('button')?.focus();
+    return new Promise(resolve => { this._resolveRosterImport = resolve; });
+  }
+
+  resolveStudentRosterImport(mode) {
+    const modal = document.getElementById('studentRosterImportModal');
+    if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; }
+    const resolve = this._resolveRosterImport; this._resolveRosterImport = null;
+    this._rosterImportFocus?.focus?.();
+    resolve?.(['append', 'replace'].includes(mode) ? mode : null);
+  }
+
+  async buildStudentRosterReplacement(root, students, existing) {
+    if (!this.isAdmin) throw Error('請先登入教師管理後台。');
+    const updates = {}, teacherUid = this.getUserId();
+    const teacherName = students[teacherUid]?.name || this.getCurrentUserName();
+    const visibleStudents = this.lastAdminStudentsList || [];
+    const uids = new Set([...Object.keys(students), ...visibleStudents.map(s => s.uid).filter(Boolean)]);
+    const names = new Set([...Object.values(students), ...visibleStudents].flatMap(s => [s?.name, ...(s?.previousNames || [])]).filter(Boolean));
+    for (const uid of uids) updates[`quiz/students/${uid}`] = null;
+    for (const key of Object.keys(existing)) updates[`student_roster/${key}`] = null;
+    const clearPaths = ['student_reaction_counts', 'quiz/answers', 'quiz/videoQuizAnswers', 'videoQuiz/answers', 'presentation/submissions', 'quiz/focusGame', 'quiz/current', 'quiz/liveReactions', 'quiz/wordCloud/submissions', 'comments', 'attendance', 'points/settlements', 'quiz/whispers/items'];
+    for (const path of clearPaths) updates[path] = null;
+    updates['quiz/wordCloud/active/active'] = false;
+    const grouped = window.currentClassCode ? ['activeGroups', 'groupSets'] : ['groups/activeGroups', 'groups/groupSets'];
+    for (const path of grouped) updates[path] = null;
+    // 僅在教師明確選擇覆蓋時讀取一次，清理使用精確子路徑，不回寫媒體本體。
+    const paths = ['questions', 'images', 'videos', 'attachments', 'student_real_names', 'quiz/wordCloud/history', 'quiz/presence'];
+    const snapshots = await Promise.all(paths.map(path => root.child(path).once('value')));
+    paths.forEach((path, index) => {
+      const records = snapshots[index].val() || {};
+      for (const [id, record] of Object.entries(records)) {
+        if (path === 'quiz/presence') { if (record?.userId !== teacherUid) updates[`${path}/${id}`] = null; continue; }
+        if (path === 'student_real_names') { updates[`${path}/${id}`] = null; continue; }
+        if (path === 'quiz/wordCloud/history') {
+          for (const field of ['submissions', 'answers', 'results', 'savedSubmissions', 'savedWords', 'totalSubmissions']) if (record?.[field]) updates[`${path}/${id}/${field}`] = null;
+          continue;
+        }
+        const uid = record?.userId || record?.uid;
+        const isStudent = uid !== teacherUid && (uids.has(uid) || (!uid && (record?.user || record?.userName) !== teacherName && names.has(record?.user || record?.userName)));
+        if (isStudent) { updates[`${path}/${id}`] = null; continue; }
+        // 保留教師教材，清除教材下的學生互動資料。
+        for (const field of ['comments', 'likes', 'votes', 'reactions', 'likesCount']) if (record?.[field]) updates[`${path}/${id}/${field}`] = null;
+      }
+    });
+    updates['quiz/rosterResetAt'] = Date.now();
+    return updates;
+  }
+
   async importStudentRosterCsv(input) {
     if (!this.isAdmin || this._importingRoster) return;
     const file = input.files?.[0]; if (!file) return;
@@ -19237,10 +19310,16 @@ class App {
     try {
       if (file.size > 1024 * 1024) throw Error('CSV 檔案過大，請控制在 1 MB 以內。');
       const rows = this.parseStudentRosterCsv(await file.text());
+      const mode = await this.chooseStudentRosterImportMode();
+      if (!mode) return;
+      if (!this.isAdmin || classCode !== (window.currentClassCode || '')) throw Error('教室或教師身分已切換，請重新匯入。');
       const root = db.ref();
       const [rosterSnap, studentsSnap] = await Promise.all([root.child('student_roster').once('value'), root.child('quiz/students').once('value')]);
       if (!this.isAdmin || classCode !== (window.currentClassCode || '')) throw Error('教室或教師身分已切換，請重新匯入。');
-      const existing = rosterSnap.val() || {}, students = studentsSnap.val() || {}, updates = {};
+      const oldRoster = rosterSnap.val() || {}, oldStudents = studentsSnap.val() || {};
+      const replacing = mode === 'replace';
+      const updates = replacing ? await this.buildStudentRosterReplacement(root, oldStudents, oldRoster) : {};
+      const existing = replacing ? {} : oldRoster, students = replacing ? {} : oldStudents;
       for (const entry of rows) {
         const previous = existing[entry.key];
         const matches = Object.entries(students).filter(([, s]) => s?.studentNumber && this.studentRosterKey(s.studentNumber) === entry.key);
@@ -19258,9 +19337,20 @@ class App {
         }
       }
       updates['quiz/profileSettings/rosterEnabled'] = true;
+      if (!this.isAdmin || classCode !== (window.currentClassCode || '')) throw Error('教室或教師身分已切換，未執行匯入。');
       await root.update(updates);
-      await this.loadStudentProfileSettings(); await this.loadClassRealNames();
-      this.showNotification('名冊匯入完成', `已匯入 ${rows.length} 位學生。同學登入時需輸入名冊中的座號或學號（包含前導 0）。同座號會更新資料，既有點數與歷程會保留。未使用座號的既有帳號可由老師整併。`);
+      if (replacing) {
+        this.registeredStudents = {}; this.classRealNames = {}; this.reactionHistoryCounts = {}; this.quizAnswers = {};
+        this.adminSelectedStudentUids = new Set();
+        for (const path of ['questions', 'images', 'videos']) {
+          this[path] = (this[path] || []).filter(item => updates[`${path}/${item.id}`] !== null).map(item => ({ ...item, comments: null, likes: null, votes: null, reactions: null, likesCount: 0 }));
+        }
+        if (window.videoQuiz) window.videoQuiz.answers = {};
+        if (window.wordCloud) window.wordCloud.submissions = {};
+        if (window.presentationCore) window.presentationCore.submissions = {};
+      }
+      await this.refreshAdminStudentsList();
+      this.showNotification('名冊匯入完成', `已${replacing ? '覆蓋名冊並清除原有學生資料與參與歷程' : '加入現有名單並保留既有點數與歷程'}，匯入 ${rows.length} 位學生。同學登入時需輸入對應座號或學號（包含前導 0）。`);
     } catch(e) { this.showNotification('匯入失敗', e.message || '請檢查網路及 CSV 格式。'); }
     finally { input.value = ''; this._importingRoster = false; }
   }

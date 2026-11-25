@@ -2957,9 +2957,10 @@
                     <span id="adminStudentsClassScopeBadge" style="background: rgba(0, 122, 255, 0.12); color: var(--accent-color); padding: 3px 10px; border-radius: 8px; font-size: 14px; font-weight: bold;">🏫 當前班級：載入中...</span>
                     <span id="adminStudentsTotalCountBadge" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">共 0 位同學</span>
                   </div>
-                  <p style="font-size: 14px; color: var(--text-secondary); margin: 6px 0 0 0; line-height: 1.5;">
-                    💡 檢視當前班級學生名冊名單、近期登入日期與時間。點擊「📜 歷程」可查閱該同學的提問、圖片分享、影片、留言互動與測驗作答記錄；亦可進行姓名與頭像編修、多帳號整併或刪除。
-                  </p>
+                  <ul style="font-size:14px;color:var(--text-secondary);margin:6px 0 0;padding-left:24px;line-height:1.6">
+                    <li>檢視當前班級學生名冊、近期登入日期與時間。點擊「📜 歷程」可查閱提問、圖片分享、影片、留言互動與測驗作答記錄；亦可編修姓名與頭像、整併多個帳號或刪除。</li>
+                    <li>CSV 格式：座號(或學號)、真實姓名(或備註)。請以 UTF-8 儲存，座號如 01 請保留前導 0。匯入時可選擇「加入現有名單」（保留點數與歷程）或「覆蓋目前名單」（清除現有名冊與參與歷程）；匯入後，同學需輸入對應座號／學號登入。</li>
+                  </ul>
                 </div>
 
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
@@ -2977,7 +2978,7 @@
                 </div>
               </div>
 
-              <p style="font-size:14px;color:var(--text-secondary)">CSV 格式：座號(或學號)、真實姓名(或備註)。請以 UTF-8 儲存，座號如 01 請保留前導 0。匯入後，同學需輸入對應座號／學號登入；再次匯入相同號碼會更新資料並保留點數與歷程。</p>
+
               <!-- 搜尋與排序過濾列 -->
               <div style="background: var(--bg-input); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
                 <div style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px;">
@@ -6734,7 +6735,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c33"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c34"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
@@ -6874,6 +6875,19 @@ Python</pre>
     </div>
   </div>
   
+  <div id="studentRosterImportModal" class="modal-overlay confirm-modal" role="dialog" aria-modal="true" aria-labelledby="studentRosterImportTitle" style="z-index:29950" onclick="if(event.target===this)window.app?.resolveStudentRosterImport(null)" onkeydown="if(event.key==='Escape')window.app?.resolveStudentRosterImport(null)">
+    <div class="modal-content"><div class="modal-body" style="font-size:14px">
+      <h3 id="studentRosterImportTitle" style="color:var(--text-primary)">📤 選擇名冊匯入方式</h3>
+      <p style="color:var(--text-secondary)">是否覆蓋目前同學名單（將清除現有同學的資料），或加入到現有名單中？</p>
+      <p style="color:var(--danger-color)">覆蓋會清除本教室現有名冊、點數、作答、學生分享及參與歷程，且無法復原；線上的同學需重新登入。教師題庫、教材與系統設定會保留。</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
+        <button type="button" class="presentation-tool-btn" onclick="window.app?.resolveStudentRosterImport('append')">加入現有名單（保留資料）</button>
+        <button type="button" class="presentation-tool-btn" style="color:var(--danger-color);border-color:var(--danger-color)" onclick="window.app?.resolveStudentRosterImport('replace')">覆蓋目前名單（清除資料）</button>
+        <button type="button" class="presentation-tool-btn" onclick="window.app?.resolveStudentRosterImport(null)">取消</button>
+      </div>
+    </div></div>
+  </div>
+
   <!-- 整合通用確認彈出視窗 -->
   <div id="customConfirmModal" class="modal-overlay confirm-modal" style="z-index: 29900;" onclick="if(event.target === this && window.app) window.app.closeConfirmModal()">
     <div class="modal-content">
