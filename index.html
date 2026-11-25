@@ -2968,13 +2968,14 @@
                     🔄 重新整理
                   </button>
                   <button type="button" class="presentation-tool-btn" onclick="if(window.app?.isAdmin)document.getElementById('studentRosterCsvFile').click()">📤 匯入名冊 CSV</button>
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.exportStudentsReportCsv()" title="匯出本班學生名冊與歷程統計為 CSV 檔" style="font-size: 14px; border-radius: 10px; padding: 6px 14px;">
+                    📥 匯出名冊
+                  </button>
                   <input type="file" id="studentRosterCsvFile" accept=".csv,text/csv" hidden onchange="window.app?.importStudentRosterCsv(this)">
                   <button type="button" class="presentation-tool-btn" onclick="window.app?.downloadStudentRosterSample()">📄 下載 CSV 範例</button>
                   <label style="font-size:14px"><input type="checkbox" id="allowStudentNicknameEdit" checked onchange="window.app?.saveStudentProfileSettings(this)"> 允許同學修改「姓名或暱稱」</label>
                   <label style="font-size:14px"><input type="checkbox" id="allowStudentRealNameEdit" checked onchange="window.app?.saveStudentProfileSettings(this)"> 允許同學修改「真實姓名」</label>
-                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.exportStudentsReportCsv()" title="匯出本班學生名冊與歷程統計為 CSV 檔" style="font-size: 14px; border-radius: 10px; padding: 6px 14px;">
-                    📥 匯出名冊
-                  </button>
+
                 </div>
               </div>
 
@@ -6735,7 +6736,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c34"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c35"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
@@ -6881,7 +6882,7 @@ Python</pre>
       <p style="color:var(--text-secondary)">是否覆蓋目前同學名單（將清除現有同學的資料），或加入到現有名單中？</p>
       <p style="color:var(--danger-color)">覆蓋會清除本教室現有名冊、點數、作答、學生分享及參與歷程，且無法復原；線上的同學需重新登入。教師題庫、教材與系統設定會保留。</p>
       <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
-        <button type="button" class="presentation-tool-btn" onclick="window.app?.resolveStudentRosterImport('append')">加入現有名單（保留資料）</button>
+        <button type="button" id="studentRosterAppendBtn" class="presentation-tool-btn active" autofocus onclick="window.app?.resolveStudentRosterImport('append')">加入現有名單（保留資料）</button>
         <button type="button" class="presentation-tool-btn" style="color:var(--danger-color);border-color:var(--danger-color)" onclick="window.app?.resolveStudentRosterImport('replace')">覆蓋目前名單（清除資料）</button>
         <button type="button" class="presentation-tool-btn" onclick="window.app?.resolveStudentRosterImport(null)">取消</button>
       </div>

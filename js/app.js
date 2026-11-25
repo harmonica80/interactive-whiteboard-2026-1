@@ -19253,7 +19253,7 @@ class App {
     if (modal.parentElement !== parent) parent.appendChild(modal);
     this._rosterImportFocus = document.activeElement;
     modal.style.display = 'flex'; modal.classList.add('active');
-    modal.querySelector('button')?.focus();
+    modal.querySelector('#studentRosterAppendBtn')?.focus();
     return new Promise(resolve => { this._resolveRosterImport = resolve; });
   }
 
