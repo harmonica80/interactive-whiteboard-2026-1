@@ -10527,3 +10527,12 @@ body.is-admin-logged-in .floating-student-avatar-container {
 
 #studentNameLogoutBtn[hidden],
 #studentNameEditRestrictions[hidden] { display: none !important; }
+
+/* 登入與學生管理僅保留外層圓角矩形，移除頭像內層圓框。 */
+#avatarPickerGrid .cute-avatar-icon,
+#adminStudentsListContainer .cute-avatar-icon,
+#adminEditStudentAvatarGrid .cute-avatar-icon {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}

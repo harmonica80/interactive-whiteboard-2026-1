@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=505">
+  <link rel="stylesheet" href="css/style.css?v=506">
   <link rel="stylesheet" href="css/presentation.css?v=c1">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -2999,10 +2999,11 @@
                 </div>
 
                 <!-- 🔀 合併帳號功能按鈕與核選快捷按鈕 -->
-                <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <div class="student-selection-actions" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                   <button type="button" id="adminMergeStudentsToolbarBtn" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenMergeStudentsModal()" style="font-size: 14px; padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" title="將同位同學之多重或舊姓名帳號合併至指定主帳號">
                     <span>🔀</span> <span id="adminMergeStudentsToolbarBtnText">合併帳號</span>
                   </button>
+                  <button type="button" id="adminDeleteSelectedStudentsBtn" class="presentation-tool-btn danger" disabled onclick="window.app && window.app.adminDeleteSelectedStudents()" style="font-size:14px;padding:6px 14px;border-radius:8px;color:var(--danger-color);border-color:var(--danger-color)"><span>🗑️</span> <span id="adminDeleteSelectedStudentsBtnText">刪除已選帳號</span></button>
                   <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminToggleSelectAllStudents(true)" style="padding: 5px 10px; font-size: 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);" title="核選名冊中全部同學進行合併">
                     全選
                   </button>
@@ -6752,7 +6753,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c45"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c46"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>

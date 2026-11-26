@@ -164,16 +164,16 @@ test('登出即使移除連線失敗，仍可清除本機身分',async()=>{
 });
 function pairedRosterFixture(allowEdit=false){const f=fixture();roster(f,{allowOutsideRoster:false,allowRealNameEdit:allowEdit});f.app.classRequiresRealName=true;f.put('quiz/profileSettings',{rosterEnabled:true,allowOutsideRoster:false,allowRealNameEdit:allowEdit});f.put('quiz/students/u1/note','王小明');f.app.registeredStudents={u1:{name:'原暱稱',studentNumber:'01',note:'王小明'}};f.fields.inputStudentModalName.value='01';return f;}
 test('限制名單且要求真實姓名時，另一位同學的姓名不能通過指定座號',async()=>{
- for(const allowEdit of [false,true]){const f=pairedRosterFixture(allowEdit);f.put('student_real_names/u2','林小華');f.fields.studentRealNameInput.value='林小華';await f.app.saveStudentNameFromModal();assert.equal(f.writes.length,0);assert.equal(f.local.get('user_id'),undefined);assert.equal(f.fields.studentRealNameInput.value,'林小華');assert(f.fields.studentNameModalError.textContent.includes('不符'));assert.equal(f.get('student_real_names/u1'),'王小明');}
+ for(const allowEdit of [true]){const f=pairedRosterFixture(allowEdit);f.put('student_real_names/u2','林小華');f.fields.studentRealNameInput.value='林小華';await f.app.saveStudentNameFromModal();assert.equal(f.writes.length,0);assert.equal(f.local.get('user_id'),undefined);assert.equal(f.fields.studentRealNameInput.value,'林小華');assert(f.fields.studentNameModalError.textContent.includes('不符'));assert.equal(f.get('student_real_names/u1'),'王小明');}
 });
-test('限制名單的真實姓名不得空白，也不能自動填入名冊姓名來通過',async()=>{
- const f=pairedRosterFixture();f.fields.studentRealNameInput.value='';await f.app.saveStudentNameFromModal();assert.equal(f.writes.length,0);assert.equal(f.fields.studentRealNameInput.value,'');assert(f.fields.studentNameModalError.textContent.includes('請輸入'));
+test('允許輸入真實姓名時不得空白，也不能自動填入名冊姓名來通過',async()=>{
+ const f=pairedRosterFixture(true);f.fields.studentRealNameInput.value='';await f.app.saveStudentNameFromModal();assert.equal(f.writes.length,0);assert.equal(f.fields.studentRealNameInput.value,'');assert(f.fields.studentNameModalError.textContent.includes('請輸入'));
 });
 test('座號或姓名與真實姓名配對正確才登入，保留原名冊資料',async()=>{
  for(const identifier of ['01','原暱稱','王小明']){const f=pairedRosterFixture(true);f.fields.inputStudentModalName.value=identifier;f.fields.studentRealNameInput.value=' 王小明 ';await f.app.saveStudentNameFromModal();assert.equal(f.local.get('user_id'),'u1');assert.equal(f.get('student_real_names/u1'),'王小明');assert.equal(f.get('quiz/students/u1/points'),9);}
 });
-test('直接座號登入入口仍拒絕姓名不符，且可以重新輸入修正',async()=>{
- const f=pairedRosterFixture();f.fields.studentRealNameInput.value='錯誤姓名';await f.app.saveRosterStudentLogin();assert.equal(f.writes.length,0);assert.equal(f.fields.studentRealNameInput.value,'錯誤姓名');assert.equal(f.fields.studentRealNameInput.readOnly,false);f.fields.studentRealNameInput.value='王小明';await f.app.saveRosterStudentLogin();assert.equal(f.local.get('user_id'),'u1');
+test('允許輸入真實姓名時直接座號登入仍拒絕不符資料',async()=>{
+ const f=pairedRosterFixture(true);f.fields.studentRealNameInput.value='錯誤姓名';await f.app.saveRosterStudentLogin();assert.equal(f.writes.length,0);assert.equal(f.fields.studentRealNameInput.value,'錯誤姓名');assert.equal(f.fields.studentRealNameInput.readOnly,false);f.fields.studentRealNameInput.value='王小明';await f.app.saveRosterStudentLogin();assert.equal(f.local.get('user_id'),'u1');
 });
 test('名冊缺少真實姓名時阻止登入，非匯入帳號亦受核對限制',async()=>{
  const f=pairedRosterFixture();f.put('student_real_names/u1',null);f.fields.studentRealNameInput.value='王小明';await f.app.saveStudentNameFromModal();assert.equal(f.writes.length,0);assert(f.fields.studentNameModalError.textContent.includes('先補齊'));
@@ -184,4 +184,28 @@ test('未登入或只查到名冊資料時不顯示登出，已登入才顯示',
 });
 test('任一姓名修改限制會顯示說明並改為存頭像，兩者開放則恢復原名稱',()=>{
  const f=fixture();for(const [nickname,realName]of [[false,true],[true,false],[false,false]]){f.app.studentProfileSettings={allowNicknameEdit:nickname,allowRealNameEdit:realName};f.app.syncStudentNameModalActions();assert.equal(f.fields.studentNameEditRestrictions.hidden,false);assert.equal(f.fields.studentNameSaveLabel.textContent,'存頭像並開始上課');if(!nickname)assert(f.fields.studentNameEditRestrictions.textContent.includes('姓名或暱稱'));if(!realName)assert(f.fields.studentNameEditRestrictions.textContent.includes('真實姓名'));}f.app.studentProfileSettings={allowNicknameEdit:true,allowRealNameEdit:true};f.app.syncStudentNameModalActions();assert.equal(f.fields.studentNameEditRestrictions.hidden,true);assert.equal(f.fields.studentNameSaveLabel.textContent,'儲存姓名與頭像並開始上課');f.app.isAdmin=true;f.app.studentProfileSettings={allowNicknameEdit:false,allowRealNameEdit:false};f.app.syncStudentNameModalActions();assert.equal(f.fields.studentNameEditRestrictions.hidden,true);assert.equal(f.fields.studentNameLogoutBtn.hidden,false);
+});
+test('真實姓名禁止修改時一律唯讀，依對應帳號帶入且保留名冊姓名',async()=>{
+ const f=pairedRosterFixture();f.app.syncStudentProfileFields(undefined,'');assert.equal(f.fields.studentRealNameInput.readOnly,true);assert.equal(f.fields.studentRealNameInput.value,'');await f.app.saveStudentNameFromModal();assert.equal(f.local.get('user_id'),'u1');assert.equal(f.fields.studentRealNameInput.value,'王小明');assert.equal(f.fields.studentRealNameInput.readOnly,true);assert.equal(f.get('student_real_names/u1'),'王小明');
+});
+test('已登入本人可連續三次改名，輸入原真實姓名也不會被當成登入別名還原',async()=>{
+ const f=pairedRosterFixture();f.local.set('user_id','u1');f.local.set('user_name','原暱稱');f.app.getCurrentUserName=()=>f.local.get('user_name')||'';f.app.setUserName=App.prototype.setUserName;f.app.updateStudentNameUI=()=>{};f.app.renderQuestions=()=>{};f.app.renderImages=()=>{};f.app.renderVideos=()=>{};f.put('quiz/profileSettings/allowNicknameEdit',true);f.app.getTakenStudentNames=async()=>{f.app.registeredStudents=f.get('quiz/students');return new Set(Object.entries(f.app.registeredStudents).filter(([uid])=>uid!=='u1').map(([,s])=>s.name))};
+ for(const name of ['第一次修改','王小明','第三次修改']){f.fields.inputStudentModalName.value=name;await f.app.saveStudentNameFromModal();assert.equal(f.get('quiz/students/u1/name'),name);assert.equal(f.local.get('user_name'),name);assert.equal(f.local.get('user_id'),'u1');assert.equal(f.get('quiz/students/u1/points'),9);assert.equal(f.get('student_real_names/u1'),'王小明');}
+ assert.equal(f.writes.length,3);assert.equal(f.app._studentNameRevision,3);
+});
+test('已登入改名不會切換為其他同學，儲存失敗也不會宣告成功',async()=>{
+ const f=pairedRosterFixture();f.local.set('user_id','u1');f.app.getCurrentUserName=()=> '原暱稱';f.put('quiz/students/u2',{name:'其他同學',studentNumber:'02'});f.app.registeredStudents=f.get('quiz/students');f.fields.inputStudentModalName.value='其他同學';await f.app.saveStudentNameFromModal();assert.equal(f.local.get('user_id'),'u1');assert.equal(f.writes.length,0);assert(f.fields.studentNameModalError.textContent.includes('已被其他同學'));
+ f.fields.inputStudentModalName.value='新暱稱';f.fail();await f.app.saveStudentNameFromModal();assert.equal(f.get('quiz/students/u1/name'),'原暱稱');assert.equal(f.app.savedName,undefined);assert.equal(f.app.closed,undefined);
+});
+test('批次刪除僅處理已選帳號與對應座號連線，保留其他同學與分享',async()=>{
+ const f=fixture();f.app.isAdmin=true;f.app.adminSelectedStudentUids=new Set(['u1','u2']);f.app.registeredStudents={u1:{name:'甲'},u2:{name:'乙'},u3:{name:'丙',points:5}};for(const[uid,s]of Object.entries(f.app.registeredStudents))f.put('quiz/students/'+uid,s);f.put('student_roster/one',{uid:'u1'});f.put('student_roster/two',{uid:'u2'});f.put('student_roster/three',{uid:'u3'});f.put('quiz/presence/s1',{userId:'u1'});f.put('quiz/presence/s3',{userId:'u3'});f.put('student_real_names/u1','真名');f.put('questions/q1',{userId:'u1',text:'保留分享'});f.app.renderAdminStudentsList=()=>{};await f.app.adminExecuteDeleteSelectedStudents(['u1','u2'],'CLASS');assert(f.get('quiz/students/u1/deletedAt'));assert.equal(f.get('quiz/students/u1/name'),null);assert.equal(f.get('student_real_names/u1'),null);assert.equal(f.get('student_roster/one'),null);assert.equal(f.get('quiz/presence/s1'),null);assert.equal(f.get('quiz/students/u3/points'),5);assert.equal(f.get('student_roster/three/uid'),'u3');assert.equal(f.get('quiz/presence/s3/userId'),'u3');assert.equal(f.get('questions/q1/text'),'保留分享');assert.equal(f.app.adminSelectedStudentUids.size,0);assert.equal(f.writes.length,1);
+});
+test('批次刪除需教師身分與原教室；儲存失敗保留原資料與選取',async()=>{
+ const f=fixture();f.put('quiz/students/u1',{name:'甲'});f.app.adminSelectedStudentUids=new Set(['u1']);await f.app.adminExecuteDeleteSelectedStudents(['u1'],'CLASS');assert.equal(f.writes.length,0);f.app.isAdmin=true;await f.app.adminExecuteDeleteSelectedStudents(['u1'],'OTHER');assert.equal(f.writes.length,0);f.fail();await f.app.adminExecuteDeleteSelectedStudents(['u1'],'CLASS');assert.equal(f.get('quiz/students/u1/name'),'甲');assert.equal(f.app.adminSelectedStudentUids.size,1);assert.equal(f.app.notice.title,'刪除失敗');
+});
+test('批次刪除先顯示確認且不立即寫入，已刪除帳號不再被姓名比對找到',()=>{
+ const f=fixture();f.app.isAdmin=true;f.app.adminSelectedStudentUids=new Set(['u1']);f.app.registeredStudents={u1:{name:'甲'}};f.app.escapeHtml=s=>String(s);let confirm;f.app.showConfirmModal=(icon,title,body,action)=>{confirm={title,body,action}};f.app.adminDeleteSelectedStudents();assert(confirm.title.includes('1'));assert(confirm.body.includes('甲'));assert.equal(f.writes.length,0);f.app.registeredStudents.u1={deletedAt:1};f.app.questions=[{userId:'u1',user:'甲'}];assert.equal(f.app.findExistingStudentByName('甲'),null);assert.equal(f.app.getStudentRosterNameMatches('甲').length,0);
+});
+test('原本已核准的同名帳號仍可儲存頭像，不會被視為切換別人帳號',async()=>{
+ const f=fixture();f.local.set('user_id','u1');f.app.getCurrentUserName=()=> '同名';f.app.studentProfileSettings={rosterEnabled:true,allowOutsideRoster:false};f.app.registeredStudents={u1:{name:'同名',studentNumber:'01'},u2:{name:'同名',studentNumber:'02'}};f.fields.inputStudentModalName.value='同名';assert.equal(await f.app.validateStudentRosterAdmission(),true);assert.equal(f.fields.studentNumberInput.value,'01');assert.equal(f.local.get('user_id'),'u1');
 });
