@@ -131,7 +131,7 @@ test('單一欄位優先比對座號，不受同學相同暱稱或過期隱藏�
  f.fields.inputStudentModalName.value='名單外新人';assert.equal(await f.app.validateStudentRosterAdmission(),false);assert.equal(f.fields.studentNumberInput.value,'');
 });
 test('單一欄位登入仍保留班級要求填寫真實姓名時的修改功能',async()=>{
- const f=fixture();roster(f);f.app.classRequiresRealName=true;f.app.registeredStudents={u1:{name:'原暱稱',studentNumber:'01'}};f.put('quiz/profileSettings',{rosterEnabled:true,allowOutsideRoster:false,allowRealNameEdit:true});f.fields.inputStudentModalName.value='01';f.fields.studentRealNameInput.value='王大明';await f.app.saveStudentNameFromModal();assert.equal(f.get('student_real_names/u1'),'王大明');
+ const f=fixture();roster(f);f.app.classRequiresRealName=true;f.app.registeredStudents={u1:{name:'原暱稱',studentNumber:'01'}};f.put('quiz/profileSettings',{rosterEnabled:true,allowOutsideRoster:true,allowRealNameEdit:true});f.fields.inputStudentModalName.value='01';f.fields.studentRealNameInput.value='王大明';await f.app.saveStudentNameFromModal();assert.equal(f.get('student_real_names/u1'),'王大明');
 });
 test('重複匯入既有座號會列出供勾選，略過者不更新原資料',async()=>{
  const f=fixture();f.app.isAdmin=true;const key=f.app.studentRosterKey('01');f.put('student_roster/'+key,{uid:'u1',studentNumber:'01',label:'原姓名'});f.put('quiz/students/u1',{name:'原暱稱',studentNumber:'01',note:'原姓名',points:21,pointsLog:{a:{amount:21}}});let duplicates=[];
@@ -161,4 +161,21 @@ test('登出只清除本機身分與本次連線，不刪除雲端名冊或點�
 });
 test('登出即使移除連線失敗，仍可清除本機身分',async()=>{
  const f=fixture();f.local.set('user_name','原同學');f.app.myPresenceRef={remove:async()=>{throw Error('離線')}};let reload=0;window.location={reload:()=>reload++};await f.app.logoutStudentFromNameModal();assert.equal(f.local.get('user_name'),undefined);assert.equal(reload,1);assert.equal(f.writes.length,0);
+});
+function pairedRosterFixture(allowEdit=false){const f=fixture();roster(f,{allowOutsideRoster:false,allowRealNameEdit:allowEdit});f.app.classRequiresRealName=true;f.put('quiz/profileSettings',{rosterEnabled:true,allowOutsideRoster:false,allowRealNameEdit:allowEdit});f.put('quiz/students/u1/note','王小明');f.app.registeredStudents={u1:{name:'原暱稱',studentNumber:'01',note:'王小明'}};f.fields.inputStudentModalName.value='01';return f;}
+test('限制名單且要求真實姓名時，另一位同學的姓名不能通過指定座號',async()=>{
+ for(const allowEdit of [false,true]){const f=pairedRosterFixture(allowEdit);f.put('student_real_names/u2','林小華');f.fields.studentRealNameInput.value='林小華';await f.app.saveStudentNameFromModal();assert.equal(f.writes.length,0);assert.equal(f.local.get('user_id'),undefined);assert.equal(f.fields.studentRealNameInput.value,'林小華');assert(f.fields.studentNameModalError.textContent.includes('不符'));assert.equal(f.get('student_real_names/u1'),'王小明');}
+});
+test('限制名單的真實姓名不得空白，也不能自動填入名冊姓名來通過',async()=>{
+ const f=pairedRosterFixture();f.fields.studentRealNameInput.value='';await f.app.saveStudentNameFromModal();assert.equal(f.writes.length,0);assert.equal(f.fields.studentRealNameInput.value,'');assert(f.fields.studentNameModalError.textContent.includes('請輸入'));
+});
+test('座號或姓名與真實姓名配對正確才登入，保留原名冊資料',async()=>{
+ for(const identifier of ['01','原暱稱','王小明']){const f=pairedRosterFixture(true);f.fields.inputStudentModalName.value=identifier;f.fields.studentRealNameInput.value=' 王小明 ';await f.app.saveStudentNameFromModal();assert.equal(f.local.get('user_id'),'u1');assert.equal(f.get('student_real_names/u1'),'王小明');assert.equal(f.get('quiz/students/u1/points'),9);}
+});
+test('直接座號登入入口仍拒絕姓名不符，且可以重新輸入修正',async()=>{
+ const f=pairedRosterFixture();f.fields.studentRealNameInput.value='錯誤姓名';await f.app.saveRosterStudentLogin();assert.equal(f.writes.length,0);assert.equal(f.fields.studentRealNameInput.value,'錯誤姓名');assert.equal(f.fields.studentRealNameInput.readOnly,false);f.fields.studentRealNameInput.value='王小明';await f.app.saveRosterStudentLogin();assert.equal(f.local.get('user_id'),'u1');
+});
+test('名冊缺少真實姓名時阻止登入，非匯入帳號亦受核對限制',async()=>{
+ const f=pairedRosterFixture();f.put('student_real_names/u1',null);f.fields.studentRealNameInput.value='王小明';await f.app.saveStudentNameFromModal();assert.equal(f.writes.length,0);assert(f.fields.studentNameModalError.textContent.includes('先補齊'));
+ f.put('student_real_names/old','原姓名');f.fields.studentRealNameInput.value='其他姓名';assert.equal(await f.app.saveRequiredRealName('old'),false);assert.equal(f.get('student_real_names/old'),'原姓名');
 });
