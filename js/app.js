@@ -19423,6 +19423,65 @@ class App {
     return updates;
   }
 
+  openStudentRosterImportSettings(summary) {
+    const modal = document.getElementById('studentRosterImportSettingsModal');
+    if (!modal || !this.isAdmin) { this.showNotification('名冊匯入完成', summary); return; }
+    this._studentRosterSettingsClass = window.currentClassCode || '';
+    this._studentRosterSettingsFocus = document.activeElement;
+    const settings = this.studentProfileSettings || {};
+    document.getElementById('importAllowStudentNicknameEdit').checked = settings.allowNicknameEdit !== false;
+    document.getElementById('importAllowStudentRealNameEdit').checked = settings.allowRealNameEdit !== false;
+    document.getElementById('importAllowOutsideRoster').checked = this.allowsOutsideStudentRoster();
+    document.getElementById('studentRosterImportSettingsSummary').textContent = summary;
+    const error = document.getElementById('studentRosterImportSettingsError');
+    error.hidden = true; error.textContent = '';
+    const fs = document.fullscreenElement, parent = fs && fs !== document.documentElement ? fs : document.body;
+    if (modal.parentElement !== parent) parent.appendChild(modal);
+    modal.style.display = 'flex'; modal.classList.add('active');
+    document.getElementById('saveStudentRosterImportSettingsBtn')?.focus();
+  }
+
+  closeStudentRosterImportSettings() {
+    if (this._savingStudentRosterSettings) return;
+    const modal = document.getElementById('studentRosterImportSettingsModal');
+    if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; }
+    this._studentRosterSettingsFocus?.focus?.();
+  }
+
+  async saveStudentRosterImportSettings() {
+    if (!this.isAdmin || this._savingStudentRosterSettings) return;
+    const error = document.getElementById('studentRosterImportSettingsError');
+    if (this._studentRosterSettingsClass !== (window.currentClassCode || '')) {
+      if (error) { error.hidden = false; error.textContent = '教室已切換，請回到原教室調整設定。'; }
+      return;
+    }
+    const updates = {
+      allowNicknameEdit: document.getElementById('importAllowStudentNicknameEdit').checked,
+      allowRealNameEdit: document.getElementById('importAllowStudentRealNameEdit').checked,
+      allowOutsideRoster: document.getElementById('importAllowOutsideRoster').checked
+    };
+    const button = document.getElementById('saveStudentRosterImportSettingsBtn');
+    this._savingStudentRosterSettings = true;
+    if (button) button.disabled = true;
+    try {
+      await db.ref('quiz/profileSettings').update(updates);
+      if (this._studentRosterSettingsClass === (window.currentClassCode || '')) {
+        this.studentProfileSettings = { ...this.studentProfileSettings, ...updates };
+        for (const [id, key] of [['allowStudentNicknameEdit', 'allowNicknameEdit'], ['allowStudentRealNameEdit', 'allowRealNameEdit'], ['allowOutsideRoster', 'allowOutsideRoster']]) {
+          const field = document.getElementById(id); if (field) field.checked = updates[key];
+        }
+      }
+      this._savingStudentRosterSettings = false;
+      this.closeStudentRosterImportSettings();
+      this.showNotification('設定已儲存', '已儲存三項名冊設定，之後也可在學生名冊頁面調整。');
+    } catch(e) {
+      if (error) { error.hidden = false; error.textContent = '設定儲存失敗，請檢查網路後重試。名冊已成功匯入。'; }
+    } finally {
+      this._savingStudentRosterSettings = false;
+      if (button) button.disabled = false;
+    }
+  }
+
   async importStudentRosterCsv(input) {
     if (!this.isAdmin || this._importingRoster) return;
     const file = input.files?.[0]; if (!file) return;
@@ -19476,8 +19535,8 @@ class App {
         if (window.wordCloud) window.wordCloud.submissions = {};
         if (window.presentationCore) window.presentationCore.submissions = {};
       }
-      await this.refreshAdminStudentsList();
-      this.showNotification('名冊匯入完成', `已${replacing ? '覆蓋名冊並清除原有學生資料與參與歷程' : '加入現有名單並保留既有點數與歷程'}，匯入 ${rows.length} 位學生。同學登入時需輸入對應座號或學號（包含前導 0）。`);
+      await this.refreshAdminStudentsList({ silent: true });
+      this.openStudentRosterImportSettings( `已${replacing ? '覆蓋名冊並清除原有學生資料與參與歷程' : '加入現有名單並保留既有點數與歷程'}，匯入 ${rows.length} 位學生。同學登入時需輸入對應座號或學號（包含前導 0）。`);
     } catch(e) { this.showNotification('匯入失敗', e.message || '請檢查網路及 CSV 格式。'); }
     finally { input.value = ''; this._importingRoster = false; }
   }
@@ -20238,7 +20297,7 @@ class App {
     }
   }
 
-  async refreshAdminStudentsList() {
+  async refreshAdminStudentsList({ silent = false } = {}) {
     if (!this.isAdmin) return;
     try {
       await this.loadStudentProfileSettings();
@@ -20246,7 +20305,7 @@ class App {
       const snap = await db.ref('quiz/students').once('value');
       this.registeredStudents = snap.val() || {};
       this.renderAdminStudentsList();
-      this.showNotification('名冊已更新', '已重新同步雲端最新學生名冊！');
+      if (!silent) this.showNotification('名冊已更新', '已重新同步雲端最新學生名冊！');
     } catch (e) {
       this.showNotification('錯誤', '同步失敗: ' + e.message);
     }

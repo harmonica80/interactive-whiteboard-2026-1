@@ -6,7 +6,7 @@ const end = source.indexOf('\n}\n') + 3;
 const App = new Function('return ' + source.slice(source.indexOf('class App {'), end))();
 function fixture() {
   const data = {}, writes = [], reads = [], local = new Map(), fields = {};
-  for (const id of ['studentNumberRow','studentNumberInput','inputStudentModalName','studentRealNameRow','studentRealNameInput','studentNameModalError','studentRosterLookupStatus','allowStudentNicknameEdit','allowStudentRealNameEdit']) fields[id] = {value:'', style:{}, focus(){}};
+  for (const id of ['studentNumberRow','studentNumberInput','inputStudentModalName','studentRealNameRow','studentRealNameInput','studentNameModalError','studentRosterLookupStatus','allowStudentNicknameEdit','allowStudentRealNameEdit','allowOutsideRoster','importAllowStudentNicknameEdit','importAllowStudentRealNameEdit','importAllowOutsideRoster','studentRosterImportSettingsError','saveStudentRosterImportSettingsBtn']) fields[id] = {value:'', style:{}, focus(){}};
   globalThis.document = {getElementById:id=>fields[id] || null};
   globalThis.window = {currentClassCode:'CLASS',boardStorage:{local:{getItem:k=>local.get(k)||null,setItem:(k,v)=>local.set(k,v)}}};
   let next = 0, failWrite = false;
@@ -140,4 +140,13 @@ test('重複匯入既有座號會列出供勾選，略過者不更新原資料',
 });
 test('覆蓋模式也先列出同座號，取消確認不會清除資料',async()=>{
  const f=fixture();f.app.isAdmin=true;f.app.chooseStudentRosterImportMode=async()=> 'replace';f.put('quiz/students/u1',{name:'小明',studentNumber:'01',points:10});f.app.chooseStudentRosterDuplicates=async(rows,students,roster)=>{assert.equal(f.app.findStudentRosterDuplicates(rows,students,roster).length,1);return null};await f.app.importStudentRosterCsv({files:[{size:20,text:async()=> '座號,真實姓名\n01,王小明'}],value:'file'});assert.equal(f.get('quiz/students/u1/points'),10);assert.equal(f.writes.length,0);
+});
+test('匯入成功後的三項設定一次儲存並同步名冊頁面',async()=>{
+ const f=fixture();f.app.isAdmin=true;f.app._studentRosterSettingsClass='CLASS';f.fields.importAllowStudentNicknameEdit.checked=true;f.fields.importAllowStudentRealNameEdit.checked=false;f.fields.importAllowOutsideRoster.checked=true;await f.app.saveStudentRosterImportSettings();assert.deepEqual(f.get('quiz/profileSettings'),{allowNicknameEdit:true,allowRealNameEdit:false,allowOutsideRoster:true});assert.equal(f.fields.allowStudentNicknameEdit.checked,true);assert.equal(f.fields.allowStudentRealNameEdit.checked,false);assert.equal(f.fields.allowOutsideRoster.checked,true);assert.equal(f.fields.saveStudentRosterImportSettingsBtn.disabled,false);
+});
+test('儲存匯入後設定失敗會保留原設定並允許重試',async()=>{
+ const f=fixture();f.app.isAdmin=true;f.app._studentRosterSettingsClass='CLASS';f.put('quiz/profileSettings',{allowNicknameEdit:false});f.fail();await f.app.saveStudentRosterImportSettings();assert.equal(f.get('quiz/profileSettings/allowNicknameEdit'),false);assert.equal(f.fields.studentRosterImportSettingsError.hidden,false);assert(f.fields.studentRosterImportSettingsError.textContent.includes('名冊已成功匯入'));assert.equal(f.app._savingStudentRosterSettings,false);assert.equal(f.fields.saveStudentRosterImportSettingsBtn.disabled,false);
+});
+test('匯入後設定仍檢查教師身分與原教室，取消匯入不顯示詢問',async()=>{
+ const f=fixture();f.app._studentRosterSettingsClass='CLASS';await f.app.saveStudentRosterImportSettings();assert.equal(f.writes.length,0);f.app.isAdmin=true;f.app._studentRosterSettingsClass='OTHER';await f.app.saveStudentRosterImportSettings();assert.equal(f.writes.length,0);let opened=0;f.app.openStudentRosterImportSettings=()=>opened++;f.app.chooseStudentRosterImportMode=async()=>null;await f.app.importStudentRosterCsv({files:[{size:20,text:async()=> '座號,真實姓名\n01,甲'}],value:'file'});assert.equal(opened,0);
 });

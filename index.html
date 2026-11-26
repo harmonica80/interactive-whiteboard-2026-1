@@ -6748,7 +6748,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c40"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c41"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
@@ -6888,6 +6888,24 @@ Python</pre>
     </div>
   </div>
   
+  <div id="studentRosterImportSettingsModal" class="modal-overlay confirm-modal" role="dialog" aria-modal="true" aria-labelledby="studentRosterImportSettingsTitle" style="z-index:29950;transition:opacity 0.3s" onclick="if(event.target===this)window.app?.closeStudentRosterImportSettings()" onkeydown="if(event.key==='Escape')window.app?.closeStudentRosterImportSettings()">
+    <div class="modal-content" style="width:min(480px,calc(100vw - 32px));max-width:480px;max-height:90vh;overflow-y:auto"><div class="modal-body" style="font-size:14px;line-height:1.6;text-align:left">
+      <h3 id="studentRosterImportSettingsTitle" style="color:var(--text-primary);margin:0 0 1em">✅ 名冊匯入成功</h3>
+      <p id="studentRosterImportSettingsSummary" style="color:var(--text-secondary)"></p>
+      <p>請確認以下三項設定，勾選代表允許；未勾選代表不允許。</p>
+      <div style="display:grid;gap:14px;margin:16px 0;color:var(--text-primary)">
+        <label><input type="checkbox" id="importAllowStudentNicknameEdit"> 允許同學修改「姓名或暱稱」</label>
+        <label><input type="checkbox" id="importAllowStudentRealNameEdit"> 允許同學修改「真實姓名」</label>
+        <label><input type="checkbox" id="importAllowOutsideRoster"> 允許目前名單以外的同學加入</label>
+      </div>
+      <p id="studentRosterImportSettingsError" role="alert" style="color:var(--danger-color)" hidden></p>
+      <div style="display:grid;gap:10px">
+        <button type="button" id="saveStudentRosterImportSettingsBtn" class="presentation-tool-btn active" style="min-height:44px" onclick="window.app?.saveStudentRosterImportSettings()">儲存設定</button>
+        <button type="button" class="presentation-tool-btn" style="min-height:44px" onclick="window.app?.closeStudentRosterImportSettings()">稍後設定（保留目前設定）</button>
+      </div>
+    </div></div>
+  </div>
+
   <div id="studentRosterDuplicatesModal" class="modal-overlay confirm-modal" role="dialog" aria-modal="true" aria-labelledby="studentRosterDuplicatesTitle" style="z-index:29950;transition:opacity 0.3s" onclick="if(event.target===this)window.app?.resolveStudentRosterDuplicates(false)" onkeydown="if(event.key==='Escape')window.app?.resolveStudentRosterDuplicates(false)">
     <div class="modal-content" style="width:min(600px,calc(100vw - 32px));max-width:600px;max-height:90vh;overflow-y:auto"><div class="modal-body" style="font-size:14px;line-height:1.6;text-align:left">
       <h3 id="studentRosterDuplicatesTitle" style="color:var(--text-primary);margin:0 0 1em">🔎 發現重複姓名或暱稱</h3>
