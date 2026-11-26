@@ -13248,6 +13248,7 @@ class App {
         quiz: {
           history: quizData.history || null,
           questionBank: quizData.questionBank || null,
+          wordCloud: quizData.wordCloud || null,
           current: quizData.current || null,
           answers: quizData.answers || null,
           timer: quizData.timer || null,
@@ -13493,6 +13494,7 @@ class App {
           }
           
           if ('history' in quizNode) promises.push(db.ref('quiz/history').set(quizNode.history || null));
+          if ('wordCloud' in quizNode) promises.push(db.ref('quiz/wordCloud').set(quizNode.wordCloud || null));
           if ('questionBank' in quizNode) promises.push(db.ref('quiz/questionBank').set(quizNode.questionBank || null));
           promises.push(db.ref('quiz/current').set(quizNode.current || null));
           promises.push(db.ref('quiz/answers').set(quizNode.answers || null));
@@ -28499,8 +28501,8 @@ class App {
       typeName = '文字雲題目';
       badgeText = '☁️ 文字雲';
       let wc = null;
-      if (window.wordCloud && window.wordCloud.historyBank) {
-        wc = window.wordCloud.historyBank[itemId];
+      if (window.wordCloud && window.wordCloud.questionBank) {
+        wc = window.wordCloud.questionBank[itemId];
       }
       if (wc) {
         const limitVal = wc.limitPerStudent !== undefined ? parseInt(wc.limitPerStudent, 10) : 1;

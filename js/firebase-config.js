@@ -299,7 +299,7 @@ window.ClassRoomManager = {
         rawRef(getPath('quiz/teacherShareFolders')).once('value'),
         rawRef(getPath('quiz/questionBank')).once('value'),
         rawRef(getPath('quiz/videoQuizCustomSets')).once('value'),
-        rawRef(getPath('quiz/wordCloud/history')).once('value')
+        rawRef(getPath('quiz/wordCloud/questionBank')).once('value')
       ]);
 
       const countVal = (val) => {
@@ -366,7 +366,7 @@ window.ClassRoomManager = {
       readPromises.videoQuizzes = rawRef(srcPath('quiz/videoQuizzes')).once('value');
     }
     if (modules.wordCloud) {
-      readPromises.wordCloudHistory = rawRef(srcPath('quiz/wordCloud/history')).once('value');
+      readPromises.wordCloudQuestionBank = rawRef(srcPath('quiz/wordCloud/questionBank')).once('value');
     }
 
     const srcData = {};
@@ -651,31 +651,20 @@ window.ClassRoomManager = {
         }
       }
 
-      // G. 處理文字雲歷史題庫 (quiz/wordCloud/history; 排除學生作答記錄)
+      // G. 僅複製文字雲備課題庫，不帶入出題歷史、成果或目前活動。
       if (modules.wordCloud) {
-        const srcWcHistory = toArray(srcData.wordCloudHistory).map(w => {
-          const cleaned = { ...w };
-          delete cleaned.savedSubmissions;
-          delete cleaned.savedWords;
-          delete cleaned.totalSubmissions;
-          return cleaned;
-        });
-
-        if (copyMode === 'overwrite') {
-          writePromises.push(rawRef(tgtPath(tCode, 'quiz/wordCloud/history')).set(toMap(srcWcHistory)));
-        } else {
-          const existSnap = await rawRef(tgtPath(tCode, 'quiz/wordCloud/history')).once('value');
-          const existWc = toArray(existSnap.val());
-
-          srcWcHistory.forEach(w => {
-            const duplicate = existWc.some(ew => ew.title === w.title && (ew.imageUrl || null) === (w.imageUrl || null));
-            if (!duplicate) {
-              const newId = `wch_copy_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-              existWc.push({ ...w, id: newId, createdAt: Date.now() });
-            }
-          });
-          writePromises.push(rawRef(tgtPath(tCode, 'quiz/wordCloud/history')).set(toMap(existWc)));
+        const source = toArray(srcData.wordCloudQuestionBank);
+        const targetRef = rawRef(tgtPath(tCode, 'quiz/wordCloud/questionBank'));
+        const targetData = (await targetRef.once('value')).val() || {}, updates = {};
+        if (copyMode === 'overwrite') for (const key of Object.keys(targetData)) updates[key] = null;
+        const existing = copyMode === 'overwrite' ? [] : toArray(targetData);
+        for (const q of source) {
+          if (existing.some(eq => eq.title === q.title && (eq.imageUrl || null) === (q.imageUrl || null))) continue;
+          const record = { title: q.title || '即時互動文字雲', createdAt: Date.now(), order: existing.length };
+          for (const field of ['imageUrl', 'limitPerStudent', 'wordOrientation', 'cloudShape', 'customMaskUrl']) if (q[field] !== undefined) record[field] = q[field];
+          updates[targetRef.push().key] = record; existing.push(record);
         }
+        if (Object.keys(updates).length) await targetRef.update(updates);
       }
 
       await Promise.all(writePromises);
@@ -892,15 +881,15 @@ window.ClassRoomManager = {
         itemData = window.videoQuiz.quizzes.find(q => q && q.id === itemId);
       }
     } else if (moduleType === 'wordCloud') {
-      const snap = await rawRef(srcPath(`quiz/wordCloud/history/${itemId}`)).once('value');
+      const snap = await rawRef(srcPath(`quiz/wordCloud/questionBank/${itemId}`)).once('value');
       itemData = snap.val();
       if (!itemData) {
-        const pSnap = await rawRef(srcPath('quiz/wordCloud/history')).once('value');
+        const pSnap = await rawRef(srcPath('quiz/wordCloud/questionBank')).once('value');
         const pVal = pSnap.val();
         if (pVal) itemData = pVal[itemId];
       }
-      if (!itemData && window.wordCloud && window.wordCloud.historyBank) {
-        itemData = window.wordCloud.historyBank[itemId];
+      if (!itemData && window.wordCloud && window.wordCloud.questionBank) {
+        itemData = window.wordCloud.questionBank[itemId];
       }
     } else if (moduleType === 'whiteboardArchive') {
       const snap = await rawRef(srcPath(`whiteboard_archives/${itemId}`)).once('value');
@@ -1052,15 +1041,9 @@ window.ClassRoomManager = {
         }
         await rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).set(toMap(existQuizzes));
       } else if (moduleType === 'wordCloud') {
-        const newWcItem = {
-          ...itemData,
-          id: newId,
-          createdAt: Date.now()
-        };
-        delete newWcItem.savedSubmissions;
-        delete newWcItem.savedWords;
-        delete newWcItem.totalSubmissions;
-        await rawRef(tgtPath(tCode, `quiz/wordCloud/history/${newId}`)).set(newWcItem);
+        const newWcItem = { title: itemData.title || '即時互動文字雲', createdAt: Date.now() };
+        for (const field of ['imageUrl', 'limitPerStudent', 'wordOrientation', 'cloudShape', 'customMaskUrl']) if (itemData[field] !== undefined) newWcItem[field] = itemData[field];
+        await rawRef(tgtPath(tCode, `quiz/wordCloud/questionBank/${newId}`)).set(newWcItem);
       } else if (moduleType === 'whiteboardArchive') {
         const newArchiveItem = {
           ...itemData,
