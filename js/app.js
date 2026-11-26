@@ -2303,6 +2303,17 @@ class App {
     }
   }
   
+  // 管理頁面保留網站標題、班級與系統訊息，避免只對齊後台面板。
+  scrollAdminPageToTop() {
+    const scrollToTop = () => window.scrollTo({ top: 0, left: window.scrollX, behavior: 'instant' });
+    scrollToTop();
+    if (this._adminScrollTopFrame) cancelAnimationFrame(this._adminScrollTopFrame);
+    this._adminScrollTopFrame = requestAnimationFrame(() => {
+      this._adminScrollTopFrame = null;
+      if (this.activeTabId === 'panel-admin') scrollToTop();
+    });
+  }
+
   handleAdminEntryClick() {
     if (this.isAdmin) {
       this.switchToTab('panel-admin');
@@ -2461,6 +2472,7 @@ class App {
       if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
     }
     this.updateAdminActiveActivitiesUI();
+    if (targetId === 'panel-admin') this.scrollAdminPageToTop();
   }
 
   // ==========================================
@@ -6543,10 +6555,7 @@ class App {
     // 同步更新測驗與搶答後台結束按鈕狀態
     this.updateAdminActivityEndButtons();
 
-    const panelAdmin = document.getElementById('panel-admin');
-    if (panelAdmin) {
-      panelAdmin.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    this.scrollAdminPageToTop();
   }
 
   backToAdminDashboard() {
@@ -6567,10 +6576,7 @@ class App {
       });
     }
 
-    const panelAdmin = document.getElementById('panel-admin');
-    if (panelAdmin) {
-      panelAdmin.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    this.scrollAdminPageToTop();
     this.updateAdminActiveActivitiesUI();
   }
 
