@@ -297,7 +297,7 @@ window.ClassRoomManager = {
         rawRef(getPath('quiz/videoFolders')).once('value'),
         rawRef(getPath('teacherShares')).once('value'),
         rawRef(getPath('quiz/teacherShareFolders')).once('value'),
-        rawRef(getPath('quiz/history')).once('value'),
+        rawRef(getPath('quiz/questionBank')).once('value'),
         rawRef(getPath('quiz/videoQuizCustomSets')).once('value'),
         rawRef(getPath('quiz/wordCloud/history')).once('value')
       ]);
@@ -359,8 +359,7 @@ window.ClassRoomManager = {
       readPromises.teacherShareFolders = rawRef(srcPath('quiz/teacherShareFolders')).once('value');
     }
     if (modules.quiz) {
-      readPromises.quizHistory = rawRef(srcPath('quiz/history')).once('value');
-      readPromises.quizCurrent = rawRef(srcPath('quiz/current')).once('value');
+      readPromises.quizQuestionBank = rawRef(srcPath('quiz/questionBank')).once('value');
     }
     if (modules.videoQuiz) {
       readPromises.videoQuizCustomSets = rawRef(srcPath('quiz/videoQuizCustomSets')).once('value');
@@ -593,27 +592,22 @@ window.ClassRoomManager = {
         }
       }
 
-      // E. 處理選擇題測驗題庫 (quiz/history, 排除 quiz/answers)
+      // E. 跨班只複製選擇題教材，不帶入出題歷史與作答。
       if (modules.quiz) {
-        const srcHistory = toArray(srcData.quizHistory);
-        if (copyMode === 'overwrite') {
-          writePromises.push(rawRef(tgtPath(tCode, 'quiz/history')).set(toMap(srcHistory)));
-          if (srcData.quizCurrent) {
-            writePromises.push(rawRef(tgtPath(tCode, 'quiz/current')).set(srcData.quizCurrent));
-          }
-        } else {
-          const existSnap = await rawRef(tgtPath(tCode, 'quiz/history')).once('value');
-          const existHistory = toArray(existSnap.val());
-
-          srcHistory.forEach(q => {
-            const duplicate = existHistory.some(eq => eq.question === q.question);
-            if (!duplicate) {
-              const newId = `quiz_copy_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-              existHistory.push({ ...q, id: newId });
-            }
-          });
-          writePromises.push(rawRef(tgtPath(tCode, 'quiz/history')).set(toMap(existHistory)));
+        const source = toArray(srcData.quizQuestionBank);
+        const targetRef = rawRef(tgtPath(tCode, 'quiz/questionBank'));
+        const targetData = (await targetRef.once('value')).val() || {};
+        const updates = {};
+        if (copyMode === 'overwrite') for (const key of Object.keys(targetData)) updates[key] = null;
+        const existing = copyMode === 'overwrite' ? [] : toArray(targetData);
+        for (const q of source) {
+          if (existing.some(eq => eq.question === q.question && JSON.stringify(eq.options) === JSON.stringify(q.options))) continue;
+          const item = { question: q.question || '', options: q.options || [], quizType: q.quizType || 'single', createdAt: Date.now(), order: existing.length };
+          for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer']) if (q[field] !== undefined) item[field] = q[field];
+          updates[targetRef.push().key] = item;
+          existing.push(item);
         }
+        if (Object.keys(updates).length) await targetRef.update(updates);
       }
 
       // F. 處理影片測驗組合 (quiz/videoQuizCustomSets 與 quiz/videoQuizzes; 排除 answers & session)
@@ -876,15 +870,15 @@ window.ClassRoomManager = {
       }
       folderTypePath = 'quiz/teacherShareFolders';
     } else if (moduleType === 'quiz') {
-      const snap = await rawRef(srcPath(`quiz/history/${itemId}`)).once('value');
+      const snap = await rawRef(srcPath(`quiz/questionBank/${itemId}`)).once('value');
       itemData = snap.val();
       if (!itemData) {
-        const pSnap = await rawRef(srcPath('quiz/history')).once('value');
+        const pSnap = await rawRef(srcPath('quiz/questionBank')).once('value');
         const pVal = pSnap.val();
         if (pVal) itemData = pVal[itemId];
       }
-      if (!itemData && window.quiz && window.quiz.historyBank) {
-        itemData = window.quiz.historyBank[itemId];
+      if (!itemData && window.quiz && window.quiz.questionBank) {
+        itemData = window.quiz.questionBank[itemId];
       }
     } else if (moduleType === 'videoQuiz') {
       const snap = await rawRef(srcPath(`quiz/videoQuizzes/${itemId}`)).once('value');
@@ -1037,12 +1031,9 @@ window.ClassRoomManager = {
         };
         await rawRef(tgtPath(tCode, `teacherShares/${newId}`)).set(newShare);
       } else if (moduleType === 'quiz') {
-        const newQuizItem = {
-          ...itemData,
-          id: newId,
-          createdAt: Date.now()
-        };
-        await rawRef(tgtPath(tCode, `quiz/history/${newId}`)).set(newQuizItem);
+        const newQuizItem = { question: itemData.question || '', options: itemData.options || [], quizType: itemData.quizType || 'single', createdAt: Date.now() };
+        for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer']) if (itemData[field] !== undefined) newQuizItem[field] = itemData[field];
+        await rawRef(tgtPath(tCode, `quiz/questionBank/${newId}`)).set(newQuizItem);
       } else if (moduleType === 'videoQuiz') {
         const existQuizzesSnap = await rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).once('value');
         const existQuizzes = toArray(existQuizzesSnap.val());

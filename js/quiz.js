@@ -3,11 +3,13 @@ class Quiz {
   constructor() {
     this.currentQuiz = null;
     this.historyBank = {};
+    this.questionBank = {};
     this.chartType = 'bar'; // 'bar' | 'pie' | 'line'
     this.currentAnswers = {};
     this.quizRef = db.ref('quiz/current');
     this.answersRef = db.ref('quiz/answers');
     this.historyRef = db.ref('quiz/history');
+    this.bankRef = db.ref('quiz/questionBank');
     this.setupFirebaseSync();
     this.initEditorEvents();
   }
@@ -50,7 +52,6 @@ class Quiz {
     this.historyRef.on('value', (snapshot) => {
       this.historyBank = snapshot.val() || {};
       this.renderQuizHistoryUI();
-      this.renderQuizBankListUI();
     });
   }
 
@@ -123,9 +124,49 @@ class Quiz {
     }
   }
 
+  async refreshQuestionBank() {
+    if (!window.app?.isAdmin) return;
+    const code = window.currentClassCode, request = this._bankReadRequest = (this._bankReadRequest || 0) + 1;
+    try {
+      const snapshot = await this.bankRef.once('value');
+      if (!window.app?.isAdmin || code !== window.currentClassCode || request !== this._bankReadRequest) return;
+      this.questionBank = snapshot.val() || {};
+      this.renderQuizBankListUI();
+    } catch (error) { window.app?.showNotification('題庫讀取失敗', '請檢查連線後重新開啟題庫管理。'); }
+  }
+
+  async saveToQuestionBank(question, options, quizType, extraData = {}) {
+    if (!window.app?.isAdmin || !question || !this.bankRef) return;
+    const item = { question, options: options || [], quizType: quizType || 'single' };
+    for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer']) {
+      if (extraData[field] !== undefined) item[field] = extraData[field];
+    }
+    const signature = JSON.stringify(item);
+    const exists = Object.values(this.questionBank || {}).some(q => {
+      const clean = { question: q.question, options: q.options || [], quizType: q.quizType || 'single' };
+      for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer']) if (q[field] !== undefined) clean[field] = q[field];
+      return JSON.stringify(clean) === signature;
+    });
+    if (exists) return;
+    item.createdAt = Date.now(); item.order = Object.keys(this.questionBank || {}).length;
+    const target = this.bankRef.push();
+    await target.set(item);
+    this.questionBank[target.key] = item;
+    this.renderQuizBankListUI();
+  }
+
+  async addHistoryQuestionToBank(key) {
+    if (!window.app?.isAdmin) return;
+    const item = this.historyBank[key]; if (!item) return;
+    try {
+      await this.saveToQuestionBank(item.question, item.options, item.quizType, item);
+      window.app.showNotification('成功', '此歷次題目已保存在題庫管理。');
+    } catch (error) { window.app.showNotification('儲存失敗', '請檢查連線後再試。'); }
+  }
+
   // 儲存至歷次題目庫 (防重覆)
   saveToHistoryBank(question, options, quizType, extraData = {}) {
-    if (!question || !this.historyRef) return;
+    if (!window.app?.isAdmin || !question || !this.historyRef) return;
 
     // 防呆：自動化測試環境下不寫入正式雲端題庫，防止測試題目污染題庫
     if (typeof window !== 'undefined' && window.navigator && window.navigator.webdriver && !window.__ALLOW_TEST_HISTORY_WRITE__) {
@@ -991,6 +1032,7 @@ class Quiz {
           <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
             <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; color: var(--accent-color); border-color: var(--accent-color);" title="複製此題到其他班級歷次題庫">📤 複製</button>
             <button type="button" class="presentation-tool-btn active" onclick="window.quiz.loadQuizFromHistory('${key}')" style="height: 32px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: bold;" title="帶入此題到出題框">🚀 載入</button>
+            <button type="button" class="presentation-tool-btn" onclick="window.quiz.addHistoryQuestionToBank('${key}')">💾 加入題庫</button>
             <button type="button" class="presentation-tool-btn danger" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px;" title="刪除此題">✕</button>
           </div>
         </div>
@@ -1130,6 +1172,7 @@ class Quiz {
 
   // 切換題目庫子頁籤 (歷次題目庫 vs 題庫管理)
   switchHistorySubTab(tab) {
+    if (tab !== 'history') this.refreshQuestionBank();
     const btnHistory = document.getElementById('btnSubTabQuizHistory');
     const btnBank = document.getElementById('btnSubTabQuizBank');
     const paneHistory = document.getElementById('quizSubTabPaneHistory');
@@ -1185,9 +1228,9 @@ class Quiz {
     const listContainer = document.getElementById('quizBankListContainer');
     if (!listContainer) return;
 
-    const keys = Object.keys(this.historyBank || {});
+    const keys = Object.keys(this.questionBank || {});
     if (keys.length === 0) {
-      listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 24px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">目前題庫無題目。您可以點選上方「➕ 新增題庫題目」新增題目，或點選「📥 匯入題庫」匯入題庫檔案！</div>';
+      listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 14px; padding: 24px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">目前題庫無題目。您可以點選上方「➕ 新增題庫題目」新增題目，或點選「📥 匯入題庫」匯入題庫檔案！</div>';
       return;
     }
 
@@ -1195,8 +1238,8 @@ class Quiz {
 
     // 依 order 排序
     const sortedKeys = keys.sort((a, b) => {
-      const itemA = this.historyBank[a];
-      const itemB = this.historyBank[b];
+      const itemA = this.questionBank[a];
+      const itemB = this.questionBank[b];
       const orderA = typeof itemA.order === 'number' ? itemA.order : null;
       const orderB = typeof itemB.order === 'number' ? itemB.order : null;
       if (orderA !== null && orderB !== null) return orderA - orderB;
@@ -1207,7 +1250,7 @@ class Quiz {
 
     const filteredKeys = sortedKeys.filter(k => {
       if (!query) return true;
-      const q = this.historyBank[k];
+      const q = this.questionBank[k];
       if (!q) return false;
       const qText = (q.question || '').toLowerCase();
       let optText = '';
@@ -1220,12 +1263,12 @@ class Quiz {
     });
 
     if (filteredKeys.length === 0) {
-      listContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 18px; background: var(--bg-card); border-radius: 10px;">查無符合「${this.escapeHtml(this.bankSearchQuery)}」的題目</div>`;
+      listContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; font-size: 14px; padding: 18px; background: var(--bg-card); border-radius: 10px;">查無符合「${this.escapeHtml(this.bankSearchQuery)}」的題目</div>`;
       return;
     }
 
     listContainer.innerHTML = filteredKeys.map((key) => {
-      const q = this.historyBank[key];
+      const q = this.questionBank[key];
       const isMultiple = q.quizType === 'multiple';
       const isMatching = q.quizType === 'matching';
       const badgeText = isMatching ? '🔗 配對' : (isMultiple ? '☑️ 複選' : '🔘 單選');
@@ -1255,10 +1298,10 @@ class Quiz {
             </div>
           </div>
           <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
-            <button type="button" class="presentation-tool-btn active" onclick="window.quiz.loadQuizFromHistory('${key}')" style="height: 32px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="帶入此題到出題框">🚀 載入出題</button>
+            <button type="button" class="presentation-tool-btn active" onclick="window.quiz.loadQuizFromHistory('${key}', 'bank')" style="height: 32px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="帶入此題到出題框">🚀 載入出題</button>
             <button type="button" class="presentation-tool-btn" onclick="window.quiz.openEditBankQuestionModal('${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="直接編輯此題內容與選項">✏️ 編輯</button>
             <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; color: var(--accent-color); border-color: var(--accent-color); display: flex; align-items: center; gap: 4px;" title="複製此題到其他班級題庫">📤 複製</button>
-            <button type="button" class="presentation-tool-btn danger" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 4px;" title="刪除此題">🗑️</button>
+            <button type="button" class="presentation-tool-btn danger" onclick="window.quiz.deleteQuizHistoryItem('${key}', 'bank')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 4px;" title="刪除此題">🗑️</button>
           </div>
         </div>
       `;
@@ -1293,14 +1336,14 @@ class Quiz {
 
         const updates = {};
         orderedKeys.forEach((key, idx) => {
-          if (this.historyBank[key]) {
-            this.historyBank[key].order = idx;
+          if (this.questionBank[key]) {
+            this.questionBank[key].order = idx;
             updates[`${key}/order`] = idx;
           }
         });
 
-        if (this.historyRef && Object.keys(updates).length > 0) {
-          this.historyRef.update(updates).catch(err => {
+        if (this.bankRef && Object.keys(updates).length > 0) {
+          this.bankRef.update(updates).catch(err => {
             console.warn('Failed to update quiz bank order in Firebase', err);
           });
         }
@@ -1374,7 +1417,7 @@ class Quiz {
 
   // 開啟匯出題庫格式選擇彈窗
   openExportModal() {
-    const keys = Object.keys(this.historyBank || {});
+    const keys = Object.keys(this.questionBank || {});
     if (keys.length === 0) {
       if (window.app) window.app.showNotification('提示', '題庫目前沒有任何題目可供匯出！');
       return;
@@ -1473,12 +1516,12 @@ class Quiz {
 
   // 匯出全部題庫備份 (JSON)
   exportQuizzesJSON() {
-    const keys = Object.keys(this.historyBank || {});
+    const keys = Object.keys(this.questionBank || {});
     if (keys.length === 0) {
       if (window.app) window.app.showNotification('提示', '題庫目前沒有任何題目可供匯出！');
       return;
     }
-    const list = keys.map(k => this.historyBank[k]).filter(Boolean);
+    const list = keys.map(k => this.questionBank[k]).filter(Boolean);
     const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1493,14 +1536,14 @@ class Quiz {
 
   // 匯出全部題庫備份 (CSV)
   exportQuizzesCSV() {
-    const keys = Object.keys(this.historyBank || {});
+    const keys = Object.keys(this.questionBank || {});
     if (keys.length === 0) {
       if (window.app) window.app.showNotification('提示', '題庫目前沒有任何題目可供匯出！');
       return;
     }
     let csv = '\uFEFF題目問句,題型(單選/複選/配對),選項(以分號;區隔),標準答案/配對\r\n';
     keys.forEach(k => {
-      const q = this.historyBank[k];
+      const q = this.questionBank[k];
       if (!q) return;
       const question = (q.question || '').replace(/"/g, '""');
       const typeStr = q.quizType === 'matching' ? '配對' : (q.quizType === 'multiple' ? '複選' : '單選');
@@ -1529,12 +1572,13 @@ class Quiz {
 
   // 統一匯入題庫檔案 (支援 .json / .csv / .txt)
   importQuizBankUnifiedFile(event) {
+    if (!window.app?.isAdmin) return;
     const file = event.target.files[0];
     if (!file) return;
 
     const fileName = (file.name || '').toLowerCase();
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const textContent = e.target.result;
         let questions = [];
@@ -1560,9 +1604,9 @@ class Quiz {
           return;
         }
 
-        questions.forEach(q => {
-          this.saveToHistoryBank(q.question, q.options, q.quizType, q);
-        });
+        for (const q of questions) {
+          await this.saveToQuestionBank(q.question, q.options, q.quizType, q);
+        }
 
         // 重新渲染兩個頁籤
         this.renderQuizHistoryUI();
@@ -1919,7 +1963,7 @@ class Quiz {
       return;
     }
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       this.compressAndInsertImage(e.target.result);
     };
     reader.readAsDataURL(file);
@@ -1951,7 +1995,7 @@ class Quiz {
             if (type.startsWith('image/')) {
               const blob = await item.getType(type);
               const reader = new FileReader();
-              reader.onload = (e) => {
+              reader.onload = async (e) => {
                 this.compressAndInsertImage(e.target.result);
               };
               reader.readAsDataURL(blob);
@@ -2141,7 +2185,7 @@ class Quiz {
             if (type.startsWith('image/')) {
               const blob = await item.getType(type);
               const reader = new FileReader();
-              reader.onload = (e) => {
+              reader.onload = async (e) => {
                 this.compressOptionImage(e.target.result);
               };
               reader.readAsDataURL(blob);
@@ -2222,8 +2266,9 @@ class Quiz {
   }
 
   // 載入歷史題目至出題框
-  loadQuizFromHistory(key) {
-    const item = this.historyBank[key];
+  loadQuizFromHistory(key, source = 'history') {
+    if (!window.app?.isAdmin) return;
+    const item = (source === 'bank' ? this.questionBank : this.historyBank)[key];
     if (!item) return;
 
     // 將題目文字/HTML 載入編輯器
@@ -2326,8 +2371,11 @@ class Quiz {
   }
 
   // 刪除單題歷史記錄 (新增彈窗確認動作)
-  deleteQuizHistoryItem(key) {
-    const item = this.historyBank[key];
+  deleteQuizHistoryItem(key, source = 'history') {
+    if (!window.app?.isAdmin) return;
+    const records = source === 'bank' ? this.questionBank : this.historyBank;
+    const ref = source === 'bank' ? this.bankRef : this.historyRef;
+    const item = records[key];
     const qText = item ? item.question : '';
 
     if (window.app) {
@@ -2336,13 +2384,15 @@ class Quiz {
         '確定要刪除此題目嗎？',
         qText ? `題目：「${qText}」\n刪除後將無法復原。` : '此動作無法復原。',
         () => {
-          this.historyRef.child(key).remove();
+          if (!window.app?.isAdmin) return;
+          ref.child(key).remove().then(() => { delete records[key]; this.renderQuizBankListUI(); this.renderQuizHistoryUI(); });
           window.app.showNotification('成功', '已刪除該題目！');
         }
       );
     } else {
       if (confirm(`確定要刪除題目「${qText}」嗎？`)) {
-        this.historyRef.child(key).remove();
+        if (!window.app?.isAdmin) return;
+          ref.child(key).remove().then(() => { delete records[key]; this.renderQuizBankListUI(); this.renderQuizHistoryUI(); });
       }
     }
   }
@@ -2350,7 +2400,7 @@ class Quiz {
   // 開啟題庫題目編輯彈窗
   openEditBankQuestionModal(key) {
     if (!window.app?.isAdmin) return;
-    const item = key ? this.historyBank?.[key] : { question: '', quizType: 'single', options: ['', ''] };
+    const item = key ? this.questionBank?.[key] : { question: '', quizType: 'single', options: ['', ''] };
     if (!item) {
       if (window.app) window.app.showNotification('提示', '找不到該題目！');
       return;
@@ -2407,7 +2457,7 @@ class Quiz {
       if (matchSec) matchSec.style.display = 'block';
       if (matchList) {
         matchList.innerHTML = '';
-        const item = sourceItem || (this.editingBankQuestionKey ? this.historyBank[this.editingBankQuestionKey] : null);
+        const item = sourceItem || (this.editingBankQuestionKey ? this.questionBank[this.editingBankQuestionKey] : null);
         let pairs = (item && item.quizType === 'matching' && Array.isArray(item.pairs)) ? item.pairs : [];
         if (pairs.length === 0 && item && Array.isArray(item.options)) {
           pairs = item.options.map((opt, i) => ({
@@ -2429,7 +2479,7 @@ class Quiz {
       if (optSec) optSec.style.display = 'block';
       if (optList) {
         optList.innerHTML = '';
-        const item = sourceItem || (this.editingBankQuestionKey ? this.historyBank[this.editingBankQuestionKey] : null);
+        const item = sourceItem || (this.editingBankQuestionKey ? this.questionBank[this.editingBankQuestionKey] : null);
         let opts = (item && Array.isArray(item.options)) ? item.options : [];
         if (opts.length === 0) {
           opts = ['', '', '', ''];
@@ -2494,7 +2544,7 @@ class Quiz {
     if (!window.app?.isAdmin || this._savingBankQuestion) return;
     const key = this.editingBankQuestionKey;
     const creating = this.creatingBankQuestion === true;
-    if (!creating && (!key || !this.historyBank[key])) {
+    if (!creating && (!key || !this.questionBank[key])) {
       if (window.app) window.app.showNotification('錯誤', '找不到要編輯的題目！');
       return;
     }
@@ -2552,21 +2602,21 @@ class Quiz {
       item.updatedAt = Date.now();
     }
 
-    if (!this.historyRef) { window.app.showNotification('錯誤', '題庫尚未連線，請稍後再試。'); return; }
+    if (!this.bankRef) { window.app.showNotification('錯誤', '題庫尚未連線，請稍後再試。'); return; }
     this._savingBankQuestion = true;
     const saveButton = document.getElementById('quizBankQuestionSaveBtn');
     if (saveButton) saveButton.disabled = true;
     const classCode = window.currentClassCode;
     try {
-      const target = creating ? this.historyRef.push() : this.historyRef.child(key);
+      const target = creating ? this.bankRef.push() : this.bankRef.child(key);
       if (creating) {
         item.createdAt = Date.now();
-        item.order = Object.keys(this.historyBank || {}).length;
+        item.order = Object.keys(this.questionBank || {}).length;
       }
       if (!window.app?.isAdmin || classCode !== window.currentClassCode) return;
       if (creating) await target.set(item);
       else await target.update(item);
-      this.historyBank[target.key || key] = { ...(this.historyBank[target.key || key] || {}), ...item };
+      this.questionBank[target.key || key] = { ...(this.questionBank[target.key || key] || {}), ...item };
       this.renderQuizBankListUI();
       this.renderQuizHistoryUI();
       this.closeEditBankQuestionModal();
@@ -2580,7 +2630,17 @@ class Quiz {
   }
 
   // 清空歷次題庫
+  clearQuestionBank() {
+    if (!window.app?.isAdmin) return;
+    window.app.showConfirmModal('🗑️', '確定要清空題庫嗎？', '將刪除題庫管理的題目，歷次出題記錄會保留。', async () => {
+      if (!window.app?.isAdmin) return;
+      try { await this.bankRef.remove(); this.questionBank = {}; this.renderQuizBankListUI(); }
+      catch (error) { window.app.showNotification('清空失敗', '請檢查連線後再試。'); }
+    });
+  }
+
   clearHistoryBank() {
+    if (!window.app?.isAdmin) return;
     if (window.app) {
       window.app.showConfirmModal(
         '🗑️',
@@ -2596,7 +2656,8 @@ class Quiz {
 
   // 清除題庫中所有重複題目（保留最新 1 筆）
   cleanDuplicateBankQuestions() {
-    const keys = Object.keys(this.historyBank || {});
+    if (!window.app?.isAdmin) return;
+    const keys = Object.keys(this.questionBank || {});
     if (keys.length === 0) {
       if (window.app) window.app.showNotification('提示', '目前題庫無題目。');
       return;
@@ -2607,7 +2668,7 @@ class Quiz {
 
     // 依序檢查重複題目（依題目問句、選項與題型進行特徵比對）
     keys.forEach(k => {
-      const item = this.historyBank[k];
+      const item = this.questionBank[k];
       if (!item) return;
       const cleanQ = String(item.question || '').trim();
       const cleanOpts = Array.isArray(item.options) ? item.options.map(o => typeof o === 'object' ? (o.text || '') : String(o)) : [];
@@ -2631,7 +2692,8 @@ class Quiz {
         '將保留最新 1 筆，並刪除其餘多餘的重複項目。',
         () => {
           duplicatesToDelete.forEach(k => {
-            this.historyRef.child(k).remove();
+            if (!window.app?.isAdmin) return;
+            this.bankRef.child(k).remove().then(() => { delete this.questionBank[k]; this.renderQuizBankListUI(); });
           });
           window.app.showNotification('成功', `已成功清理 ${duplicatesToDelete.length} 筆重複題目！`);
         }
@@ -2681,11 +2743,12 @@ Python
 
   // 匯入純文字檔 TXT 格式題目庫
   importQuizBankTxtFile(event) {
+    if (!window.app?.isAdmin) return;
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const textContent = e.target.result;
         let questions = [];
@@ -2745,10 +2808,10 @@ Python
           return;
         }
 
-        // 自動寫入歷次題目庫
-        questions.forEach(q => {
-          this.saveToHistoryBank(q.question, q.options, q.quizType, q);
-        });
+        // 匯入題庫管理，不新增出題歷史
+        for (const q of questions) {
+          await this.saveToQuestionBank(q.question, q.options, q.quizType, q);
+        }
 
         // 帶入第一題
         const q0 = questions[0];
@@ -2842,7 +2905,7 @@ Python
         }
 
 
-        if (window.app) window.app.showNotification('成功', `已成功解析並儲存 ${questions.length} 個題目至歷次題目庫！第一題已自動帶入出題框`);
+        if (window.app) window.app.showNotification('成功', `已成功解析並儲存 ${questions.length} 個題目至題庫管理！第一題已自動帶入出題框`);
       } catch (err) {
         if (window.app) window.app.showNotification('錯誤', '解析文字檔失敗: ' + err.message);
       }

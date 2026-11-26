@@ -13240,6 +13240,8 @@ class App {
         whiteboardV2: { canvases: canvasesSnap.val() || null, pages: pagesSnap.val() || null, settings: settingsSnap.val() || null },
         courseMaterials: { version: 1, presentationDraft: draftSnap.val() || null, presentationMaterials, whiteboardArchives },
         quiz: {
+          history: quizData.history || null,
+          questionBank: quizData.questionBank || null,
           current: quizData.current || null,
           answers: quizData.answers || null,
           timer: quizData.timer || null,
@@ -13484,6 +13486,8 @@ class App {
             });
           }
           
+          if ('history' in quizNode) promises.push(db.ref('quiz/history').set(quizNode.history || null));
+          if ('questionBank' in quizNode) promises.push(db.ref('quiz/questionBank').set(quizNode.questionBank || null));
           promises.push(db.ref('quiz/current').set(quizNode.current || null));
           promises.push(db.ref('quiz/answers').set(quizNode.answers || null));
           promises.push(db.ref('quiz/timer').set(quizNode.timer || null));
@@ -28468,8 +28472,8 @@ class App {
       typeName = '選擇題';
       badgeText = '📝 選擇題';
       let q = null;
-      if (window.quiz && window.quiz.historyBank) {
-        q = window.quiz.historyBank[itemId];
+      if (window.quiz && window.quiz.questionBank) {
+        q = window.quiz.questionBank[itemId];
       }
       if (q) {
         previewTitle = `【${q.quizType === 'multiple' ? '複選' : '單選'}】${q.question || ''}（${(q.options || []).join(' | ')}）`;
