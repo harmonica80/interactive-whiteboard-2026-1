@@ -18,7 +18,7 @@ class Quiz {
     this.quizRef.on('value', (snapshot) => {
       const prevActive = this.currentQuiz?.active;
       this.currentQuiz = snapshot.val();
-      if (this.currentQuiz && this.currentQuiz.chartType) {
+      if (this.currentQuiz && this.currentQuiz.chartType && !this._bankEditorSession) {
         this.chartType = this.currentQuiz.chartType;
         const radios = document.querySelectorAll('input[name="quizChartTypeRadio"]');
         radios.forEach(r => {
@@ -57,6 +57,7 @@ class Quiz {
 
   setChartType(type) {
     if (!['bar', 'pie', 'line'].includes(type)) type = 'bar';
+    if (this._bankEditorSession) return;
     this.chartType = type;
     const radios = document.querySelectorAll('input[name="quizChartTypeRadio"]');
     radios.forEach(r => {
@@ -72,6 +73,7 @@ class Quiz {
   }
   
   async startQuiz(question, options, quizType = 'single', extraData = {}) {
+    if (this._bankEditorSession) return;
     if (!window.app?.isAdmin) {
       window.app?.showNotification('權限不足', '只有獲授權的教師可以出題。');
       return;
@@ -116,7 +118,7 @@ class Quiz {
       return;
     }
 
-    this.saveToHistoryBank(question, options, quizType, extraData);
+    this.saveToHistoryBank(question, options, quizType, { ...extraData, chartType: selectedChartType });
 
     // 發起測驗後自動切換至前台「選擇題測驗」畫面，供投影與控場
     if (window.app && typeof window.app.switchToTab === 'function') {
@@ -138,13 +140,13 @@ class Quiz {
   async saveToQuestionBank(question, options, quizType, extraData = {}) {
     if (!window.app?.isAdmin || !question || !this.bankRef) return;
     const item = { question, options: options || [], quizType: quizType || 'single' };
-    for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer']) {
+    for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer', 'chartType']) {
       if (extraData[field] !== undefined) item[field] = extraData[field];
     }
     const signature = JSON.stringify(item);
     const exists = Object.values(this.questionBank || {}).some(q => {
       const clean = { question: q.question, options: q.options || [], quizType: q.quizType || 'single' };
-      for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer']) if (q[field] !== undefined) clean[field] = q[field];
+      for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer', 'chartType']) if (q[field] !== undefined) clean[field] = q[field];
       return JSON.stringify(clean) === signature;
     });
     if (exists) return;
@@ -190,6 +192,7 @@ class Quiz {
         question: question,
         options: options,
         quizType: quizType || 'single',
+        chartType: extraData.chartType || 'bar',
         createdAt: Date.now(),
         order: keys.length
       };
@@ -336,7 +339,7 @@ class Quiz {
         </div>
       `;
     } else {
-      if (container.querySelector('.option-matching-pair')) {
+      if (container.querySelector('.option-matching-pair') || !container.querySelector('.option-input')) {
         container.innerHTML = `
           <div class="option-input" data-type="text" data-correct="false">
             <span class="option-label">1</span>
@@ -359,7 +362,7 @@ class Quiz {
             <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
           </div>
         `;
-      } else if (quizType === 'single') {
+      } else if (type === 'single') {
         // 切換回單選題時，若原本複選勾了多個正解，僅保留第一個正解
         let foundFirst = false;
         container.querySelectorAll('.option-input').forEach(el => {
@@ -457,7 +460,7 @@ class Quiz {
 
   updateUI() {
     const quizStatus = document.getElementById('quizStatus');
-    const quizForm = document.getElementById('quizForm');
+    const quizForm = this._bankEditorSession?.original || document.getElementById('quizForm');
     const answerOptions = document.getElementById('answerOptions');
     const endQuizBtn = document.getElementById('endQuizBtn');
     const idleNotice = document.getElementById('quizStudentIdleNotice');
@@ -587,7 +590,7 @@ class Quiz {
   // 清除學生端與後台測驗結果及答題介面，回復至「目前沒有進行中的測驗」
   clearQuizResults() {
     const quizStatus = document.getElementById('quizStatus');
-    const quizForm = document.getElementById('quizForm');
+    const quizForm = this._bankEditorSession?.original || document.getElementById('quizForm');
     const answerOptions = document.getElementById('answerOptions');
     const endQuizBtn = document.getElementById('endQuizBtn');
     const resultsContainer = document.getElementById('quizResults');
@@ -1932,6 +1935,7 @@ class Quiz {
 
   // 壓縮圖檔並插入編輯器
   compressAndInsertImage(src) {
+    const targetEditor = document.getElementById('quizQuestionEditor');
     const img = new Image();
     img.onload = () => {
       const MAX = 800;
@@ -1949,7 +1953,7 @@ class Quiz {
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0, w, h);
       const dataUrl = canvas.toDataURL('image/webp', 0.82);
-      this.insertEditorImageHtml(dataUrl);
+      if (targetEditor?.isConnected && targetEditor === document.getElementById('quizQuestionEditor')) this.insertEditorImageHtml(dataUrl);
     };
     img.src = src;
   }
@@ -2132,7 +2136,7 @@ class Quiz {
       menu.id = 'quizOptionImgActionMenu';
       menu.className = 'quiz-editor-dropdown-menu';
       menu.style.position = 'fixed';
-      menu.style.zIndex = '9999';
+      menu.style.zIndex = '24000';
       menu.innerHTML = `
         <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.triggerOptionFileUpload()">
           📁 上傳電腦圖檔...
@@ -2144,6 +2148,9 @@ class Quiz {
       document.body.appendChild(menu);
     }
 
+    const host = document.fullscreenElement || document.body;
+    if (menu.parentElement !== host) host.appendChild(menu);
+    menu.style.zIndex = '24000';
     const rect = btn.getBoundingClientRect();
     menu.style.top = `${rect.bottom + 4}px`;
     menu.style.left = `${Math.max(10, rect.left - 40)}px`;
@@ -2266,11 +2273,15 @@ class Quiz {
   }
 
   // 載入歷史題目至出題框
-  loadQuizFromHistory(key, source = 'history') {
+  loadQuizFromHistory(key, source = 'history', notify = true) {
     if (!window.app?.isAdmin) return;
     const item = (source === 'bank' ? this.questionBank : this.historyBank)[key];
     if (!item) return;
 
+    if (item.chartType) {
+      document.querySelectorAll('input[name="quizChartTypeRadio"]').forEach(r => r.checked = r.value === item.chartType);
+      if (!this._bankEditorSession) this.chartType = item.chartType;
+    }
     // 將題目文字/HTML 載入編輯器
     const editor = document.getElementById('quizQuestionEditor');
     if (editor) {
@@ -2327,7 +2338,7 @@ class Quiz {
           `;
         }).join('');
       }
-      if (window.app) window.app.showNotification('成功', '已載入此題至出題框！');
+      if (notify && window.app) window.app.showNotification('成功', '已載入此題至出題框！');
       return;
     }
 
@@ -2418,125 +2429,97 @@ class Quiz {
     const host = document.fullscreenElement || document.body;
     if (modal.parentElement !== host) host.appendChild(modal);
 
-    // 設定題目內容
-    const qInput = document.getElementById('editBankQuestionInput');
-    if (qInput) {
-      qInput.value = item.question || '';
+    if (!this._bankEditorSession) {
+      const original = document.getElementById('quizForm');
+      const mount = document.getElementById('quizBankEditorMount');
+      if (!original || !mount) return;
+      const placeholder = document.createComment('題庫編輯器開啟時保留原出題草稿');
+      original.replaceWith(placeholder);
+      const form = original.cloneNode(true);
+      this._bankEditorSession = { original, placeholder, form, chartType: this.chartType };
+      form.style.display = 'block';
+      form.querySelector('#startQuizBtn')?.remove();
+      form.querySelectorAll('.quiz-editor-dropdown-menu').forEach(menu => { menu.classList.remove('show'); menu.style.display = 'none'; });
+      mount.replaceChildren(form);
+      form.querySelectorAll('button').forEach(button => { button.type = 'button'; button.classList.add('presentation-tool-btn'); if (button.getAttribute('onclick')?.includes('openQuizFormatModal')) button.setAttribute('onclick', 'window.quiz.openBankFormatGuide()'); });
+      form.querySelectorAll('option').forEach(option => { if (option.textContent.includes('12px')) option.remove(); });
     }
-
-    // 設定題型
-    const type = item.quizType || 'single';
-    const rad = document.querySelector(`input[name="editBankQuizType"][value="${type}"]`);
-    if (rad) rad.checked = true;
-
-    this.onEditBankQuizTypeChange(type, item);
+    const editor = document.getElementById('quizQuestionEditor');
+    editor.innerHTML = '';
+    document.getElementById('quizQuestion').value = '';
+    document.querySelectorAll('input[name="quizTypeRadio"]').forEach(r => r.checked = r.value === 'single');
+    document.querySelectorAll('input[name="quizChartTypeRadio"]').forEach(r => r.checked = r.value === (item.chartType || 'bar'));
+    document.getElementById('optionsContainer').innerHTML = '';
+    this.handleQuizTypeChange('single');
+    if (key) this.loadQuizFromHistory(key, 'bank', false);
+    this.initEditorEvents();
     modal.classList.add('active');
     modal.style.display = 'flex';
   }
 
   // 關閉題庫題目編輯彈窗
   closeEditBankQuestionModal() {
+    if (this._savingBankQuestion) return;
     const modal = document.getElementById('quizBankQuestionEditModal');
-    if (modal) {
-      modal.classList.remove('active');
-      modal.style.display = 'none';
+    if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; }
+    this.closeAllDropdowns();
+    if (this._bankEditorSession) {
+      const { original, placeholder, form, chartType } = this._bankEditorSession;
+      form.remove(); placeholder.replaceWith(original);
+      this.chartType = chartType;
+      this.currentEditingOptionRow = null;
+      this._bankEditorSession = null;
     }
     this.editingBankQuestionKey = null;
     this.creatingBankQuestion = false;
   }
 
-  // 切換編輯彈窗中的題型
-  onEditBankQuizTypeChange(type, sourceItem = null) {
-    const optSec = document.getElementById('editBankOptionsSection');
-    const matchSec = document.getElementById('editBankMatchingSection');
-    const optList = document.getElementById('editBankOptionsList');
-    const matchList = document.getElementById('editBankMatchingList');
+  openBankFormatGuide() {
+    const modal = document.getElementById('quizFormatModal');
+    if (!modal) return;
+    const host = document.fullscreenElement || document.body;
+    if (modal.parentElement !== host) host.appendChild(modal);
+    modal.style.zIndex = '24000';
+    modal.classList.add('active');
+  }
 
-    if (type === 'matching') {
-      if (optSec) optSec.style.display = 'none';
-      if (matchSec) matchSec.style.display = 'block';
-      if (matchList) {
-        matchList.innerHTML = '';
-        const item = sourceItem || (this.editingBankQuestionKey ? this.questionBank[this.editingBankQuestionKey] : null);
-        let pairs = (item && item.quizType === 'matching' && Array.isArray(item.pairs)) ? item.pairs : [];
-        if (pairs.length === 0 && item && Array.isArray(item.options)) {
-          pairs = item.options.map((opt, i) => ({
-            left: typeof opt === 'object' ? (opt.text || '') : String(opt),
-            right: item.matchOptions?.[i] || ''
-          }));
-        }
-        if (pairs.length === 0) {
-          pairs = [{ left: '', right: '' }, { left: '', right: '' }];
-        }
-        pairs.forEach(p => {
-          const lText = typeof p.left === 'object' ? (p.left.text || '') : String(p.left || '');
-          const rText = typeof p.right === 'object' ? (p.right.text || '') : String(p.right || '');
-          this.addEditBankMatchingPair(lText, rText);
-        });
-      }
+  collectBankQuestion() {
+    const form = this._bankEditorSession?.form;
+    if (!form) throw Error('題庫編輯器尚未就緒。');
+    const editor = form.querySelector('#quizQuestionEditor');
+    if (!editor.textContent.trim() && !editor.querySelector('img,video,audio,iframe')) throw Error('請輸入題目內容。');
+    const quizType = form.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
+    const item = { question: editor.innerHTML, quizType, chartType: form.querySelector('input[name="quizChartTypeRadio"]:checked')?.value || 'bar', updatedAt: Date.now() };
+    const readOption = (row, index, side = '') => {
+      const text = row.querySelector('.option-field')?.value.trim() || '';
+      const image = row.querySelector('.option-img-data')?.value || '';
+      if (row.dataset.type === 'image' && image) return { type: 'image', text, image, ...(side ? { key: text || `[${side}圖 ${index + 1}]` } : {}) };
+      return text;
+    };
+    if (quizType === 'matching') {
+      item.pairs = [];
+      form.querySelectorAll('.option-matching-pair').forEach((row, i) => {
+        const left = readOption(row.querySelector('.matching-left-item'), i, '左');
+        const right = readOption(row.querySelector('.matching-right-item'), i, '右');
+        if (left && right) item.pairs.push({ left, right });
+        else if (left || right) throw Error('每組配對都必須填寫左側題目與右側答案。');
+      });
+      if (item.pairs.length < 2) throw Error('配對題至少需要兩組完整配對。');
+      item.options = item.pairs.map(p => p.left);
+      item.matchOptions = item.pairs.map(p => p.right);
+      item.correctAnswer = Object.fromEntries(item.pairs.map(p => [typeof p.left === 'object' ? p.left.key : p.left, typeof p.right === 'object' ? p.right.key : p.right]));
+      item.correctOptions = null;
     } else {
-      if (matchSec) matchSec.style.display = 'none';
-      if (optSec) optSec.style.display = 'block';
-      if (optList) {
-        optList.innerHTML = '';
-        const item = sourceItem || (this.editingBankQuestionKey ? this.questionBank[this.editingBankQuestionKey] : null);
-        let opts = (item && Array.isArray(item.options)) ? item.options : [];
-        if (opts.length === 0) {
-          opts = ['', '', '', ''];
-        }
-        opts.forEach(opt => {
-          const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
-          const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt || ''));
-          const imgSrc = isImg ? opt.image : '';
-          this.addEditBankOption(optText, imgSrc);
-        });
-      }
+      item.options = []; item.correctOptions = [];
+      form.querySelectorAll('.option-input').forEach((row, i) => {
+        const value = readOption(row, i);
+        if (value) { if (row.dataset.correct === 'true') item.correctOptions.push(item.options.length); item.options.push(value); }
+      });
+      if (item.options.length < 2) throw Error('請至少填寫兩個選項。');
+      if (quizType === 'single' && item.correctOptions.length > 1) throw Error('單選題只能設定一個正解。');
+      item.pairs = null; item.matchOptions = null; item.correctAnswer = null;
     }
-  }
-
-  // 新增選項 (編輯彈窗)
-  addEditBankOption(text = '', image = '') {
-    const list = document.getElementById('editBankOptionsList');
-    if (!list) return;
-
-    const idx = list.querySelectorAll('.edit-bank-option-row').length + 1;
-    const row = document.createElement('div');
-    row.className = 'edit-bank-option-row';
-    row.style = 'display: flex; align-items: center; gap: 8px; background: var(--bg-input); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);';
-    row.innerHTML = `
-      <span class="edit-bank-opt-badge" style="font-size: 14px; font-weight: bold; background: var(--bg-card); color: var(--text-secondary); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${idx}</span>
-      <input type="text" class="edit-bank-opt-input question-input" value="${this.escapeHtml(text)}" placeholder="請輸入選項文字..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
-      <button type="button" class="remove-option-btn" onclick="this.closest('.edit-bank-option-row').remove(); window.quiz && window.quiz.reindexEditBankOptions();" style="background: transparent; border: none; color: var(--danger-color); cursor: pointer; font-size: 16px; padding: 4px;" title="刪除此選項">✕</button>
-    `;
-    list.appendChild(row);
-    this.reindexEditBankOptions();
-  }
-
-  // 重新計算選項編號
-  reindexEditBankOptions() {
-    const list = document.getElementById('editBankOptionsList');
-    if (!list) return;
-    list.querySelectorAll('.edit-bank-option-row').forEach((row, i) => {
-      const badge = row.querySelector('.edit-bank-opt-badge');
-      if (badge) badge.textContent = i + 1;
-    });
-  }
-
-  // 新增配對組 (編輯彈窗)
-  addEditBankMatchingPair(left = '', right = '') {
-    const list = document.getElementById('editBankMatchingList');
-    if (!list) return;
-
-    const row = document.createElement('div');
-    row.className = 'edit-bank-matching-row';
-    row.style = 'display: flex; align-items: center; gap: 8px; background: var(--bg-input); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);';
-    row.innerHTML = `
-      <input type="text" class="edit-bank-match-left question-input" value="${this.escapeHtml(left)}" placeholder="左側題目..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
-      <span style="color: var(--accent-color); font-weight: bold; user-select: none;">🔗</span>
-      <input type="text" class="edit-bank-match-right question-input" value="${this.escapeHtml(right)}" placeholder="右側配對答案..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
-      <button type="button" class="remove-option-btn" onclick="this.closest('.edit-bank-matching-row').remove();" style="background: transparent; border: none; color: var(--danger-color); cursor: pointer; font-size: 16px; padding: 4px;" title="刪除此配對組">✕</button>
-    `;
-    list.appendChild(row);
+    return item;
   }
 
   // 儲存題庫題目修改
@@ -2549,59 +2532,9 @@ class Quiz {
       return;
     }
 
-    const qInput = document.getElementById('editBankQuestionInput');
-    const questionText = (qInput?.value || '').trim();
-    if (!questionText) {
-      if (window.app) window.app.showNotification('提示', '請輸入題目問句內容！');
-      return;
-    }
-
-    const quizType = document.querySelector('input[name="editBankQuizType"]:checked')?.value || 'single';
-    const item = {};
-
-    if (quizType === 'matching') {
-      const matchRows = document.querySelectorAll('#editBankMatchingList .edit-bank-matching-row');
-      const pairs = [];
-      matchRows.forEach(row => {
-        const leftVal = (row.querySelector('.edit-bank-match-left')?.value || '').trim();
-        const rightVal = (row.querySelector('.edit-bank-match-right')?.value || '').trim();
-        if (leftVal || rightVal) {
-          pairs.push({ left: leftVal, right: rightVal });
-        }
-      });
-
-      if (pairs.length < 2) {
-        if (window.app) window.app.showNotification('提示', '連線配對題請至少建立 2 組配對項目！');
-        return;
-      }
-
-      item.question = questionText;
-      item.quizType = 'matching';
-      item.pairs = pairs;
-      item.options = pairs.map(p => p.left);
-      item.matchOptions = pairs.map(p => p.right);
-      item.updatedAt = Date.now();
-
-    } else {
-      const optRows = document.querySelectorAll('#editBankOptionsList .edit-bank-opt-input');
-      const options = [];
-      optRows.forEach(input => {
-        const val = input.value.trim();
-        if (val) options.push(val);
-      });
-
-      if (options.length < 2) {
-        if (window.app) window.app.showNotification('提示', '請至少保留 2 個選項！');
-        return;
-      }
-
-      item.question = questionText;
-      item.quizType = quizType;
-      item.options = options;
-      if (!creating) { item.pairs = null; item.matchOptions = null; }
-      item.updatedAt = Date.now();
-    }
-
+    let item;
+    try { item = this.collectBankQuestion(); }
+    catch (error) { window.app.showNotification('提示', error.message); return; }
     if (!this.bankRef) { window.app.showNotification('錯誤', '題庫尚未連線，請稍後再試。'); return; }
     this._savingBankQuestion = true;
     const saveButton = document.getElementById('quizBankQuestionSaveBtn');
@@ -2619,6 +2552,7 @@ class Quiz {
       this.questionBank[target.key || key] = { ...(this.questionBank[target.key || key] || {}), ...item };
       this.renderQuizBankListUI();
       this.renderQuizHistoryUI();
+      this._savingBankQuestion = false;
       this.closeEditBankQuestionModal();
       window.app.showNotification('成功', creating ? '已加入題庫，可稍後載入出題。' : '已成功儲存題庫題目修改！');
     } catch (err) {

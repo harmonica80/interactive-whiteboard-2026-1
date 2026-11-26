@@ -7,6 +7,7 @@
 /* ===== 色系主題 ===== */
 /* 淺色主題（預設） */
 :root {
+  --text-on-accent: #ffffff;
   --bg-primary: #f0f2f5;
   --bg-card: #ffffff;
   --bg-header: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -10535,4 +10536,23 @@ body.is-admin-logged-in .floating-student-avatar-container {
   border: 0;
   border-radius: 0;
   box-shadow: none;
+}
+
+/* 題庫共用出題編輯器：依四種佈景主題呈現。 */
+.quiz-bank-editor-mount { overflow-y: auto; min-height: 0; flex: 1; padding: 2px; }
+#quizBankQuestionEditModal .quiz-controls { margin: 0; }
+#quizBankQuestionEditModal button, #quizBankQuestionEditModal select, #quizBankQuestionEditModal input, #quizBankQuestionEditModal label { font-size: 14px; }
+#quizBankQuestionEditModal button { background: var(--bg-card) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; border-radius: 8px; }
+#quizBankQuestionEditModal button:hover { background: var(--bg-input) !important; border-color: var(--accent-color) !important; }
+#quizBankQuestionEditModal button.active, #quizBankQuestionSaveBtn { background: var(--accent-color) !important; color: var(--text-on-accent) !important; border-color: var(--accent-color) !important; }
+#quizBankQuestionEditModal .option-correct-toggle-btn.is-correct { color: var(--success-color) !important; border-color: var(--success-color) !important; }
+#quizBankQuestionEditModal .remove-option-btn { color: var(--danger-color) !important; }
+#quizBankQuestionEditModal .quiz-editor-content { min-height: 130px; color: var(--text-primary); background: var(--bg-card); }
+#quizBankQuestionEditModal .option-field { min-width: 0; }
+#quizBankQuestionEditModal .quiz-editor-dropdown-menu { max-width: calc(90vw - 48px); }
+@media (max-width: 600px) {
+  #quizBankQuestionEditModal .modal-content { padding: 16px !important; }
+  #quizBankQuestionEditModal .option-input, #quizBankQuestionEditModal .option-matching-pair { flex-wrap: wrap; }
+  #quizBankQuestionEditModal .option-field { flex: 1 1 120px; width: 100%; }
+  #quizBankQuestionEditModal .option-matching-item { min-width: 0; flex-wrap: wrap; }
 }

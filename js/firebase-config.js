@@ -603,7 +603,7 @@ window.ClassRoomManager = {
         for (const q of source) {
           if (existing.some(eq => eq.question === q.question && JSON.stringify(eq.options) === JSON.stringify(q.options))) continue;
           const item = { question: q.question || '', options: q.options || [], quizType: q.quizType || 'single', createdAt: Date.now(), order: existing.length };
-          for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer']) if (q[field] !== undefined) item[field] = q[field];
+          for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer', 'chartType']) if (q[field] !== undefined) item[field] = q[field];
           updates[targetRef.push().key] = item;
           existing.push(item);
         }
@@ -1032,7 +1032,7 @@ window.ClassRoomManager = {
         await rawRef(tgtPath(tCode, `teacherShares/${newId}`)).set(newShare);
       } else if (moduleType === 'quiz') {
         const newQuizItem = { question: itemData.question || '', options: itemData.options || [], quizType: itemData.quizType || 'single', createdAt: Date.now() };
-        for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer']) if (itemData[field] !== undefined) newQuizItem[field] = itemData[field];
+        for (const field of ['pairs', 'matchOptions', 'correctOptions', 'correctAnswer', 'chartType']) if (itemData[field] !== undefined) newQuizItem[field] = itemData[field];
         await rawRef(tgtPath(tCode, `quiz/questionBank/${newId}`)).set(newQuizItem);
       } else if (moduleType === 'videoQuiz') {
         const existQuizzesSnap = await rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).once('value');
