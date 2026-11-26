@@ -727,6 +727,7 @@ class App {
   };
 
   generateRandomCuteName() {
+    if (!this.isAdmin && this.studentProfileSettings?.allowNicknameEdit === false) { this.randomPickAvatar(); return; }
     if (document.getElementById('inputStudentModalName')?.readOnly) return;
     const randomId = Math.floor(Math.random() * 96);
     const targetTab = randomId < 48 ? 1 : 2;
@@ -749,6 +750,7 @@ class App {
   }
 
   selectCuteAnimalName(name) {
+    if (!this.isAdmin && this.studentProfileSettings?.allowNicknameEdit === false) return;
     if (document.getElementById('inputStudentModalName')?.readOnly) return;
     const input = document.getElementById('inputStudentModalName');
     const err = document.getElementById('studentNameModalError');
@@ -1125,7 +1127,7 @@ class App {
     }
 
     // 若點擊時希望同步更新名稱為頭像名稱
-    if (updateName && !document.getElementById('inputStudentModalName')?.readOnly) {
+    if (updateName && (this.isAdmin || this.studentProfileSettings?.allowNicknameEdit !== false) && !document.getElementById('inputStudentModalName')?.readOnly) {
       const input = document.getElementById('inputStudentModalName');
       if (input) {
         if (typeof this.selectedAvatarId === 'string') {
@@ -19592,6 +19594,25 @@ class App {
     finally { input.value = ''; this._importingRoster = false; }
   }
 
+  syncStudentNameModalActions() {
+    const own = this._studentOwnProfile || this.registeredStudents?.[this.getUserId()];
+    const signedIn = this.isAdmin || Boolean(this.getCurrentUserName() && own?.name && !own.rosterPending);
+    const logout = document.getElementById('studentNameLogoutBtn');
+    if (logout) logout.hidden = !signedIn;
+    const settings = this.studentProfileSettings || {}, locked = [];
+    if (!this.isAdmin) {
+      if (settings.allowNicknameEdit === false) locked.push('姓名或暱稱');
+      if (settings.allowRealNameEdit !== true) locked.push('真實姓名');
+    }
+    const notice = document.getElementById('studentNameEditRestrictions');
+    if (notice) {
+      notice.hidden = !locked.length;
+      notice.textContent = locked.length ? `老師未開放修改「${locked.join('」及「')}」。您仍可挑選頭像；上方欄位可用來登入或核對身分。${this.requiresRosterRealNameMatch() ? '真實姓名須與名冊相符。' : ''}` : '';
+    }
+    const label = document.getElementById('studentNameSaveLabel');
+    if (label) label.textContent = locked.length ? '存頭像並開始上課' : '儲存姓名與頭像並開始上課';
+  }
+
   syncStudentProfileFields(profile = this.registeredStudents?.[this.getUserId()], realName) {
     const settings = this.studentProfileSettings || {}, student = !this.isAdmin;
     const number = document.getElementById('studentNumberInput');
@@ -19610,6 +19631,7 @@ class App {
       realInput.readOnly = student && !this.requiresRosterRealNameMatch() && settings.allowRealNameEdit !== true && !!realInput.value;
       realInput.title = realInput.readOnly ? '老師已關閉真實姓名修改' : '';
     }
+    this.syncStudentNameModalActions();
   }
 
   clearRosterLookup() {

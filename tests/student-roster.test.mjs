@@ -6,7 +6,7 @@ const end = source.indexOf('\n}\n') + 3;
 const App = new Function('return ' + source.slice(source.indexOf('class App {'), end))();
 function fixture() {
   const data = {}, writes = [], reads = [], local = new Map(), fields = {};
-  for (const id of ['studentNumberRow','studentNumberInput','inputStudentModalName','studentRealNameRow','studentRealNameInput','studentNameModalError','studentRosterLookupStatus','allowStudentNicknameEdit','allowStudentRealNameEdit','allowOutsideRoster','importAllowStudentNicknameEdit','importAllowStudentRealNameEdit','importAllowOutsideRoster','studentRosterImportSettingsError','saveStudentRosterImportSettingsBtn']) fields[id] = {value:'', style:{}, focus(){}};
+  for (const id of ['studentNumberRow','studentNumberInput','inputStudentModalName','studentRealNameRow','studentRealNameInput','studentNameModalError','studentRosterLookupStatus','allowStudentNicknameEdit','allowStudentRealNameEdit','allowOutsideRoster','importAllowStudentNicknameEdit','importAllowStudentRealNameEdit','importAllowOutsideRoster','studentRosterImportSettingsError','saveStudentRosterImportSettingsBtn','studentNameLogoutBtn','studentNameEditRestrictions','studentNameSaveLabel']) fields[id] = {value:'', style:{}, focus(){}};
   globalThis.document = {getElementById:id=>fields[id] || null};
   globalThis.window = {currentClassCode:'CLASS',boardStorage:{local:{getItem:k=>local.get(k)||null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)}}};
   let next = 0, failWrite = false;
@@ -178,4 +178,10 @@ test('直接座號登入入口仍拒絕姓名不符，且可以重新輸入修�
 test('名冊缺少真實姓名時阻止登入，非匯入帳號亦受核對限制',async()=>{
  const f=pairedRosterFixture();f.put('student_real_names/u1',null);f.fields.studentRealNameInput.value='王小明';await f.app.saveStudentNameFromModal();assert.equal(f.writes.length,0);assert(f.fields.studentNameModalError.textContent.includes('先補齊'));
  f.put('student_real_names/old','原姓名');f.fields.studentRealNameInput.value='其他姓名';assert.equal(await f.app.saveRequiredRealName('old'),false);assert.equal(f.get('student_real_names/old'),'原姓名');
+});
+test('未登入或只查到名冊資料時不顯示登出，已登入才顯示',()=>{
+ const f=fixture();f.app.getCurrentUserName=()=>'';f.app.syncStudentNameModalActions();assert.equal(f.fields.studentNameLogoutBtn.hidden,true);f.fields.inputStudentModalName.value='已輸入的名稱';f.app.syncStudentProfileFields({name:'另一位同學',studentNumber:'01'},'姓名');assert.equal(f.fields.studentNameLogoutBtn.hidden,true);f.app._studentOwnProfile={name:'本人'};f.app.getCurrentUserName=()=> '本人';f.app.syncStudentNameModalActions();assert.equal(f.fields.studentNameLogoutBtn.hidden,false);f.app._studentOwnProfile.rosterPending=true;f.app.syncStudentNameModalActions();assert.equal(f.fields.studentNameLogoutBtn.hidden,true);
+});
+test('任一姓名修改限制會顯示說明並改為存頭像，兩者開放則恢復原名稱',()=>{
+ const f=fixture();for(const [nickname,realName]of [[false,true],[true,false],[false,false]]){f.app.studentProfileSettings={allowNicknameEdit:nickname,allowRealNameEdit:realName};f.app.syncStudentNameModalActions();assert.equal(f.fields.studentNameEditRestrictions.hidden,false);assert.equal(f.fields.studentNameSaveLabel.textContent,'存頭像並開始上課');if(!nickname)assert(f.fields.studentNameEditRestrictions.textContent.includes('姓名或暱稱'));if(!realName)assert(f.fields.studentNameEditRestrictions.textContent.includes('真實姓名'));}f.app.studentProfileSettings={allowNicknameEdit:true,allowRealNameEdit:true};f.app.syncStudentNameModalActions();assert.equal(f.fields.studentNameEditRestrictions.hidden,true);assert.equal(f.fields.studentNameSaveLabel.textContent,'儲存姓名與頭像並開始上課');f.app.isAdmin=true;f.app.studentProfileSettings={allowNicknameEdit:false,allowRealNameEdit:false};f.app.syncStudentNameModalActions();assert.equal(f.fields.studentNameEditRestrictions.hidden,true);assert.equal(f.fields.studentNameLogoutBtn.hidden,false);
 });

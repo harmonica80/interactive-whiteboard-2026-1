@@ -10524,3 +10524,6 @@ body.is-admin-logged-in .floating-student-avatar-container {
 #studentNameModal .student-name-actions { flex-direction: row !important; align-items: stretch; }
 #studentNameModal .student-name-actions .ask-btn { flex: 1; min-width: 0; }
 #studentNameLogoutBtn { flex-shrink: 0; min-width: 76px; justify-content: center; font-size: 14px; }
+
+#studentNameLogoutBtn[hidden],
+#studentNameEditRestrictions[hidden] { display: none !important; }
