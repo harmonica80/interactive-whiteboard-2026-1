@@ -3791,8 +3791,8 @@
                       <span style="font-size: 14px; color: var(--text-muted); font-weight: normal;">（可透過 ☰ 圖示拖曳調整題目排序）</span>
                     </h4>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                      <button type="button" class="presentation-tool-btn active" onclick="window.quiz.openCreateNewQuiz()" style="font-size: 14px; border-radius: 10px;" title="在上方出題框建立新題目">
-                        ➕ 建立新測驗
+                      <button type="button" class="presentation-tool-btn active" onclick="window.quiz.openCreateNewQuiz()" style="font-size: 14px; border-radius: 10px;" title="新增題目與選項並儲存到題庫">
+                        ➕ 新增題庫題目
                       </button>
                       <button type="button" class="presentation-tool-btn" onclick="openQuizFormatModal()" style="font-size: 14px; border-radius: 10px;" title="查看題庫格式規範">
                         📋 範例格式說明
@@ -6654,12 +6654,12 @@ Python</pre>
   </div>
 
   <!-- 選擇題題庫題目直接編輯彈出視窗 -->
-  <div id="quizBankQuestionEditModal" class="modal-overlay" style="z-index: 10000;" onclick="if(event.target === this) window.quiz && window.quiz.closeEditBankQuestionModal()">
+  <div id="quizBankQuestionEditModal" class="modal-overlay" style="z-index: 22000;" onclick="if(event.target === this) window.quiz && window.quiz.closeEditBankQuestionModal()">
     <div class="modal-content" style="max-width: 640px; width: 92%; max-height: 88vh; display: flex; flex-direction: column; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); position: relative; box-sizing: border-box;">
       <button onclick="window.quiz && window.quiz.closeEditBankQuestionModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
       
       <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-        <span>✏️</span> <span>編輯題庫題目</span>
+        <span>✏️</span> <span id="quizBankQuestionEditTitle">編輯題庫題目</span>
       </h3>
 
       <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 14px;">
@@ -6728,7 +6728,7 @@ Python</pre>
         <button type="button" class="btn btn-secondary" onclick="window.quiz && window.quiz.closeEditBankQuestionModal()" style="padding: 8px 18px; font-size: 14px;">
           取消
         </button>
-        <button type="button" class="btn btn-primary" onclick="window.quiz && window.quiz.saveEditBankQuestion()" style="padding: 8px 22px; font-size: 14px; font-weight: bold;">
+        <button id="quizBankQuestionSaveBtn" type="button" class="presentation-tool-btn active" onclick="window.quiz && window.quiz.saveEditBankQuestion()" style="padding: 8px 22px; font-size: 14px; font-weight: bold;">
           💾 儲存修改
         </button>
       </div>
@@ -6752,7 +6752,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/focus_question_bank.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
-  <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
+  <script type="application/x-board-script" data-src="js/quiz.js?v=c11"></script>
   <script type="application/x-board-script" data-src="js/app.js?v=c47"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>

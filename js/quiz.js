@@ -1168,22 +1168,10 @@ class Quiz {
     if (paneCsv) paneCsv.style.display = format === 'csv' ? 'block' : 'none';
   }
 
-  // 快捷建立新測驗：捲動並聚焦至上方出題區
+  // 直接新增題庫題目，不啟動或改動目前測驗。
   openCreateNewQuiz() {
-    const section = document.getElementById('quizQuestionEditor') || document.getElementById('quizQuestion');
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      section.focus();
-      const parent = section.closest('.panel-body') || section.parentElement;
-      if (parent) {
-        parent.style.transition = 'box-shadow 0.3s ease';
-        parent.style.boxShadow = '0 0 0 3px var(--accent-color)';
-        setTimeout(() => { parent.style.boxShadow = ''; }, 1200);
-      }
-    }
-    if (window.app) {
-      window.app.showNotification('💡 建立新測驗', '請在上方出題框輸入題目內容與選項，點選「🚀 開始測驗」！');
-    }
+    if (!window.app?.isAdmin) return;
+    this.openEditBankQuestionModal(null);
   }
 
   // 題庫管理搜尋過濾
@@ -1199,7 +1187,7 @@ class Quiz {
 
     const keys = Object.keys(this.historyBank || {});
     if (keys.length === 0) {
-      listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 24px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">目前題庫無題目。您可以點選上方「➕ 建立新測驗」出題，或點選「📥 匯入題庫」匯入題庫檔案！</div>';
+      listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 24px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">目前題庫無題目。您可以點選上方「➕ 新增題庫題目」新增題目，或點選「📥 匯入題庫」匯入題庫檔案！</div>';
       return;
     }
 
@@ -2361,15 +2349,24 @@ class Quiz {
 
   // 開啟題庫題目編輯彈窗
   openEditBankQuestionModal(key) {
-    const item = this.historyBank && this.historyBank[key];
+    if (!window.app?.isAdmin) return;
+    const item = key ? this.historyBank?.[key] : { question: '', quizType: 'single', options: ['', ''] };
     if (!item) {
       if (window.app) window.app.showNotification('提示', '找不到該題目！');
       return;
     }
     this.editingBankQuestionKey = key;
+    this.creatingBankQuestion = !key;
 
     const modal = document.getElementById('quizBankQuestionEditModal');
     if (!modal) return;
+
+    const title = document.getElementById('quizBankQuestionEditTitle');
+    const save = document.getElementById('quizBankQuestionSaveBtn');
+    if (title) title.textContent = key ? '編輯題庫題目' : '新增題庫題目';
+    if (save) save.textContent = key ? '💾 儲存修改' : '💾 加入題庫';
+    const host = document.fullscreenElement || document.body;
+    if (modal.parentElement !== host) host.appendChild(modal);
 
     // 設定題目內容
     const qInput = document.getElementById('editBankQuestionInput');
@@ -2395,6 +2392,7 @@ class Quiz {
       modal.style.display = 'none';
     }
     this.editingBankQuestionKey = null;
+    this.creatingBankQuestion = false;
   }
 
   // 切換編輯彈窗中的題型
@@ -2456,8 +2454,8 @@ class Quiz {
     row.className = 'edit-bank-option-row';
     row.style = 'display: flex; align-items: center; gap: 8px; background: var(--bg-input); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);';
     row.innerHTML = `
-      <span class="edit-bank-opt-badge" style="font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-secondary); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${idx}</span>
-      <input type="text" class="edit-bank-opt-input question-input" value="${this.escapeHtml(text)}" placeholder="請輸入選項文字..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 13.5px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+      <span class="edit-bank-opt-badge" style="font-size: 14px; font-weight: bold; background: var(--bg-card); color: var(--text-secondary); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${idx}</span>
+      <input type="text" class="edit-bank-opt-input question-input" value="${this.escapeHtml(text)}" placeholder="請輸入選項文字..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
       <button type="button" class="remove-option-btn" onclick="this.closest('.edit-bank-option-row').remove(); window.quiz && window.quiz.reindexEditBankOptions();" style="background: transparent; border: none; color: var(--danger-color); cursor: pointer; font-size: 16px; padding: 4px;" title="刪除此選項">✕</button>
     `;
     list.appendChild(row);
@@ -2483,18 +2481,20 @@ class Quiz {
     row.className = 'edit-bank-matching-row';
     row.style = 'display: flex; align-items: center; gap: 8px; background: var(--bg-input); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);';
     row.innerHTML = `
-      <input type="text" class="edit-bank-match-left question-input" value="${this.escapeHtml(left)}" placeholder="左側題目..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 13.5px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+      <input type="text" class="edit-bank-match-left question-input" value="${this.escapeHtml(left)}" placeholder="左側題目..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
       <span style="color: var(--accent-color); font-weight: bold; user-select: none;">🔗</span>
-      <input type="text" class="edit-bank-match-right question-input" value="${this.escapeHtml(right)}" placeholder="右側配對答案..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 13.5px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+      <input type="text" class="edit-bank-match-right question-input" value="${this.escapeHtml(right)}" placeholder="右側配對答案..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
       <button type="button" class="remove-option-btn" onclick="this.closest('.edit-bank-matching-row').remove();" style="background: transparent; border: none; color: var(--danger-color); cursor: pointer; font-size: 16px; padding: 4px;" title="刪除此配對組">✕</button>
     `;
     list.appendChild(row);
   }
 
   // 儲存題庫題目修改
-  saveEditBankQuestion() {
+  async saveEditBankQuestion() {
+    if (!window.app?.isAdmin || this._savingBankQuestion) return;
     const key = this.editingBankQuestionKey;
-    if (!key || !this.historyBank[key]) {
+    const creating = this.creatingBankQuestion === true;
+    if (!creating && (!key || !this.historyBank[key])) {
       if (window.app) window.app.showNotification('錯誤', '找不到要編輯的題目！');
       return;
     }
@@ -2507,7 +2507,7 @@ class Quiz {
     }
 
     const quizType = document.querySelector('input[name="editBankQuizType"]:checked')?.value || 'single';
-    const item = this.historyBank[key];
+    const item = {};
 
     if (quizType === 'matching') {
       const matchRows = document.querySelectorAll('#editBankMatchingList .edit-bank-matching-row');
@@ -2548,23 +2548,35 @@ class Quiz {
       item.question = questionText;
       item.quizType = quizType;
       item.options = options;
-      delete item.pairs;
-      delete item.matchOptions;
+      if (!creating) { item.pairs = null; item.matchOptions = null; }
       item.updatedAt = Date.now();
     }
 
-    // 寫入 Firebase
-    if (this.historyRef) {
-      this.historyRef.child(key).set(item).then(() => {
-        if (window.app) window.app.showNotification('成功', '已成功儲存題庫題目修改！');
-      }).catch(err => {
-        console.warn('Sync to firebase failed', err);
-      });
+    if (!this.historyRef) { window.app.showNotification('錯誤', '題庫尚未連線，請稍後再試。'); return; }
+    this._savingBankQuestion = true;
+    const saveButton = document.getElementById('quizBankQuestionSaveBtn');
+    if (saveButton) saveButton.disabled = true;
+    const classCode = window.currentClassCode;
+    try {
+      const target = creating ? this.historyRef.push() : this.historyRef.child(key);
+      if (creating) {
+        item.createdAt = Date.now();
+        item.order = Object.keys(this.historyBank || {}).length;
+      }
+      if (!window.app?.isAdmin || classCode !== window.currentClassCode) return;
+      if (creating) await target.set(item);
+      else await target.update(item);
+      this.historyBank[target.key || key] = { ...(this.historyBank[target.key || key] || {}), ...item };
+      this.renderQuizBankListUI();
+      this.renderQuizHistoryUI();
+      this.closeEditBankQuestionModal();
+      window.app.showNotification('成功', creating ? '已加入題庫，可稍後載入出題。' : '已成功儲存題庫題目修改！');
+    } catch (err) {
+      window.app.showNotification('儲存失敗', '無法儲存題庫，請檢查連線後重試；填寫內容已保留。');
+    } finally {
+      this._savingBankQuestion = false;
+      if (saveButton) saveButton.disabled = false;
     }
-
-    this.renderQuizBankListUI();
-    this.renderQuizHistoryUI();
-    this.closeEditBankQuestionModal();
   }
 
   // 清空歷次題庫
