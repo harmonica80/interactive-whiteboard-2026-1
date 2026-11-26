@@ -10564,8 +10564,15 @@ body.is-admin-logged-in .floating-student-avatar-container {
 .wc-bank-modal-fields { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 .wc-bank-modal-fields label, .wc-bank-modal-fields .question-input, .wc-bank-modal-content button { font-size: 14px; }
 .wc-bank-modal-fields .question-input { width: 100%; margin: 0; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; }
-.wc-bank-settings-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .wc-bank-image-preview { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .wc-bank-image-preview img { max-width: 100%; max-height: 180px; border: 1px solid var(--border-color); border-radius: 8px; }
 .wc-bank-modal-actions { justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 14px; }
-@media (max-width: 600px) { .wc-bank-modal-content { padding: 16px; } .wc-bank-settings-row { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .wc-bank-modal-content { padding: 16px; } }
+
+.wc-bank-modal-fields h4 { margin: 0 0 8px; font-size: 16px; color: var(--text-primary); }
+.wc-bank-modal-fields > label { font-weight: bold; color: var(--text-secondary); }
+.wc-bank-image-upload { margin: 6px 0 12px; padding: 16px; border: 1px dashed var(--accent-color); border-radius: 10px; background: var(--bg-input); }
+.wc-bank-image-upload > label { color: var(--accent-color); font-weight: bold; }
+.wc-bank-upload-actions { margin-top: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.wc-bank-upload-actions span { font-size: 14px; color: var(--text-secondary); }
+.wc-bank-upload-actions kbd { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; }

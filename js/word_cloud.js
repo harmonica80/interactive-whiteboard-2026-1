@@ -294,7 +294,7 @@
     }
 
     // 處理與壓縮題目圖片 (上限 5MB, 自動最佳化為 WebP/JPEG)
-    processAndSetImage(file, bankMask = false) {
+    processAndSetImage(file) {
       const bankEditor = this.wordCloudBankEditor;
       if (!file) return;
       if (file.size > 15 * 1024 * 1024) {
@@ -326,15 +326,14 @@
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext('2d');
-          if (!bankMask) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
           const compressedUrl = canvas.toDataURL('image/webp', 0.82);
 
           if (bankEditor) {
             bankEditor.loading = false;
             if (this.wordCloudBankEditor !== bankEditor) return;
-            bankEditor[bankMask ? 'customMaskUrl' : 'imageUrl'] = compressedUrl;
-            if (bankMask) document.getElementById('wcBankShapeSelect').value = 'custom';
+            bankEditor.imageUrl = compressedUrl;
             this.renderBankImagePreview();
           } else {
             this.uploadedImageUrl = compressedUrl; this.renderQuestionImagePreview(compressedUrl);
@@ -400,10 +399,9 @@
       const record = editor ? {
         title: document.getElementById('wcBankTitleInput').value.trim(), imageUrl: editor.imageUrl || null,
         limitPerStudent: parseInt(document.getElementById('wcBankLimitSelect').value, 10),
-        wordOrientation: document.getElementById('wcBankOrientationSelect').value,
-        cloudShape: document.getElementById('wcBankShapeSelect').value, customMaskUrl: editor.customMaskUrl || null
+        wordOrientation: editor.wordOrientation || 'mixed',
+        cloudShape: editor.cloudShape || 'circle', customMaskUrl: editor.customMaskUrl || null
       } : this.getDraftQuestion();
-      if (record.cloudShape === 'custom' && !record.customMaskUrl) { window.app.showNotification('提示', '請上傳自訂形狀圖片，或選擇其他形狀。'); return; }
       if (!record.title) { window.app.showNotification('提示', '請輸入文字雲題目標題。'); return; }
       this._savingQuestionBank = true;
       const saveButton = document.getElementById('wcBankSaveBtn'); if (saveButton) saveButton.disabled = true;
@@ -778,16 +776,12 @@
       this.wordCloudBankEditor = { ...item, key, previousFocus: document.activeElement };
       document.getElementById('wcBankModalHeading').textContent = key ? '編輯文字雲題庫題目' : '新增文字雲題庫題目';
       document.getElementById('wcBankTitleInput').value = item.title || '';
-      for (const [field, id, sourceId, fallback] of [['limitPerStudent','wcBankLimitSelect','adminWcLimitSelect',1], ['wordOrientation','wcBankOrientationSelect','wcOrientationSelect','mixed'], ['cloudShape','wcBankShapeSelect','wcShapeSelect','circle']]) {
-        const select = document.getElementById(id), source = document.getElementById(sourceId);
-        if (source) select.innerHTML = source.innerHTML;
-        const value = String(item[field] ?? fallback);
-        if (!Array.from(select.options).some(option => option.value === value)) select.add(new Option(value, value));
-        select.value = value;
-      }
-      document.getElementById('wcBankSaveBtn').textContent = key ? '💾 儲存修改' : '💾 加入題庫';
+      const limitSelect = document.getElementById('wcBankLimitSelect');
+      const limit = String(item.limitPerStudent ?? 1);
+      if (!Array.from(limitSelect.options).some(option => option.value === limit)) limitSelect.add(new Option(`每人 ${limit} 次`, limit));
+      limitSelect.value = limit;
+      document.getElementById('wcBankSaveBtn').textContent = key ? '💾 儲存修改' : '💾 儲存至題庫';
       document.getElementById('wcBankImageInput').value = '';
-      document.getElementById('wcBankMaskInput').value = '';
       this.renderBankImagePreview();
       const host = document.fullscreenElement || document.body;
       if (modal.parentElement !== host) host.appendChild(modal);
@@ -806,7 +800,7 @@
 
     renderBankImagePreview() {
       const editor = this.wordCloudBankEditor;
-      for (const [field, id] of [['imageUrl','wcBankImagePreview'], ['customMaskUrl','wcBankMaskPreview']]) {
+      for (const [field, id] of [['imageUrl','wcBankImagePreview']]) {
         const container = document.getElementById(id); if (!container) continue;
         container.replaceChildren();
         if (!editor?.[field]) continue;

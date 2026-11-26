@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=508">
+  <link rel="stylesheet" href="css/style.css?v=509">
   <link rel="stylesheet" href="css/presentation.css?v=c1">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -6659,21 +6659,17 @@ Python</pre>
     <div class="modal-content wc-bank-modal-content">
       <div class="wc-bank-modal-heading"><h3 id="wcBankModalHeading">新增文字雲題庫題目</h3><button type="button" class="presentation-tool-btn" aria-label="關閉文字雲題庫視窗" onclick="window.wordCloud?.closeQuestionBankModal()">✕</button></div>
       <div class="wc-bank-modal-fields">
+        <h4>📝 出題設定（文字題型／圖片題型）</h4>
         <label for="wcBankTitleInput">題目標題／提問指引：</label>
-        <textarea id="wcBankTitleInput" class="question-input" rows="3" placeholder="請輸入題目標題或引導詞…"></textarea>
-        <label>題目圖片（選填，可貼上圖片）：</label>
-        <button type="button" class="presentation-tool-btn" onclick="document.getElementById('wcBankImageInput').click()">📁 選擇圖片</button>
-        <input id="wcBankImageInput" type="file" accept="image/*" hidden onchange="window.wordCloud?.processAndSetImage(this.files[0])">
-        <div id="wcBankImagePreview" class="wc-bank-image-preview"></div>
-        <label for="wcBankLimitSelect">每位同學送出次數上限：</label>
-        <select id="wcBankLimitSelect" class="question-input"><option value="1">每人 1 次</option><option value="3">每人 3 次</option><option value="0">不限次數</option></select>
-        <div class="wc-bank-settings-row">
-          <label>文字方向：<select id="wcBankOrientationSelect" class="question-input"><option value="mixed">直橫交錯</option><option value="horizontal">水平橫式</option><option value="vertical">垂直直式</option><option value="tilt30">傾斜 ±30°</option><option value="tilt45">傾斜 ±45°</option></select></label>
-          <label>文字雲形狀：<select id="wcBankShapeSelect" class="question-input"><option value="circle">圓形</option><option value="custom">自訂圖片形狀</option></select></label>
+        <input type="text" id="wcBankTitleInput" class="question-input" placeholder="例：請用一個詞形容今天學到的核心觀念，或看圖說出特徵…">
+        <div class="wc-bank-image-upload">
+          <label for="wcBankImageInput">🖼️ 題目圖片（選填，支援圖檔或直接剪貼簿 Ctrl+V 貼上截圖）：</label>
+          <div class="wc-bank-upload-actions"><button type="button" class="presentation-tool-btn" onclick="document.getElementById('wcBankImageInput').click()">📁 選擇本機圖檔上傳</button><span>或直接在此視窗按 <kbd>Ctrl + V</kbd> 貼上截圖</span></div>
+          <input id="wcBankImageInput" type="file" accept="image/*" hidden onchange="window.wordCloud?.processAndSetImage(this.files[0])">
+          <div id="wcBankImagePreview" class="wc-bank-image-preview"></div>
         </div>
-        <button type="button" class="presentation-tool-btn" onclick="document.getElementById('wcBankMaskInput').click()">🖼️ 選擇自訂形狀圖片（選填）</button>
-        <input id="wcBankMaskInput" type="file" accept="image/*" hidden onchange="window.wordCloud?.processAndSetImage(this.files[0], true)">
-        <div id="wcBankMaskPreview" class="wc-bank-image-preview"></div>
+        <label for="wcBankLimitSelect">🎯 每位同學送出次數上限：</label>
+        <select id="wcBankLimitSelect" class="question-input"><option value="1">每人限送出 1 次（最經典聚焦）</option><option value="3">每人限送出 3 次（多面向發想）</option><option value="0">不限次數（自由腦力激盪）</option></select>
       </div>
       <div class="wc-bank-modal-actions"><button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.closeQuestionBankModal()">取消</button><button id="wcBankSaveBtn" type="button" class="presentation-tool-btn active" onclick="window.wordCloud?.saveQuestionToBank()">💾 加入題庫</button></div>
     </div>
@@ -6729,7 +6725,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/dilemma-bank-manager.js?v=c2"></script>
   <script type="application/x-board-script" data-src="js/dilemma-game.js?v=c8"></script>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
-  <script type="application/x-board-script" data-src="js/word_cloud.js?v=c4"></script>
+  <script type="application/x-board-script" data-src="js/word_cloud.js?v=c5"></script>
   <script type="application/x-board-script" data-src="js/presentation-draft.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/presentation_core.js?v=c7"></script>
   <script type="application/x-board-script" data-src="js/group_manager.js?v=c1"></script>
