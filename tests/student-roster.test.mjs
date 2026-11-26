@@ -47,7 +47,7 @@ test('座號登入承接同一 UID，鎖定姓名與真實姓名並保留點數'
  assert(!f.reads.includes('student_roster'));assert(!f.reads.includes('student_real_names'));
 });
 test('允許修改時可更新暱稱與真實姓名',async()=>{
- const f=fixture();roster(f);await f.app.lookupStudentRoster();f.fields.studentRealNameInput.value='王大明';await f.app.saveRosterStudentLogin();assert.equal(f.get('quiz/students/u1/name'),'新暱稱');assert.equal(f.get('student_real_names/u1'),'王大明');
+ const f=fixture();roster(f,{allowRealNameEdit:true});await f.app.lookupStudentRoster();f.fields.studentRealNameInput.value='王大明';await f.app.saveRosterStudentLogin();assert.equal(f.get('quiz/students/u1/name'),'新暱稱');assert.equal(f.get('student_real_names/u1'),'王大明');
 });
 test('查無座號不建立帳號，寫入失敗不切換本機 UID',async()=>{
  const f=fixture();roster(f);f.fields.studentNumberInput.value='99';await f.app.saveRosterStudentLogin();assert.equal(f.writes.length,0);assert.equal(f.local.get('user_id'),undefined);
@@ -149,4 +149,10 @@ test('儲存匯入後設定失敗會保留原設定並允許重試',async()=>{
 });
 test('匯入後設定仍檢查教師身分與原教室，取消匯入不顯示詢問',async()=>{
  const f=fixture();f.app._studentRosterSettingsClass='CLASS';await f.app.saveStudentRosterImportSettings();assert.equal(f.writes.length,0);f.app.isAdmin=true;f.app._studentRosterSettingsClass='OTHER';await f.app.saveStudentRosterImportSettings();assert.equal(f.writes.length,0);let opened=0;f.app.openStudentRosterImportSettings=()=>opened++;f.app.chooseStudentRosterImportMode=async()=>null;await f.app.importStudentRosterCsv({files:[{size:20,text:async()=> '座號,真實姓名\n01,甲'}],value:'file'});assert.equal(opened,0);
+});
+test('真實姓名修改預設不勾選，保留教師明確儲存的選擇',async()=>{
+ const f=fixture();f.app.isAdmin=true;await f.app.loadStudentProfileSettings();assert.equal(f.app.studentProfileSettings.allowRealNameEdit,false);assert.equal(f.fields.allowStudentRealNameEdit.checked,false);f.put('quiz/profileSettings/allowRealNameEdit',true);await f.app.loadStudentProfileSettings();assert.equal(f.fields.allowStudentRealNameEdit.checked,true);
+});
+test('重複清單分別標記已存在座號與姓名',()=>{
+ const f=fixture();const rows=f.app.parseStudentRosterCsv('座號,真實姓名\n01,新姓名\n02,舊姓名');const students={u1:{studentNumber:'01',name:'舊姓名',note:'原備註'}};const result=f.app.findStudentRosterDuplicates(rows,students,{});assert.equal(result[0].sameNumber,true);assert.equal(result[0].nameExists,false);assert.equal(result[1].sameNumber,false);assert.equal(result[1].nameExists,true);
 });

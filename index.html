@@ -2959,7 +2959,7 @@
                   </div>
                   <ul style="font-size:14px;color:var(--text-secondary);margin:6px 0 0;padding-left:24px;line-height:1.6">
                     <li>檢視當前班級學生名冊、近期登入日期與時間。點擊「📜 歷程」可查閱提問、圖片分享、影片、留言互動與測驗作答記錄；亦可編修姓名與頭像、整併多個帳號或刪除。</li>
-                    <li>CSV 格式：座號(或學號)、真實姓名(或備註)。重複項目會先供老師勾選。請以 UTF-8 儲存，座號如 01 請保留前導 0。匯入時可選擇「加入現有名單」（保留點數與歷程）或「覆蓋目前名單」（清除現有名冊與參與歷程）；匯入後，同學需輸入對應座號／學號登入。</li>
+                    <li>CSV 格式：座號(或學號)、真實姓名(或備註)。重複項目會先供老師勾選。匯入時可選擇「加入現有名單」（保留點數與歷程）或「覆蓋目前名單」（清除現有名冊與參與歷程）；匯入後，同學需輸入對應座號／學號登入。</li>
                   </ul>
                 </div>
 
@@ -2974,7 +2974,7 @@
                   <input type="file" id="studentRosterCsvFile" accept=".csv,text/csv" hidden onchange="window.app?.importStudentRosterCsv(this)">
                   <button type="button" class="presentation-tool-btn" onclick="window.app?.downloadStudentRosterSample()">📄 下載 CSV 範例</button>
                   <label style="font-size:14px"><input type="checkbox" id="allowStudentNicknameEdit" checked onchange="window.app?.saveStudentProfileSettings(this)"> 允許同學修改「姓名或暱稱」</label>
-                  <label style="font-size:14px"><input type="checkbox" id="allowStudentRealNameEdit" checked onchange="window.app?.saveStudentProfileSettings(this)"> 允許同學修改「真實姓名」</label>
+                  <label style="font-size:14px"><input type="checkbox" id="allowStudentRealNameEdit" onchange="window.app?.saveStudentProfileSettings(this)"> 允許同學修改「真實姓名」</label>
                   <label style="font-size:14px"><input type="checkbox" id="allowOutsideRoster" onchange="window.app?.saveStudentProfileSettings(this)"> 允許目前名單以外的同學加入</label>
 
                 </div>
@@ -6748,7 +6748,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c41"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c42"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
@@ -6909,7 +6909,10 @@ Python</pre>
   <div id="studentRosterDuplicatesModal" class="modal-overlay confirm-modal" role="dialog" aria-modal="true" aria-labelledby="studentRosterDuplicatesTitle" style="z-index:29950;transition:opacity 0.3s" onclick="if(event.target===this)window.app?.resolveStudentRosterDuplicates(false)" onkeydown="if(event.key==='Escape')window.app?.resolveStudentRosterDuplicates(false)">
     <div class="modal-content" style="width:min(600px,calc(100vw - 32px));max-width:600px;max-height:90vh;overflow-y:auto"><div class="modal-body" style="font-size:14px;line-height:1.6;text-align:left">
       <h3 id="studentRosterDuplicatesTitle" style="color:var(--text-primary);margin:0 0 1em">🔎 發現重複姓名或暱稱</h3>
-      <p>請勾選仍要加入的重複項目；未勾選的項目會略過，其餘不重複的資料照常匯入。CSV 未填「姓名或暱稱」時，以「真實姓名或備註」比對。</p>
+      <ul id="studentRosterDuplicateGuidance" style="margin:0 0 16px;padding-left:1.5em">
+        <li>請勾選仍要加入的重複項目；未勾選的項目會略過，其餘不重複的資料照常匯入。</li>
+        <li>相同座號／學號勾選後更新原帳號，保留點數與歷程。</li>
+      </ul>
       <div id="studentRosterDuplicateRows" style="display:grid;gap:10px;margin:16px 0"></div>
       <div style="display:grid;gap:10px">
         <button type="button" class="presentation-tool-btn active" style="min-height:44px" onclick="window.app?.resolveStudentRosterDuplicates(true)">確認匯入（包含勾選項目）</button>
