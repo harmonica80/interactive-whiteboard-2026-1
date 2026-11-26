@@ -19208,7 +19208,11 @@ class App {
   getStudentRosterNameMatches(name) {
     const value = this.normalizeStudentRosterName(name);
     if (!value) return [];
-    return Object.entries(this.registeredStudents || {}).filter(([, student]) => this.normalizeStudentRosterName(student?.name) === value).map(([uid, student]) => ({ uid, ...student }));
+    const students = Object.entries(this.registeredStudents || {});
+    // 座號／學號優先精確比對，避免與其他同學的暱稱混淆。
+    const numbers = students.filter(([, student]) => student?.studentNumber && this.normalizeStudentRosterName(student.studentNumber) === value);
+    const matches = numbers.length ? numbers : students.filter(([, student]) => this.normalizeStudentRosterName(student?.name) === value || (student?.studentNumber && this.normalizeStudentRosterName(student.note) === value));
+    return matches.map(([uid, student]) => ({ uid, ...student }));
   }
 
   updateStudentRosterNameMatch() {
@@ -19218,14 +19222,14 @@ class App {
     status.hidden = !value;
     if (!value) return;
     const matches = this.getStudentRosterNameMatches(value);
-    status.textContent = matches.length > 1 ? '名單中有多位同名同學，請輸入座號或學號辨識。' : matches.length ? '名單中已有此姓名或暱稱；送出時會確認原有身分，避免重複建立帳號。' : this.allowsOutsideStudentRoster() ? '目前名單中沒有此姓名或暱稱，可作為新同學加入。' : '目前名單中沒有此姓名或暱稱，請確認座號／學號或向老師詢問。';
+    status.textContent = matches.length > 1 ? '名單中有多位同名同學，請輸入座號或學號辨識。' : matches.length ? '名單中已有對應資料；送出時會確認原有身分，避免重複建立帳號。' : this.allowsOutsideStudentRoster() ? '目前名單中沒有此姓名或暱稱，可作為新同學加入。' : '目前名單中沒有此姓名或暱稱，請確認座號／學號或向老師詢問。';
   }
 
   async validateStudentRosterAdmission() {
     // 送出時重新確認名單；輸入期間只比對現有快取，避免每個按鍵都下載名冊。
     await this.getTakenStudentNames();
     const number = document.getElementById('studentNumberInput');
-    if (this.studentProfileSettings?.rosterEnabled && number?.value.trim()) return true;
+    if (number) number.value = '';
     const input = document.getElementById('inputStudentModalName');
     const matches = this.getStudentRosterNameMatches(input?.value);
     this.updateStudentRosterNameMatch();
@@ -19482,10 +19486,7 @@ class App {
 
   syncStudentProfileFields(profile = this.registeredStudents?.[this.getUserId()], realName) {
     const settings = this.studentProfileSettings || {}, student = !this.isAdmin;
-    const numberRow = document.getElementById('studentNumberRow'), number = document.getElementById('studentNumberInput');
-    if (numberRow) numberRow.hidden = !student || !settings.rosterEnabled;
-    const numberLabel = document.getElementById('studentNumberLabel');
-    if (numberLabel) numberLabel.textContent = this.allowsOutsideStudentRoster() ? '座號或學號（名單外同學可留空）' : '座號或學號（必填）';
+    const number = document.getElementById('studentNumberInput');
     if (number && document.activeElement !== number) number.value = profile?.studentNumber || window.boardStorage.local.getItem('student_number:' + (window.currentClassCode || '')) || '';
     const input = document.getElementById('inputStudentModalName');
     if (input) {
@@ -19494,7 +19495,7 @@ class App {
       input.title = input.readOnly ? '老師已關閉姓名或暱稱修改' : '';
     }
     const realRow = document.getElementById('studentRealNameRow'), realInput = document.getElementById('studentRealNameInput');
-    if (realRow) realRow.hidden = !student || !(this.classRequiresRealName || (settings.rosterEnabled && (profile?.studentNumber || number?.value.trim())));
+    if (realRow) realRow.hidden = !student || !this.classRequiresRealName;
     if (realInput) {
       if (realName !== undefined) realInput.value = realName;
       realInput.readOnly = student && settings.allowRealNameEdit === false && !!realInput.value;
@@ -19529,7 +19530,8 @@ class App {
       this.syncStudentProfileFields(profile, realSnap.val() || entry.label);
       // 保留使用者實際輸入，避免格式正規化造成誤認。
       input.value = value;
-      document.getElementById('studentRosterLookupStatus').textContent = `已找到座號／學號：${entry.studentNumber}`;
+      const status = document.getElementById('studentRosterLookupStatus');
+      if (status) status.textContent = `已找到座號／學號：${entry.studentNumber}`;
       return this._rosterLookup;
     } catch(e) { this._rosterLookup = null; this.studentRosterError(e.message || '無法讀取名冊，請檢查網路後再試。'); return null; }
   }
@@ -19537,7 +19539,10 @@ class App {
   async saveRosterStudentLogin() {
     // 每次送出重讀指定座號與個人資料，不下載整份名冊。
     const numberValue = document.getElementById('studentNumberInput')?.value.trim();
-    const typedRealName = this._rosterLookup && this.studentRosterKey(this._rosterLookup.entry.studentNumber) === this.studentRosterKey(numberValue) ? document.getElementById('studentRealNameInput')?.value.trim() : '';
+    const enteredRealName = document.getElementById('studentRealNameInput')?.value.trim() || '';
+    const sameLookup = this._rosterLookup && this.studentRosterKey(this._rosterLookup.entry.studentNumber) === this.studentRosterKey(numberValue);
+    const sameMember = this._studentOwnProfile?.studentNumber && this.studentRosterKey(this._studentOwnProfile.studentNumber) === this.studentRosterKey(numberValue);
+    const typedRealName = sameLookup || sameMember || (this.classRequiresRealName && enteredRealName !== (this._studentOwnRealName || '')) ? enteredRealName : '';
     const result = await this.lookupStudentRoster(); if (!result) return;
     const { entry, profile } = result;
     const nameInput = document.getElementById('inputStudentModalName');
@@ -19850,7 +19855,7 @@ class App {
           uid,
           name: String(data.name).trim(),
           studentNumber: data.studentNumber || '',
-          note: [data.studentNumber ? '座號／學號：' + data.studentNumber : '', data.note || ''].filter(Boolean).join(' · '),
+          note: data.note || '',
           realName: this.classRealNames?.[uid] ? String(this.classRealNames[uid]) : '',
           avatar: data.avatar !== undefined ? data.avatar : 0,
           points: parseInt(data.points, 10) || 0,
@@ -19948,6 +19953,7 @@ class App {
         s.name.toLowerCase().includes(query) ||
         (s.note && s.note.toLowerCase().includes(query)) ||
         (s.realName && s.realName.toLowerCase().includes(query)) ||
+        (s.studentNumber && s.studentNumber.toLowerCase().includes(query)) ||
         s.uid.toLowerCase().includes(query)
       );
     }
@@ -20011,8 +20017,8 @@ class App {
                 ${avatarHtml}
               </div>
               <div class="admin-student-list-name-box" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <span class="admin-student-list-name" title="${safeName}">${safeName}</span>${s.realName ? `<span>真實姓名：${this.escapeHtml(s.realName)}</span>` : ''}
-                ${s.note
+                <span class="admin-student-list-name" title="${safeName}">${safeName}</span>${s.realName ? `<span>${this.escapeHtml(s.realName)}</span>` : ''}
+                ${s.studentNumber ? '' : s.note
                   ? `<span class="student-note-badge has-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="學生備註：${this.escapeHtml(s.note)}（點擊修改真實姓名或注意事項）">📝 ${this.escapeHtml(s.note)}</span>`
                   : `<button type="button" class="student-note-badge empty-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="點擊新增學生備註（真實姓名／座號／注意事項）">＋ 備註</button>`
                 }
@@ -20077,8 +20083,8 @@ class App {
               </div>
               <div class="admin-student-card-info">
                 <div class="admin-student-card-name-row" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                  <span class="admin-student-card-name" title="${safeName}">${safeName}</span>${s.realName ? `<span>真實姓名：${this.escapeHtml(s.realName)}</span>` : ''}
-                  ${s.note
+                  <span class="admin-student-card-name" title="${safeName}">${safeName}</span>${s.realName ? `<span>${this.escapeHtml(s.realName)}</span>` : ''}
+                  ${s.studentNumber ? '' : s.note
                     ? `<span class="student-note-badge has-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="學生備註：${this.escapeHtml(s.note)}（點擊修改真實姓名或注意事項）">📝 ${this.escapeHtml(s.note)}</span>`
                     : `<button type="button" class="student-note-badge empty-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="點擊新增學生備註（真實姓名／座號／注意事項）">＋ 備註</button>`
                   }

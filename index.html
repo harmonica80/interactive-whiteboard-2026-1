@@ -5225,15 +5225,15 @@
       <div class="student-name-form" style="display: flex; flex-direction: column; gap: 12px;">
         <div>
           <label style="display: block; font-size: 14px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
-            📝 您的姓名或暱稱 <span style="color: #ff3b30;">*</span>
+            📝 您的姓名/暱稱/座號/學號 <span style="color: #ff3b30;">*</span>
           </label>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <input type="text" id="inputStudentModalName" class="question-input" placeholder="例如：05 王小明 或 點選右側隨機" style="margin: 0; flex: 1; font-size: 14px;" autocomplete="name" maxlength="20">
+            <input type="text" id="inputStudentModalName" class="question-input" placeholder="請輸入姓名、暱稱、座號或學號" style="margin: 0; flex: 1; font-size: 14px;" autocomplete="name" maxlength="40">
             <button type="button" class="btn btn-secondary" onclick="window.app.generateRandomCuteName()" style="white-space: nowrap; padding: 10px 14px; font-weight: bold; border-radius: 10px; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; cursor: pointer; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--accent-color); flex-shrink: 0;" title="隨機挑選可愛動物或小生物名稱">
               🎲 隨機挑選
             </button>
           </div>
-          <div id="studentNumberRow" hidden style="font-size:14px"><label id="studentNumberLabel" for="studentNumberInput">座號或學號（必填）</label><input id="studentNumberInput" class="question-input" maxlength="40" autocomplete="off" placeholder="請輸入老師名冊中的座號或學號" oninput="window.app?.clearRosterLookup()" onblur="window.app?.lookupStudentRoster()"><p id="studentRosterLookupStatus" style="font-size:14px;color:var(--text-secondary)"></p></div>
+          <input type="hidden" id="studentNumberInput">
           <div id="studentRealNameRow" hidden><label for="studentRealNameInput">真實姓名（必填）</label><input type="text" id="studentRealNameInput" class="question-input" autocomplete="name" maxlength="100" placeholder="請輸入真實姓名"></div>
           <p id="studentNameRosterStatus" role="status" style="font-size:14px;color:var(--text-secondary);margin:6px 0" hidden></p>
           <div id="studentNameModalError" style="display: none; margin-top: 6px; color: #ff3b30; font-size: 14px; font-weight: bold;"></div>
@@ -6748,7 +6748,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/timer_music_manager.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c10"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c38"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c39"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c12"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>

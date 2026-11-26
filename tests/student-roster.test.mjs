@@ -99,7 +99,7 @@ test('開放名單外加入時可留空座號；既有名冊姓名自動對應�
  const f=fixture();f.app.studentProfileSettings={rosterEnabled:true,allowOutsideRoster:true};f.fields.inputStudentModalName.value='新同學';assert.equal(await f.app.validateStudentRosterAdmission(),true);assert.equal(f.fields.studentNumberInput.value,'');f.app.registeredStudents={u1:{name:'小明',studentNumber:'01'}};f.fields.inputStudentModalName.value='小明';assert.equal(await f.app.validateStudentRosterAdmission(),true);assert.equal(f.fields.studentNumberInput.value,'01');
 });
 test('多位同名學生必須用座號識別，輸入姓名不會任意選取帳號',async()=>{
- const f=fixture();f.app.studentProfileSettings={rosterEnabled:true,allowOutsideRoster:true};f.app.registeredStudents={a:{name:'小明',studentNumber:'01'},b:{name:'小明',studentNumber:'02'}};f.fields.inputStudentModalName.value='小明';assert.equal(await f.app.validateStudentRosterAdmission(),false);assert.equal(f.local.get('user_id'),undefined);f.fields.studentNumberInput.value='02';assert.equal(await f.app.validateStudentRosterAdmission(),true);
+ const f=fixture();f.app.studentProfileSettings={rosterEnabled:true,allowOutsideRoster:true};f.app.registeredStudents={a:{name:'小明',studentNumber:'01'},b:{name:'小明',studentNumber:'02'}};f.fields.inputStudentModalName.value='小明';assert.equal(await f.app.validateStudentRosterAdmission(),false);assert.equal(f.local.get('user_id'),undefined);f.fields.inputStudentModalName.value='02';assert.equal(await f.app.validateStudentRosterAdmission(),true);
 });
 test('CSV 選填暱稱與重複項目比對，重新匯入同座號除外',()=>{
  const f=fixture();const rows=f.app.parseStudentRosterCsv('座號,真實姓名,姓名或暱稱（選填）\n01,甲,同名\n02,乙,同名\n03,丙,獨特');assert.equal(rows[0].nickname,'同名');assert.deepEqual(f.app.findStudentRosterDuplicates(rows,{},{}).map(d=>d.index),[0,1]);const only=[rows[2]];assert.equal(f.app.findStudentRosterDuplicates(only,{old:{name:'獨特'}},{}).length,1);assert.equal(f.app.findStudentRosterDuplicates(only,{old:{name:'獨特',studentNumber:'03'}},{[only[0].key]:{uid:'old',label:'丙'}}).length,0);
@@ -121,4 +121,15 @@ test('關閉名單外加入仍允許既有同學依姓名修改權限更名',asy
 });
 test('老師預先匯入的暱稱在關閉修改時，首次登入也不能變更',async()=>{
  const f=fixture();f.app.studentProfileSettings={rosterEnabled:true,allowNicknameEdit:false};f.app.syncStudentProfileFields({name:'老師指定名',studentNumber:'01',rosterPending:true,nicknamePreset:true},'王小明');assert.equal(f.fields.inputStudentModalName.readOnly,true);assert.equal(f.fields.inputStudentModalName.value,'老師指定名');
+});
+test('單一登入欄位可用座號或匯入姓名對應原帳號，不把座號改成暱稱',async()=>{
+ const f=fixture();roster(f);f.put('quiz/students/u1/note','王小明');f.app.registeredStudents={u1:{name:'原暱稱',studentNumber:'01',note:'王小明'}};f.put('quiz/profileSettings',{rosterEnabled:true,allowOutsideRoster:false});f.fields.studentNumberInput.value='';f.fields.inputStudentModalName.value='01';await f.app.saveStudentNameFromModal();assert.equal(f.local.get('user_id'),'u1');assert.equal(f.get('quiz/students/u1/name'),'原暱稱');assert.equal(f.fields.inputStudentModalName.value,'原暱稱');
+ f.fields.inputStudentModalName.value='王小明';assert.equal(await f.app.validateStudentRosterAdmission(),true);assert.equal(f.fields.studentNumberInput.value,'01');
+});
+test('單一欄位優先比對座號，不受同學相同暱稱或過期隱藏座號誤導',async()=>{
+ const f=fixture();f.app.studentProfileSettings={rosterEnabled:true,allowOutsideRoster:false};f.app.registeredStudents={a:{name:'01',studentNumber:'02'},b:{name:'小明',studentNumber:'01'}};f.fields.inputStudentModalName.value='01';assert.equal(await f.app.validateStudentRosterAdmission(),true);assert.equal(f.fields.studentNumberInput.value,'01');assert.equal(f.fields.inputStudentModalName.value,'小明');
+ f.fields.inputStudentModalName.value='名單外新人';assert.equal(await f.app.validateStudentRosterAdmission(),false);assert.equal(f.fields.studentNumberInput.value,'');
+});
+test('單一欄位登入仍保留班級要求填寫真實姓名時的修改功能',async()=>{
+ const f=fixture();roster(f);f.app.classRequiresRealName=true;f.app.registeredStudents={u1:{name:'原暱稱',studentNumber:'01'}};f.put('quiz/profileSettings',{rosterEnabled:true,allowOutsideRoster:false,allowRealNameEdit:true});f.fields.inputStudentModalName.value='01';f.fields.studentRealNameInput.value='王大明';await f.app.saveStudentNameFromModal();assert.equal(f.get('student_real_names/u1'),'王大明');
 });
