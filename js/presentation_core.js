@@ -15,6 +15,8 @@
   class PresentationManager {
     constructor() {
       // 簡報核心資料
+      this.remoteSlideSource = null;
+      this.remoteSlideOrder = [];
       this.slides = []; // [{ id, type, bgUrl, bgColor, externalUrl, urlPosition, displayMode, questions }]
       this.currentSlideIndex = 0;
       this.isPresenting = false; // 是否向全班同步廣播
@@ -985,6 +987,7 @@
               // 另一位老師正在廣播
               this.isRemoteBroadcastingActive = true;
               this.isPresenting = false;
+              this.remoteCurrentSlideId = data.currentSlideId || null;
               this.attachLivePresentationListeners();
             }
           } else {
@@ -998,8 +1001,10 @@
                 window.app.switchToTab('panel-presentation');
               }
             }
-            if (typeof data.currentSlideIndex === 'number' && data.currentSlideIndex !== this.currentSlideIndex) {
-              this.currentSlideIndex = data.currentSlideIndex;
+            this.remoteCurrentSlideId = data.currentSlideId || null;
+            const remoteIndex = this.resolveRemoteSlideIndex(data);
+            if (remoteIndex !== this.currentSlideIndex) {
+              this.currentSlideIndex = remoteIndex;
               this.onSlideChanged();
             }
           }
@@ -1018,8 +1023,8 @@
       this._onSlidesChange = (snap) => {
         const cloudSlides = snap.val();
         if (cloudSlides && Array.isArray(cloudSlides) && this.isRemoteBroadcastingActive) {
-          this.slides = cloudSlides;
-          this.render();
+          this.remoteSlideSource = cloudSlides;
+          this.applyRemoteSlideOrder();
         }
       };
 
@@ -1036,6 +1041,8 @@
         this.redrawAnnotations();
       };
 
+      this._onSlideOrderChange = snap => { this.remoteSlideOrder = snap.val() || []; this.applyRemoteSlideOrder(); };
+      presRef.child('slideOrder').on('value', this._onSlideOrderChange);
       presRef.child('slides').on('value', this._onSlidesChange);
       presRef.child('laser').on('value', this._onLaserChange);
       presRef.child('annotations').on('value', this._onAnnotationsChange);
@@ -1046,6 +1053,8 @@
       if (!this._isLiveListenersAttached || typeof db === 'undefined') return;
       this._isLiveListenersAttached = false;
       const presRef = db.ref('presentation');
+      if (this._onSlideOrderChange) presRef.child('slideOrder').off('value', this._onSlideOrderChange);
+      this.remoteSlideSource = null; this.remoteSlideOrder = []; this.remoteCurrentSlideId = null;
       if (this._onSlidesChange) presRef.child('slides').off('value', this._onSlidesChange);
       if (this._onLaserChange) presRef.child('laser').off('value', this._onLaserChange);
       if (this._onAnnotationsChange) presRef.child('annotations').off('value', this._onAnnotationsChange);
@@ -1152,6 +1161,7 @@
       db.ref('presentation/live').set({
         isPresenting: this.isPresenting,
         currentSlideIndex: this.currentSlideIndex,
+        currentSlideId: this.getCurrentSlide()?.id || null,
         hostUid: user.uid,
         hostName: user.name,
         updatedAt: Date.now()
@@ -1159,7 +1169,7 @@
 
       if (syncSlides && this.isPresenting && this.slides.length > 0) {
         try {
-          db.ref('presentation/slides').set(this.slides).catch(err => console.warn('Slide sync warning:', err));
+          db.ref('presentation').update({ slides: this.slides, slideOrder: this.slides.map(slide => slide.id) }).catch(err => console.warn('Slide sync warning:', err));
         } catch (e) {
           console.warn('Cannot write full slides to Firebase:', e);
         }
@@ -1184,6 +1194,7 @@
         liveRef.set({
           isPresenting: true,
           currentSlideIndex: this.currentSlideIndex,
+          currentSlideId: this.getCurrentSlide()?.id || null,
           hostUid: user.uid,
           hostName: user.name,
           updatedAt: Date.now()
@@ -1194,7 +1205,7 @@
 
         if (this.slides.length > 0) {
           try {
-            db.ref('presentation/slides').set(this.slides).catch(() => {});
+            db.ref('presentation').update({ slides: this.slides, slideOrder: this.slides.map(slide => slide.id) }).catch(() => {});
           } catch (e) {}
         }
       }
@@ -1214,6 +1225,7 @@
         db.ref('presentation/live').set({
           isPresenting: false,
           currentSlideIndex: this.currentSlideIndex,
+          currentSlideId: this.getCurrentSlide()?.id || null,
           hostUid: '',
           hostName: '',
           updatedAt: Date.now()
@@ -1693,6 +1705,103 @@
       this.renderStudentInteraction();
     }
 
+    canReorderSlides() { return this.canControlPresentation() && !this.isRemoteBroadcastingActive; }
+
+    resolveRemoteSlideIndex(data) {
+      const index = data.currentSlideId ? this.slides.findIndex(slide => slide.id === data.currentSlideId) : -1;
+      return index >= 0 ? index : Math.max(0, Math.min(Number(data.currentSlideIndex) || 0, this.slides.length - 1));
+    }
+
+    applyRemoteSlideOrder() {
+      if (!this.isRemoteBroadcastingActive || !Array.isArray(this.remoteSlideSource)) return;
+      const byId = new Map(this.remoteSlideSource.map(slide => [slide.id, slide]));
+      const ordered = [];
+      for (const id of Array.isArray(this.remoteSlideOrder) ? this.remoteSlideOrder : []) {
+        if (byId.has(id)) { ordered.push(byId.get(id)); byId.delete(id); }
+      }
+      ordered.push(...byId.values()); this.slides = ordered;
+      const index = ordered.findIndex(slide => slide.id === this.remoteCurrentSlideId);
+      this.currentSlideIndex = index >= 0 ? index : Math.max(0, Math.min(this.currentSlideIndex, ordered.length - 1));
+      this.render();
+      if (this.els.modalGridOverview?.classList.contains('active')) this.renderGridOverviewCards();
+    }
+
+    async reorderSlides(slideId, targetId, after = false) {
+      if (!this.canReorderSlides() || this.reorderingSlides || slideId === targetId) return false;
+      const next = this.slides.slice(), from = next.findIndex(slide => slide.id === slideId);
+      if (from < 0 || !next.some(slide => slide.id === targetId)) return false;
+      const currentId = this.getCurrentSlide()?.id;
+      const [moved] = next.splice(from, 1);
+      next.splice(next.findIndex(slide => slide.id === targetId) + (after ? 1 : 0), 0, moved);
+      if (next.every((slide, i) => slide === this.slides[i])) return false;
+      this.slides = next; this.currentSlideIndex = Math.max(0, next.findIndex(slide => slide.id === currentId));
+      const scroll = this.els.thumbnailsList?.scrollTop || 0;
+      this.render();
+      if (this.els.thumbnailsList) this.els.thumbnailsList.scrollTop = scroll;
+      if (this.els.modalGridOverview?.classList.contains('active')) this.renderGridOverviewCards();
+      this.draft?.schedule();
+      if (this.isPresenting && typeof db !== 'undefined') {
+        this.reorderingSlides = true;
+        try {
+          await db.ref('presentation').update({ slideOrder: next.map(slide => slide.id), 'live/currentSlideIndex': this.currentSlideIndex, 'live/currentSlideId': currentId || null, 'live/updatedAt': Date.now() });
+        } catch (error) { this.notify('順序同步失敗', '本機順序已調整，請檢查連線後重新開始同步簡報。'); }
+        finally { this.reorderingSlides = false; }
+      }
+      return true;
+    }
+
+    bindSlideReorderCard(card, slideId, layout) {
+      card.dataset.presentationSlideId = slideId;
+      card.dataset.presentationSortLayout = layout;
+      card.querySelectorAll('img').forEach(image => image.draggable = false);
+      if (!this.canReorderSlides()) return;
+      card.classList.add('presentation-sortable-slide'); card.draggable = true;
+      const markTarget = (target, x, y) => {
+        document.querySelectorAll('.presentation-sort-before,.presentation-sort-after').forEach(el => el.classList.remove('presentation-sort-before','presentation-sort-after'));
+        if (!target || !target.parentElement || target.dataset.presentationSlideId === this.draggedSlideId) return null;
+        const rect = target.getBoundingClientRect(), after = layout === 'grid' || getComputedStyle(target.parentElement).flexDirection === 'row' ? x > rect.left + rect.width / 2 : y > rect.top + rect.height / 2;
+        target.classList.add(after ? 'presentation-sort-after' : 'presentation-sort-before');
+        return { id: target.dataset.presentationSlideId, after };
+      };
+      const clear = () => {
+        document.querySelectorAll('.presentation-sort-before,.presentation-sort-after,.presentation-slide-dragging').forEach(el => el.classList.remove('presentation-sort-before','presentation-sort-after','presentation-slide-dragging'));
+        this.draggedSlideId = null; this.suppressSlideClickUntil = performance.now() + 300;
+      };
+      card.addEventListener('dragstart', event => {
+        if (!this.canReorderSlides() || event.target.closest('button')) { event.preventDefault(); return; }
+        this.draggedSlideId = slideId; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', slideId); card.classList.add('presentation-slide-dragging');
+      });
+      card.addEventListener('dragover', event => { if (!this.draggedSlideId || !this.canReorderSlides()) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; markTarget(card, event.clientX, event.clientY); });
+      card.addEventListener('drop', event => {
+        if (!this.draggedSlideId || !this.canReorderSlides()) return;
+        event.preventDefault(); event.stopPropagation(); const source = this.draggedSlideId, target = markTarget(card, event.clientX, event.clientY); clear();
+        if (target) this.reorderSlides(source, target.id, target.after);
+      });
+      card.addEventListener('dragend', clear);
+      const handle = document.createElement('button'); handle.type = 'button'; handle.className = 'presentation-slide-drag-handle'; handle.textContent = '⠿'; handle.title = '拖曳調整簡報順序'; handle.setAttribute('aria-label', '拖曳調整簡報順序');
+      handle.onclick = event => { event.preventDefault(); event.stopPropagation(); };
+      handle.addEventListener('pointerdown', event => {
+        if (!this.canReorderSlides() || event.button !== 0) return;
+        event.preventDefault(); event.stopPropagation(); handle.setPointerCapture(event.pointerId); this.draggedSlideId = slideId;
+        let target = null, ghost = null;
+        const move = ev => {
+          if (!ghost) { ghost = card.cloneNode(true); ghost.classList.add('presentation-slide-drag-ghost'); ghost.style.width = card.getBoundingClientRect().width + 'px'; (document.fullscreenElement || document.body).append(ghost); card.classList.add('presentation-slide-dragging'); }
+          ghost.style.left = ev.clientX + 12 + 'px'; ghost.style.top = ev.clientY + 12 + 'px';
+          const hovered = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-presentation-slide-id]');
+          target = hovered?.parentElement === card.parentElement ? markTarget(hovered, ev.clientX, ev.clientY) : null;
+          const area = card.parentElement.closest('.presentation-thumbnails-container') || card.parentElement.parentElement;
+          if (area) { const rect = area.getBoundingClientRect(); if (layout === 'list' && getComputedStyle(card.parentElement).flexDirection === 'row') { if (ev.clientX < rect.left + 35) area.scrollLeft -= 18; else if (ev.clientX > rect.right - 35) area.scrollLeft += 18; } else { if (ev.clientY < rect.top + 35) area.scrollTop -= 18; else if (ev.clientY > rect.bottom - 35) area.scrollTop += 18; } }
+        };
+        const finish = ev => {
+          handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', finish); handle.removeEventListener('pointercancel', finish); handle.removeEventListener('lostpointercapture', finish);
+          ghost?.remove(); const destination = target; clear();
+          if (ev.type === 'pointerup' && destination) this.reorderSlides(slideId, destination.id, destination.after);
+        };
+        handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', finish); handle.addEventListener('pointercancel', finish); handle.addEventListener('lostpointercapture', finish);
+      });
+      card.append(handle);
+    }
+
     // 渲染左側縮圖列表
     renderThumbnails() {
       const container = this.els.thumbnailsList;
@@ -1703,6 +1812,7 @@
         const card = document.createElement('div');
         card.className = `presentation-thumbnail-card ${index === this.currentSlideIndex ? 'active' : ''}`;
         card.onclick = () => {
+          if (performance.now() < (this.suppressSlideClickUntil || 0)) return;
           if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
             this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
             return;
@@ -1731,6 +1841,7 @@
           card.appendChild(delBtn);
         }
 
+        this.bindSlideReorderCard(card, slide.id, 'list');
         container.appendChild(card);
       });
     }
@@ -4093,6 +4204,12 @@
 
     // 縮圖九宮格總覽彈窗
     openGridOverviewModal() {
+      if (!this.els.modalGridOverview || !this.els.gridOverviewContainer) return;
+      this.renderGridOverviewCards();
+      this.openModal(this.els.modalGridOverview);
+    }
+
+    renderGridOverviewCards() {
       const modal = this.els.modalGridOverview;
       const container = this.els.gridOverviewContainer;
       if (!modal || !container) return;
@@ -4107,6 +4224,7 @@
         item.style.cursor = 'pointer';
         item.style.border = idx === this.currentSlideIndex ? '3px solid var(--accent-color)' : '1px solid var(--border-color)';
         item.onclick = () => {
+          if (performance.now() < (this.suppressSlideClickUntil || 0)) return;
           if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
             this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。');
             return;
@@ -4121,10 +4239,9 @@
           item.innerHTML = `<div style="width: 100%; height: 100%; background: ${slide.bgColor || '#1e293b'};"></div>`;
         }
         item.innerHTML += `<div style="position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.7); color: white; padding: 1px 6px; border-radius: 4px; font-size: 14px; font-weight: 700;">${idx + 1}</div>`;
+        this.bindSlideReorderCard(item, slide.id, 'grid');
         container.appendChild(item);
       });
-
-      this.openModal(modal);
     }
 
     closeGridOverviewModal() {

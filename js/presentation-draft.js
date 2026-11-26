@@ -8,6 +8,8 @@
       this.ready = false;
       this.loading = null;
       this.last = { slides: [], annotations: {}, currentSlideIndex: 0 };
+      this.slideStorageKeys = {};
+      this.slideKeySequence = 0;
       this.timer = null;
       this.saving = false;
       this.pending = false;
@@ -33,7 +35,12 @@
           if (!this.matchesScope()) return;
           const data = snap.val();
           if (data && data.version !== 1) throw new Error('暫存格式不支援');
-          const storedSlides = data?.slides ? Object.keys(data.slides).sort((a,b) => Number(a)-Number(b)).map(k => data.slides[k]) : [];
+          const storedEntries = Object.entries(data?.slides || {}).filter(([, slide]) => slide?.id);
+          this.slideStorageKeys = Object.fromEntries(storedEntries.map(([key, slide]) => [slide.id, key]));
+          const byId = new Map(storedEntries.map(([, slide]) => [slide.id, slide]));
+          const storedSlides = [];
+          for (const id of data?.slideOrder || []) { if (byId.has(id)) { storedSlides.push(byId.get(id)); byId.delete(id); } }
+          storedSlides.push(...byId.values());
           const restored = { slides: storedSlides, annotations: data?.annotations || {}, currentSlideIndex: Number(data?.currentSlideIndex) || 0 };
           this.last = JSON.parse(JSON.stringify(restored));
           const changed = before !== JSON.stringify(this.current());
@@ -74,16 +81,22 @@
       const next = this.current();
       const changes = {};
       const previous = this.last;
-      const max = Math.max(previous.slides.length, next.slides.length);
-      for (let i = 0; i < max; i++) {
-        const oldSlide = previous.slides[i];
-        const newSlide = next.slides[i];
-        if (!newSlide) { changes['slides/' + i] = null; continue; }
-        if (!oldSlide) { changes['slides/' + i] = newSlide; continue; }
+      const oldById = new Map(previous.slides.map(slide => [slide.id, slide]));
+      const storageKeys = { ...this.slideStorageKeys };
+      const nextIds = new Set(next.slides.map(slide => slide.id));
+      for (const oldSlide of previous.slides) if (!nextIds.has(oldSlide.id) && storageKeys[oldSlide.id] !== undefined) {
+        changes['slides/' + storageKeys[oldSlide.id]] = null; delete storageKeys[oldSlide.id];
+      }
+      for (const newSlide of next.slides) {
+        const oldSlide = oldById.get(newSlide.id);
+        const storageKey = storageKeys[newSlide.id] ?? ('page_' + Date.now().toString(36) + '_' + (++this.slideKeySequence));
+        storageKeys[newSlide.id] = storageKey;
+        if (!oldSlide || this.slideStorageKeys[newSlide.id] === undefined) { changes['slides/' + storageKey] = newSlide; continue; }
         for (const key of new Set([...Object.keys(oldSlide), ...Object.keys(newSlide)])) {
-          if (oldSlide[key] !== newSlide[key] && JSON.stringify(oldSlide[key]) !== JSON.stringify(newSlide[key])) changes['slides/' + i + '/' + key] = newSlide[key] === undefined ? null : newSlide[key];
+          if (JSON.stringify(oldSlide[key]) !== JSON.stringify(newSlide[key])) changes['slides/' + storageKey + '/' + key] = newSlide[key] === undefined ? null : newSlide[key];
         }
       }
+      if (JSON.stringify(previous.slides.map(slide => slide.id)) !== JSON.stringify(next.slides.map(slide => slide.id))) changes.slideOrder = next.slides.map(slide => slide.id);
       const annotKeys = new Set([...Object.keys(previous.annotations), ...Object.keys(next.annotations)]);
       for (const key of annotKeys) {
         if (JSON.stringify(previous.annotations[key]) !== JSON.stringify(next.annotations[key])) changes['annotations/' + key] = next.annotations[key] ?? null;
@@ -95,6 +108,7 @@
       try {
         await this.ref.update(changes);
         this.last = next;
+        this.slideStorageKeys = storageKeys;
         this.failures = 0;
         this.resetRequested = false;
         this.status('簡報已自動暫存');
