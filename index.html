@@ -4689,7 +4689,7 @@
                 <div style="margin-bottom: 16px; padding: 14px; background: var(--bg-input); border: 1.5px dashed var(--accent-color); border-radius: 10px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
                     <label style="font-size: 14px; font-weight: bold; color: var(--accent-color); display: flex; align-items: center; gap: 6px; margin: 0;">
-                      <span>🖼️ 題目圖片 (選填，支援圖檔或直接剪貼簿 Ctrl+V 貼上截圖)：</span>
+                      <span>🖼️ 題目圖片：</span>
                     </label>
                     <div style="font-size: 14px; color: var(--text-muted);">支援 PNG / JPG / WebP，自動壓縮提升流暢度避免延遲</div>
                   </div>
@@ -4723,7 +4723,7 @@
                 <!-- 發布按鈕 -->
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                   <button type="button" class="presentation-tool-btn active" onclick="window.wordCloud?.publishActivity()" style="flex: 2; min-width: 200px; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 10px;">
-                    🚀 發布 / 更新文字雲題目 (全班同步開動)
+                    🚀 發布文字雲題目 (全班同步開動)
                   </button>
                   <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.openQuestionBankModal(null, true)" style="flex: 1; min-width: 140px; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 10px;">
                     💾 儲存至題庫
@@ -6663,7 +6663,7 @@ Python</pre>
         <label for="wcBankTitleInput">題目標題／提問指引：</label>
         <input type="text" id="wcBankTitleInput" class="question-input" placeholder="例：請用一個詞形容今天學到的核心觀念，或看圖說出特徵…">
         <div class="wc-bank-image-upload">
-          <label for="wcBankImageInput">🖼️ 題目圖片（選填，支援圖檔或直接剪貼簿 Ctrl+V 貼上截圖）：</label>
+          <label for="wcBankImageInput">🖼️ 題目圖片：</label>
           <div class="wc-bank-upload-actions"><button type="button" class="presentation-tool-btn" onclick="document.getElementById('wcBankImageInput').click()">📁 選擇本機圖檔上傳</button><span>或直接在此視窗按 <kbd>Ctrl + V</kbd> 貼上截圖</span></div>
           <input id="wcBankImageInput" type="file" accept="image/*" hidden onchange="window.wordCloud?.processAndSetImage(this.files[0])">
           <div id="wcBankImagePreview" class="wc-bank-image-preview"></div>
