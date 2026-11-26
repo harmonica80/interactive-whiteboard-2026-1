@@ -8,7 +8,7 @@ function fixture() {
   const data = {}, writes = [], reads = [], local = new Map(), fields = {};
   for (const id of ['studentNumberRow','studentNumberInput','inputStudentModalName','studentRealNameRow','studentRealNameInput','studentNameModalError','studentRosterLookupStatus','allowStudentNicknameEdit','allowStudentRealNameEdit','allowOutsideRoster','importAllowStudentNicknameEdit','importAllowStudentRealNameEdit','importAllowOutsideRoster','studentRosterImportSettingsError','saveStudentRosterImportSettingsBtn']) fields[id] = {value:'', style:{}, focus(){}};
   globalThis.document = {getElementById:id=>fields[id] || null};
-  globalThis.window = {currentClassCode:'CLASS',boardStorage:{local:{getItem:k=>local.get(k)||null,setItem:(k,v)=>local.set(k,v)}}};
+  globalThis.window = {currentClassCode:'CLASS',boardStorage:{local:{getItem:k=>local.get(k)||null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)}}};
   let next = 0, failWrite = false;
   const get = path => path.split('/').filter(Boolean).reduce((o,k)=>o?.[k],data) ?? null;
   const put = (path,v) => { const parts=path.split('/').filter(Boolean); let node=data; for(const part of parts.slice(0,-1)) node=node[part] ||= {}; node[parts.at(-1)]=v; };
@@ -155,4 +155,10 @@ test('真實姓名修改預設不勾選，保留教師明確儲存的選擇',asy
 });
 test('重複清單分別標記已存在座號與姓名',()=>{
  const f=fixture();const rows=f.app.parseStudentRosterCsv('座號,真實姓名\n01,新姓名\n02,舊姓名');const students={u1:{studentNumber:'01',name:'舊姓名',note:'原備註'}};const result=f.app.findStudentRosterDuplicates(rows,students,{});assert.equal(result[0].sameNumber,true);assert.equal(result[0].nameExists,false);assert.equal(result[1].sameNumber,false);assert.equal(result[1].nameExists,true);
+});
+test('登出只清除本機身分與本次連線，不刪除雲端名冊或點數',async()=>{
+ const f=fixture();f.app.isAdmin=true;f.put('quiz/students/old',{name:'原同學',points:20});for(const key of ['user_nickname','user_name','comment_nickname','user_id','app_user_id','quiz_user_id','user_avatar','real_name:CLASS','student_number:CLASS'])f.local.set(key,'old');f.local.set('active_class_code','CLASS');let removed=0,reloaded=0,adminCleared=0;f.app.myPresenceRef={remove:async()=>removed++};f.app.clearAdminSession=()=>adminCleared++;window.location={reload:()=>reloaded++};await f.app.logoutStudentFromNameModal();assert.equal(removed,1);assert.equal(adminCleared,1);assert.equal(reloaded,1);assert.equal(f.app.isAdmin,false);assert.equal(f.local.get('user_id'),undefined);assert.equal(f.local.get('user_name'),undefined);assert.equal(f.local.get('active_class_code'),'CLASS');assert.equal(f.get('quiz/students/old/points'),20);assert.equal(f.writes.length,0);await f.app.logoutStudentFromNameModal();assert.equal(removed,1);
+});
+test('登出即使移除連線失敗，仍可清除本機身分',async()=>{
+ const f=fixture();f.local.set('user_name','原同學');f.app.myPresenceRef={remove:async()=>{throw Error('離線')}};let reload=0;window.location={reload:()=>reload++};await f.app.logoutStudentFromNameModal();assert.equal(f.local.get('user_name'),undefined);assert.equal(reload,1);assert.equal(f.writes.length,0);
 });

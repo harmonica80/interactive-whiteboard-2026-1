@@ -10503,3 +10503,24 @@ body.is-admin-logged-in .floating-student-avatar-container {
   #studentNameModal #avatarPickerGrid .avatar-grid-item { min-height: 0; }
   #studentNameModal #txtSelectedAvatarInfo { min-width: 0; overflow-wrap: anywhere; }
 }
+
+/* 真實姓名要求啟用時，兩個欄位共用同一輸入列。 */
+#studentNameModal .student-identity-fields.has-required-real-name {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: end;
+}
+#studentNameModal .has-required-real-name .student-login-label { grid-area: 1 / 1; }
+#studentNameModal .has-required-real-name .student-login-input-row { grid-area: 2 / 1; min-width: 0; }
+#studentNameModal #studentRealNameRow[hidden] { display: none !important; }
+#studentNameModal .has-required-real-name #studentRealNameRow { display: contents; }
+#studentNameModal .has-required-real-name #studentRealNameRow label { grid-area: 1 / 2; font-size: 14px; line-height: 1.4; margin-bottom: 6px; }
+#studentNameModal .has-required-real-name #studentRealNameInput { grid-area: 2 / 2; }
+#studentNameModal .has-required-real-name #inputStudentModalName,
+#studentNameModal .has-required-real-name #studentRealNameInput { min-width: 0; width: 100%; height: 44px; margin: 0; box-sizing: border-box; }
+#studentNameModal .has-required-real-name .student-random-label { display: none; }
+#studentNameModal .has-required-real-name .student-random-button { width: 40px; min-width: 40px; height: 44px; padding: 8px !important; justify-content: center; }
+#studentNameModal .student-name-actions { flex-direction: row !important; align-items: stretch; }
+#studentNameModal .student-name-actions .ask-btn { flex: 1; min-width: 0; }
+#studentNameLogoutBtn { flex-shrink: 0; min-width: 76px; justify-content: center; font-size: 14px; }

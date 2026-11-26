@@ -375,7 +375,7 @@ class App {
   }
 
   setUserName(name) {
-    if (!name) return;
+    if (!name || this._signingOutStudent) return;
     let trimmed = name.trim();
     const ownProfile = this._studentOwnProfile || this.registeredStudents?.[this.getUserId()];
     if (!this.isAdmin && this.studentProfileSettings?.allowNicknameEdit === false && ownProfile?.name && (!ownProfile.rosterPending || ownProfile.nicknamePreset)) trimmed = ownProfile.name;
@@ -1178,6 +1178,31 @@ class App {
     // 預設 Tab 1 或一般情況
     const randId = Math.floor(Math.random() * 48);
     this.selectAvatar(randId, true);
+  }
+
+  async logoutStudentFromNameModal() {
+    if (this._signingOutStudent) return;
+    this._signingOutStudent = true;
+    const button = document.getElementById('studentNameLogoutBtn');
+    if (button) button.disabled = true;
+    this.isAdmin = false;
+    this.clearAdminSession();
+    this.stopAdminIdleMonitor();
+    let presenceTimer;
+    try {
+      await Promise.race([
+        Promise.resolve().then(() => this.myPresenceRef?.remove()).catch(() => {}),
+        new Promise(resolve => { presenceTimer = setTimeout(resolve, 1500); })
+      ]);
+    } finally {
+      clearTimeout(presenceTimer);
+      const code = window.currentClassCode || '';
+      for (const key of ['user_nickname', 'user_name', 'comment_nickname', 'user_id', 'app_user_id', 'quiz_user_id', 'user_avatar', 'real_name:' + code, 'student_number:' + code]) window.boardStorage.local.removeItem(key);
+      window.ClassRoomManager?.setUserRole?.('student');
+      this._studentOwnProfile = null; this._rosterLookup = null; this.currentUserName = '';
+      // 只登出本機身分，不刪除名冊、作品、點數或學習歷程，也不切換教室。
+      window.location.reload();
+    }
   }
 
   closeStudentNameModal() {
@@ -3996,7 +4021,7 @@ class App {
       }
 
       // 學生端自動即時感知教師修改姓名或頭像並同步至本機與介面
-      if (!this.isAdmin) {
+      if (!this.isAdmin && !this._signingOutStudent) {
         const myUid = this.getUserId();
         const myRemoteData = this.registeredStudents[myUid];
         this._studentOwnProfile = myRemoteData || null;
@@ -11925,6 +11950,7 @@ class App {
         // 登入或重新連線時，優先檢查雲端是否有老師更新過的名冊記錄 (防止本地舊名覆蓋老師新設的姓名)
         if (!this.isAdmin && typeof db !== 'undefined' && db && curUserUid) {
           db.ref('quiz/students').child(curUserUid).once('value').then(snap => {
+            if (this._signingOutStudent) return;
             const remoteData = snap.val();
             if (remoteData && remoteData.name && remoteData.name !== curUserName) {
               const newRemoteName = String(remoteData.name).trim();
@@ -19263,11 +19289,17 @@ class App {
 
   chooseStudentRosterDuplicates(rows, students, roster) {
     const duplicates = this.findStudentRosterDuplicates(rows, students, roster);
-    if (!duplicates.length) return Promise.resolve(rows);
+
     const modal = document.getElementById('studentRosterDuplicatesModal');
     const list = document.getElementById('studentRosterDuplicateRows');
     if (!modal || !list || !this.isAdmin) return Promise.resolve(null);
-    list.innerHTML = duplicates.map(({ index, entry, sameNumber, nameExists }) => `<label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-input);color:var(--text-primary);font-size:14px"><input type="checkbox" data-roster-duplicate-index="${index}" style="margin-top:5px"><span><span data-roster-duplicate-number>座號／學號：${this.escapeHtml(entry.studentNumber)}${sameNumber ? ' <strong style="color:var(--danger-color)">(已存在)</strong>' : ''}</span><br><span data-roster-duplicate-name>姓名或暱稱：${this.escapeHtml(entry.nickname || entry.label)}${nameExists ? ' <strong style="color:var(--danger-color)">(已存在)</strong>' : ''}</span></span></label>`).join('');
+    const byIndex = new Map(duplicates.map(item => [item.index, item]));
+    const title = document.getElementById('studentRosterDuplicatesTitle');
+    if (title) title.textContent = duplicates.length ? '🔎 發現重複姓名或暱稱' : '📤 確認匯入名冊';
+    list.innerHTML = rows.map((entry, index) => {
+      const duplicate = byIndex.get(index);
+      return `<label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-input);color:var(--text-primary);font-size:14px"><input type="checkbox" data-roster-duplicate-index="${index}" ${duplicate ? '' : 'checked'} style="margin-top:5px"><span><span data-roster-duplicate-number>座號／學號：${this.escapeHtml(entry.studentNumber)}${duplicate?.sameNumber ? ' <strong style="color:var(--danger-color)">(已存在)</strong>' : ''}</span><br><span data-roster-duplicate-name>姓名或暱稱：${this.escapeHtml(entry.nickname || entry.label)}${duplicate?.nameExists ? ' <strong style="color:var(--danger-color)">(已存在)</strong>' : ''}</span></span></label>`;
+    }).join('');
     const fs = document.fullscreenElement, parent = fs && fs !== document.documentElement ? fs : document.body;
     if (modal.parentElement !== parent) parent.appendChild(modal);
     this._pendingRosterDuplicates = { rows, indexes: new Set(duplicates.map(d => d.index)), previousFocus: document.activeElement };
@@ -19280,7 +19312,7 @@ class App {
     let rows = null;
     if (confirmed && pending && this.isAdmin) {
       const selected = new Set(Array.from(modal?.querySelectorAll('input[data-roster-duplicate-index]:checked') || []).map(input => Number(input.dataset.rosterDuplicateIndex)));
-      rows = pending.rows.flatMap((row, index) => !pending.indexes.has(index) ? [row] : selected.has(index) ? [{ ...row, approvedDuplicate: true }] : []);
+      rows = pending.rows.flatMap((row, index) => !selected.has(index) ? [] : pending.indexes.has(index) ? [{ ...row, approvedDuplicate: true }] : [row]);
     }
     if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; }
     pending?.previousFocus?.focus?.();
@@ -19500,7 +19532,7 @@ class App {
       const replacing = mode === 'replace';
       rows = await this.chooseStudentRosterDuplicates(rows, oldStudents, oldRoster);
       if (!rows) return;
-      if (!rows.length) { this.showNotification('未匯入名冊', '未勾選任何重複項目，沒有資料需要匯入。'); return; }
+      if (!rows.length) { this.showNotification('未匯入名冊', '未勾選任何項目，沒有資料需要匯入。'); return; }
       if (!this.isAdmin || classCode !== (window.currentClassCode || '')) throw Error('教室或教師身分已切換，未執行匯入。');
       const updates = replacing ? await this.buildStudentRosterReplacement(root, oldStudents, oldRoster) : {};
       const existing = replacing ? {} : oldRoster, students = replacing ? {} : oldStudents;
@@ -19553,6 +19585,7 @@ class App {
     }
     const realRow = document.getElementById('studentRealNameRow'), realInput = document.getElementById('studentRealNameInput');
     if (realRow) realRow.hidden = !student || !this.classRequiresRealName;
+    document.getElementById('studentIdentityFields')?.classList.toggle('has-required-real-name', Boolean(realRow && !realRow.hidden));
     if (realInput) {
       if (realName !== undefined) realInput.value = realName;
       realInput.readOnly = student && settings.allowRealNameEdit !== true && !!realInput.value;
