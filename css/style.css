@@ -10556,3 +10556,16 @@ body.is-admin-logged-in .floating-student-avatar-container {
   #quizBankQuestionEditModal .option-field { flex: 1 1 120px; width: 100%; }
   #quizBankQuestionEditModal .option-matching-item { min-width: 0; flex-wrap: wrap; }
 }
+
+/* 文字雲題庫：獨立備課視窗。 */
+.wc-bank-modal-content { width: 94%; max-width: 820px; max-height: 90vh; display: flex; flex-direction: column; gap: 16px; padding: 24px; color: var(--text-primary); background: var(--bg-card); }
+.wc-bank-modal-heading, .wc-bank-modal-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wc-bank-modal-heading h3 { margin: 0; font-size: 20px; }
+.wc-bank-modal-fields { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.wc-bank-modal-fields label, .wc-bank-modal-fields .question-input, .wc-bank-modal-content button { font-size: 14px; }
+.wc-bank-modal-fields .question-input { width: 100%; margin: 0; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; }
+.wc-bank-settings-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.wc-bank-image-preview { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.wc-bank-image-preview img { max-width: 100%; max-height: 180px; border: 1px solid var(--border-color); border-radius: 8px; }
+.wc-bank-modal-actions { justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 14px; }
+@media (max-width: 600px) { .wc-bank-modal-content { padding: 16px; } .wc-bank-settings-row { grid-template-columns: minmax(0, 1fr); } }

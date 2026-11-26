@@ -294,14 +294,17 @@
     }
 
     // 處理與壓縮題目圖片 (上限 5MB, 自動最佳化為 WebP/JPEG)
-    processAndSetImage(file) {
+    processAndSetImage(file, bankMask = false) {
+      const bankEditor = this.wordCloudBankEditor;
       if (!file) return;
       if (file.size > 15 * 1024 * 1024) {
         window.app?.showNotification('提示', '圖片大小超過 15MB，請先縮小後再上傳！');
         return;
       }
 
-      const reader = new FileReader();
+      if (bankEditor) bankEditor.loading = true;
+      const failed = () => { if (bankEditor) bankEditor.loading = false; window.app?.showNotification('圖片讀取失敗', '請確認圖檔格式後重試。'); };
+      const reader = new FileReader(); reader.onerror = failed;
       reader.onload = (e) => {
         const rawUrl = e.target.result;
         const img = new Image();
@@ -323,15 +326,22 @@
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, w, h);
+          if (!bankMask) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
           ctx.drawImage(img, 0, 0, w, h);
           const compressedUrl = canvas.toDataURL('image/webp', 0.82);
 
-          this.uploadedImageUrl = compressedUrl;
-          this.renderQuestionImagePreview(compressedUrl);
-          window.app?.showNotification('成功', '題目圖片已成功載入！');
+          if (bankEditor) {
+            bankEditor.loading = false;
+            if (this.wordCloudBankEditor !== bankEditor) return;
+            bankEditor[bankMask ? 'customMaskUrl' : 'imageUrl'] = compressedUrl;
+            if (bankMask) document.getElementById('wcBankShapeSelect').value = 'custom';
+            this.renderBankImagePreview();
+          } else {
+            this.uploadedImageUrl = compressedUrl; this.renderQuestionImagePreview(compressedUrl);
+            window.app?.showNotification('成功', '題目圖片已成功載入！');
+          }
         };
+        img.onerror = failed;
         img.src = rawUrl;
       };
       reader.readAsDataURL(file);
@@ -385,21 +395,31 @@
 
     async saveQuestionToBank() {
       if (!window.app?.isAdmin || this._savingQuestionBank) return;
-      const record = this.getDraftQuestion();
+      const editor = this.wordCloudBankEditor;
+      if (editor?.loading) { window.app.showNotification('提示', '圖片正在處理，請稍候再儲存。'); return; }
+      const record = editor ? {
+        title: document.getElementById('wcBankTitleInput').value.trim(), imageUrl: editor.imageUrl || null,
+        limitPerStudent: parseInt(document.getElementById('wcBankLimitSelect').value, 10),
+        wordOrientation: document.getElementById('wcBankOrientationSelect').value,
+        cloudShape: document.getElementById('wcBankShapeSelect').value, customMaskUrl: editor.customMaskUrl || null
+      } : this.getDraftQuestion();
+      if (record.cloudShape === 'custom' && !record.customMaskUrl) { window.app.showNotification('提示', '請上傳自訂形狀圖片，或選擇其他形狀。'); return; }
       if (!record.title) { window.app.showNotification('提示', '請輸入文字雲題目標題。'); return; }
       this._savingQuestionBank = true;
+      const saveButton = document.getElementById('wcBankSaveBtn'); if (saveButton) saveButton.disabled = true;
       try {
-        const key = this.editingQuestionBankKey || db.ref('quiz/wordCloud/questionBank').push().key;
+        const key = (editor ? editor.key : this.editingQuestionBankKey) || db.ref('quiz/wordCloud/questionBank').push().key;
         const previous = this.questionBank[key];
         record.createdAt = previous?.createdAt || Date.now(); record.updatedAt = Date.now();
         record.order = previous?.order ?? Object.keys(this.questionBank).length;
         await db.ref('quiz/wordCloud/questionBank').child(key).update(record);
         this.questionBank[key] = record;
-        this.editingQuestionBankKey = key;
+        if (!editor) this.editingQuestionBankKey = key;
         this.renderBankListUI();
+        if (editor && this.wordCloudBankEditor === editor) { this._savingQuestionBank = false; this.closeQuestionBankModal(); }
         window.app.showNotification('已儲存', '題目已保存至題庫管理，可稍後載入出題。');
       } catch (error) { window.app.showNotification('儲存失敗', '請檢查連線後再試；填寫內容已保留。'); }
-      finally { this._savingQuestionBank = false; }
+      finally { this._savingQuestionBank = false; if (saveButton) saveButton.disabled = false; }
     }
 
     async addHistoryToQuestionBank(key) {
@@ -747,26 +767,54 @@
       });
     }
 
-    // 建立新題目：重設出題表單以利輸入
-    openCreateNewTopic() {
-      if (!window.app?.isAdmin) return;
-      this.editingQuestionBankKey = null;
-      const adminTitleInput = document.getElementById('adminWcQuestionTitleInput');
-      if (adminTitleInput) {
-        adminTitleInput.value = '';
-        adminTitleInput.focus();
-      }
-      this.uploadedImageUrl = null;
-      this.renderQuestionImagePreview(null);
-      const limitSel = document.getElementById('adminWcLimitSelect');
-      if (limitSel) limitSel.value = '1';
-      this.maxSubmissionsPerStudent = 1;
+    // 題庫新增與編輯使用獨立視窗，保留上方尚未發布的草稿。
+    openCreateNewTopic() { this.openQuestionBankModal(); }
 
-      const adminSection = document.getElementById('adminWordCloudSection');
-      if (adminSection) {
-        adminSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    openQuestionBankModal(key = null, fromDraft = false) {
+      if (!window.app?.isAdmin || this._savingQuestionBank) return;
+      const item = key ? this.questionBank[key] : fromDraft ? this.getDraftQuestion() : { title: '', imageUrl: null, limitPerStudent: 1, wordOrientation: 'mixed', cloudShape: 'circle', customMaskUrl: null };
+      if (!item) { window.app.showNotification('提示', '找不到此題庫題目。'); return; }
+      const modal = document.getElementById('wcQuestionBankModal'); if (!modal) return;
+      this.wordCloudBankEditor = { ...item, key, previousFocus: document.activeElement };
+      document.getElementById('wcBankModalHeading').textContent = key ? '編輯文字雲題庫題目' : '新增文字雲題庫題目';
+      document.getElementById('wcBankTitleInput').value = item.title || '';
+      for (const [field, id, sourceId, fallback] of [['limitPerStudent','wcBankLimitSelect','adminWcLimitSelect',1], ['wordOrientation','wcBankOrientationSelect','wcOrientationSelect','mixed'], ['cloudShape','wcBankShapeSelect','wcShapeSelect','circle']]) {
+        const select = document.getElementById(id), source = document.getElementById(sourceId);
+        if (source) select.innerHTML = source.innerHTML;
+        const value = String(item[field] ?? fallback);
+        if (!Array.from(select.options).some(option => option.value === value)) select.add(new Option(value, value));
+        select.value = value;
       }
-      window.app?.showNotification('➕ 建立新題目', '請在上方出題框輸入題目標題或引導詞，完成後點選「🚀 發布」或「💾 儲存至題庫」！');
+      document.getElementById('wcBankSaveBtn').textContent = key ? '💾 儲存修改' : '💾 加入題庫';
+      document.getElementById('wcBankImageInput').value = '';
+      document.getElementById('wcBankMaskInput').value = '';
+      this.renderBankImagePreview();
+      const host = document.fullscreenElement || document.body;
+      if (modal.parentElement !== host) host.appendChild(modal);
+      modal.classList.add('active'); modal.style.display = 'flex';
+      document.getElementById('wcBankTitleInput').focus({ preventScroll: true });
+    }
+
+    closeQuestionBankModal() {
+      if (this._savingQuestionBank) return;
+      const previousFocus = this.wordCloudBankEditor?.previousFocus;
+      this.wordCloudBankEditor = null;
+      const modal = document.getElementById('wcQuestionBankModal');
+      if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; }
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+    }
+
+    renderBankImagePreview() {
+      const editor = this.wordCloudBankEditor;
+      for (const [field, id] of [['imageUrl','wcBankImagePreview'], ['customMaskUrl','wcBankMaskPreview']]) {
+        const container = document.getElementById(id); if (!container) continue;
+        container.replaceChildren();
+        if (!editor?.[field]) continue;
+        const image = document.createElement('img'); image.src = editor[field]; image.alt = field === 'imageUrl' ? '題目圖片預覽' : '自訂形狀預覽';
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'presentation-tool-btn'; remove.textContent = '✕ 移除圖片';
+        remove.onclick = () => { if (this.wordCloudBankEditor !== editor) return; editor[field] = null; this.renderBankImagePreview(); };
+        container.append(image, remove);
+      }
     }
 
     // 開啟下載範例檔格式選擇彈窗
@@ -1052,7 +1100,7 @@
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap;">
               <button type="button" class="presentation-tool-btn active" onclick="window.wordCloud?.loadFromHistory('${key}', true, 'bank')" style="height: 32px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="帶入此題並立即開動">🚀 載入出題</button>
-              <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.loadFromHistory('${key}', false, 'bank')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="帶入設定至出題框">📝 載入修改</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.openQuestionBankModal('${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="開啟視窗編輯題庫題目">✏️ 編輯</button>
               <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; color: var(--accent-color); border-color: var(--accent-color); display: flex; align-items: center; gap: 4px;" title="複製此題到其他班級題庫">📤 複製</button>
               <button type="button" class="presentation-tool-btn danger" onclick="window.wordCloud?.deleteHistoryItem('${key}', 'bank')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 4px;" title="刪除此題">🗑️</button>
             </div>
@@ -1246,15 +1294,7 @@
           this.renderHistoryListUI();
           this.renderBankListUI();
 
-          // 自動帶入第一題到出題框
-          if (items.length > 0) {
-            const firstKey = Object.keys(this.questionBank).find(k => this.questionBank[k]?.title === items[0].title);
-            if (firstKey) {
-              this.loadFromHistory(firstKey, false, 'bank');
-            }
-          }
-
-          window.app?.showNotification('成功', `已成功解析並匯入 ${addedCount} 道題目至文字雲題庫！第一題已帶入出題框。`);
+          window.app?.showNotification('成功', `已成功解析並匯入 ${addedCount} 道題目至文字雲題庫。`);
         } catch (err) {
           window.app?.showNotification('錯誤', '解析檔案失敗：' + err.message);
         }

@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=507">
+  <link rel="stylesheet" href="css/style.css?v=508">
   <link rel="stylesheet" href="css/presentation.css?v=c1">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -4725,7 +4725,7 @@
                   <button type="button" class="presentation-tool-btn active" onclick="window.wordCloud?.publishActivity()" style="flex: 2; min-width: 200px; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 10px;">
                     🚀 發布 / 更新文字雲題目 (全班同步開動)
                   </button>
-                  <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.saveQuestionToBank()" style="flex: 1; min-width: 140px; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 10px;">
+                  <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.openQuestionBankModal(null, true)" style="flex: 1; min-width: 140px; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 10px;">
                     💾 儲存至題庫
                   </button>
                   <button type="button" id="adminWcEndBtn" class="presentation-tool-btn is-idle-btn" onclick="window.wordCloud?.stopActivity()" style="flex: 1; min-width: 140px; padding: 12px; font-size: 14px; border-radius: 10px;" disabled>
@@ -6654,6 +6654,31 @@ Python</pre>
     </div>
   </div>
 
+  <!-- 文字雲題庫新增與編輯視窗 -->
+  <div id="wcQuestionBankModal" class="modal-overlay" style="z-index: 22000;" role="dialog" aria-modal="true" aria-labelledby="wcBankModalHeading" onclick="if(event.target === this) window.wordCloud?.closeQuestionBankModal()" onkeydown="if(event.key === 'Escape') { event.stopPropagation(); window.wordCloud?.closeQuestionBankModal(); }">
+    <div class="modal-content wc-bank-modal-content">
+      <div class="wc-bank-modal-heading"><h3 id="wcBankModalHeading">新增文字雲題庫題目</h3><button type="button" class="presentation-tool-btn" aria-label="關閉文字雲題庫視窗" onclick="window.wordCloud?.closeQuestionBankModal()">✕</button></div>
+      <div class="wc-bank-modal-fields">
+        <label for="wcBankTitleInput">題目標題／提問指引：</label>
+        <textarea id="wcBankTitleInput" class="question-input" rows="3" placeholder="請輸入題目標題或引導詞…"></textarea>
+        <label>題目圖片（選填，可貼上圖片）：</label>
+        <button type="button" class="presentation-tool-btn" onclick="document.getElementById('wcBankImageInput').click()">📁 選擇圖片</button>
+        <input id="wcBankImageInput" type="file" accept="image/*" hidden onchange="window.wordCloud?.processAndSetImage(this.files[0])">
+        <div id="wcBankImagePreview" class="wc-bank-image-preview"></div>
+        <label for="wcBankLimitSelect">每位同學送出次數上限：</label>
+        <select id="wcBankLimitSelect" class="question-input"><option value="1">每人 1 次</option><option value="3">每人 3 次</option><option value="0">不限次數</option></select>
+        <div class="wc-bank-settings-row">
+          <label>文字方向：<select id="wcBankOrientationSelect" class="question-input"><option value="mixed">直橫交錯</option><option value="horizontal">水平橫式</option><option value="vertical">垂直直式</option><option value="tilt30">傾斜 ±30°</option><option value="tilt45">傾斜 ±45°</option></select></label>
+          <label>文字雲形狀：<select id="wcBankShapeSelect" class="question-input"><option value="circle">圓形</option><option value="custom">自訂圖片形狀</option></select></label>
+        </div>
+        <button type="button" class="presentation-tool-btn" onclick="document.getElementById('wcBankMaskInput').click()">🖼️ 選擇自訂形狀圖片（選填）</button>
+        <input id="wcBankMaskInput" type="file" accept="image/*" hidden onchange="window.wordCloud?.processAndSetImage(this.files[0], true)">
+        <div id="wcBankMaskPreview" class="wc-bank-image-preview"></div>
+      </div>
+      <div class="wc-bank-modal-actions"><button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.closeQuestionBankModal()">取消</button><button id="wcBankSaveBtn" type="button" class="presentation-tool-btn active" onclick="window.wordCloud?.saveQuestionToBank()">💾 加入題庫</button></div>
+    </div>
+  </div>
+
   <!-- 選擇題題庫題目直接編輯彈出視窗 -->
   <div id="quizBankQuestionEditModal" class="modal-overlay" style="z-index: 22000;" onclick="if(event.target === this) window.quiz && window.quiz.closeEditBankQuestionModal()">
     <div class="modal-content" style="max-width: 1180px; width: 96%; max-height: 92vh; display: flex; flex-direction: column; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); position: relative; box-sizing: border-box;">
@@ -6704,7 +6729,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/dilemma-bank-manager.js?v=c2"></script>
   <script type="application/x-board-script" data-src="js/dilemma-game.js?v=c8"></script>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
-  <script type="application/x-board-script" data-src="js/word_cloud.js?v=c3"></script>
+  <script type="application/x-board-script" data-src="js/word_cloud.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/presentation-draft.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/presentation_core.js?v=c7"></script>
   <script type="application/x-board-script" data-src="js/group_manager.js?v=c1"></script>
