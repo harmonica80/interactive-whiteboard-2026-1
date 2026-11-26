@@ -15,7 +15,7 @@ function fixture() {
   const ref = (path='') => ({child:k=>ref([path,k].filter(Boolean).join('/')),push:()=>({key:'new'+(++next)}),once:async()=>{reads.push(path);return {val:()=>get(path),exists:()=>get(path)!==null}},set:async v=>{if(failWrite)throw Error('離線');put(path,v)},update:async updates=>{if(failWrite)throw Error('離線');writes.push({path,updates});for(const [k,v] of Object.entries(updates))put([path,k].filter(Boolean).join('/'),v)}});
   globalThis.db = {ref};
   const app=Object.create(App.prototype);
-  Object.assign(app,{isAdmin:false,registeredStudents:{},getUserId:()=>local.get('user_id')||'old',getCurrentUserAvatar:()=>3,setCurrentUserAvatar(){},showNotification(title,message){this.notice={title,message}},loadClassRealNames:async()=>{},chooseStudentRosterImportMode:async()=> 'append',refreshAdminStudentsList:async()=>{},getCurrentUserName:()=> '老師',getTakenStudentNames:async()=>new Set(),closeStudentNameModal(){this.closed=true},setUserName(name){this.savedName=name}});
+  Object.assign(app,{isAdmin:false,registeredStudents:{},getUserId:()=>local.get('user_id')||'old',getCurrentUserAvatar:()=>3,setCurrentUserAvatar(){},showNotification(title,message){this.notice={title,message}},loadClassRealNames:async()=>{},chooseStudentRosterDuplicates:async rows=>rows,chooseStudentRosterImportMode:async()=> 'append',refreshAdminStudentsList:async()=>{},getCurrentUserName:()=> '老師',getTakenStudentNames:async()=>new Set(),closeStudentNameModal(){this.closed=true},setUserName(name){this.savedName=name}});
   return {app,fields,data,put,get,local,reads,writes,fail:()=>{failWrite=true}};
 }
 test('CSV 支援 BOM、前導零、引號與換行，拒絕重複及缺漏',()=>{
@@ -101,8 +101,8 @@ test('開放名單外加入時可留空座號；既有名冊姓名自動對應�
 test('多位同名學生必須用座號識別，輸入姓名不會任意選取帳號',async()=>{
  const f=fixture();f.app.studentProfileSettings={rosterEnabled:true,allowOutsideRoster:true};f.app.registeredStudents={a:{name:'小明',studentNumber:'01'},b:{name:'小明',studentNumber:'02'}};f.fields.inputStudentModalName.value='小明';assert.equal(await f.app.validateStudentRosterAdmission(),false);assert.equal(f.local.get('user_id'),undefined);f.fields.inputStudentModalName.value='02';assert.equal(await f.app.validateStudentRosterAdmission(),true);
 });
-test('CSV 選填暱稱與重複項目比對，重新匯入同座號除外',()=>{
- const f=fixture();const rows=f.app.parseStudentRosterCsv('座號,真實姓名,姓名或暱稱（選填）\n01,甲,同名\n02,乙,同名\n03,丙,獨特');assert.equal(rows[0].nickname,'同名');assert.deepEqual(f.app.findStudentRosterDuplicates(rows,{},{}).map(d=>d.index),[0,1]);const only=[rows[2]];assert.equal(f.app.findStudentRosterDuplicates(only,{old:{name:'獨特'}},{}).length,1);assert.equal(f.app.findStudentRosterDuplicates(only,{old:{name:'獨特',studentNumber:'03'}},{[only[0].key]:{uid:'old',label:'丙'}}).length,0);
+test('CSV 選填暱稱與重複項目比對，同座號也列入確認',()=>{
+ const f=fixture();const rows=f.app.parseStudentRosterCsv('座號,真實姓名,姓名或暱稱（選填）\n01,甲,同名\n02,乙,同名\n03,丙,獨特');assert.equal(rows[0].nickname,'同名');assert.deepEqual(f.app.findStudentRosterDuplicates(rows,{},{}).map(d=>d.index),[0,1]);const only=[rows[2]];assert.equal(f.app.findStudentRosterDuplicates(only,{old:{name:'獨特'}},{}).length,1);assert.equal(f.app.findStudentRosterDuplicates(only,{old:{name:'獨特',studentNumber:'03'}},{[only[0].key]:{uid:'old',label:'丙'}}).length,1);
 });
 test('教師勾選的重複項目才會匯入，同名核准只對指定名稱生效',async()=>{
  const f=fixture();f.app.isAdmin=true;f.put('quiz/students/old',{name:'小明',points:12});let conflict=[];f.app.chooseStudentRosterDuplicates=async(rows,students,roster)=>{conflict=f.app.findStudentRosterDuplicates(rows,students,roster);return rows.filter((row,i)=>i!==0).map(row=>({...row,approvedDuplicate:true}))};await f.app.importStudentRosterCsv({files:[{size:20,text:async()=> '座號,真實姓名,姓名或暱稱\n01,甲,小明\n02,乙,小明'}],value:'file'});assert.equal(conflict.length,2);assert.equal(f.get('student_roster/'+f.app.studentRosterKey('01')),null);assert.equal(f.get('quiz/students/new1/name'),'小明');assert.equal(f.get('quiz/students/new1/approvedDuplicateName'),'小明');assert.equal(f.get('quiz/students/old/points'),12);
@@ -132,4 +132,12 @@ test('單一欄位優先比對座號，不受同學相同暱稱或過期隱藏�
 });
 test('單一欄位登入仍保留班級要求填寫真實姓名時的修改功能',async()=>{
  const f=fixture();roster(f);f.app.classRequiresRealName=true;f.app.registeredStudents={u1:{name:'原暱稱',studentNumber:'01'}};f.put('quiz/profileSettings',{rosterEnabled:true,allowOutsideRoster:false,allowRealNameEdit:true});f.fields.inputStudentModalName.value='01';f.fields.studentRealNameInput.value='王大明';await f.app.saveStudentNameFromModal();assert.equal(f.get('student_real_names/u1'),'王大明');
+});
+test('重複匯入既有座號會列出供勾選，略過者不更新原資料',async()=>{
+ const f=fixture();f.app.isAdmin=true;const key=f.app.studentRosterKey('01');f.put('student_roster/'+key,{uid:'u1',studentNumber:'01',label:'原姓名'});f.put('quiz/students/u1',{name:'原暱稱',studentNumber:'01',note:'原姓名',points:21,pointsLog:{a:{amount:21}}});let duplicates=[];
+ f.app.chooseStudentRosterDuplicates=async(rows,students,roster)=>{duplicates=f.app.findStudentRosterDuplicates(rows,students,roster);return []};const input={files:[{size:20,text:async()=> '座號,真實姓名\n01,新姓名'}],value:'file'};await f.app.importStudentRosterCsv(input);assert.equal(duplicates.length,1);assert(duplicates[0].reason.includes('座號／學號已存在'));assert.equal(f.get('quiz/students/u1/note'),'原姓名');assert.equal(f.writes.length,0);
+ f.app.chooseStudentRosterDuplicates=async(rows,students,roster)=>{assert.equal(f.app.findStudentRosterDuplicates(rows,students,roster).length,1);return rows.map(r=>({...r,approvedDuplicate:true}))};await f.app.importStudentRosterCsv(input);assert.equal(f.get('student_roster/'+key+'/uid'),'u1');assert.equal(f.get('quiz/students/u1/note'),'新姓名');assert.equal(f.get('quiz/students/u1/points'),21);assert.deepEqual(f.get('quiz/students/u1/pointsLog'),{a:{amount:21}});
+});
+test('覆蓋模式也先列出同座號，取消確認不會清除資料',async()=>{
+ const f=fixture();f.app.isAdmin=true;f.app.chooseStudentRosterImportMode=async()=> 'replace';f.put('quiz/students/u1',{name:'小明',studentNumber:'01',points:10});f.app.chooseStudentRosterDuplicates=async(rows,students,roster)=>{assert.equal(f.app.findStudentRosterDuplicates(rows,students,roster).length,1);return null};await f.app.importStudentRosterCsv({files:[{size:20,text:async()=> '座號,真實姓名\n01,王小明'}],value:'file'});assert.equal(f.get('quiz/students/u1/points'),10);assert.equal(f.writes.length,0);
 });

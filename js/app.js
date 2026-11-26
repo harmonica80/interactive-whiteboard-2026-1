@@ -19253,13 +19253,11 @@ class App {
     });
     return rows.flatMap((entry, index) => {
       const value = this.normalizeStudentRosterName(entry.nickname || entry.label);
-      const previousUid = roster[entry.key]?.uid;
-      const existing = Object.entries(students).some(([uid, student]) => {
-        if (uid === previousUid || (student?.studentNumber && this.studentRosterKey(student.studentNumber) === entry.key)) return false;
-        return this.normalizeStudentRosterName(student?.name) === value || (!entry.nickname && this.normalizeStudentRosterName(student?.note) === value);
-      }) || Object.entries(roster).some(([key, record]) => key !== entry.key && this.normalizeStudentRosterName(record.label) === value);
+      const sameNumber = Boolean(roster[entry.key]) || Object.values(students).some(student => student?.studentNumber && this.studentRosterKey(student.studentNumber) === entry.key);
+      const sameName = Object.values(students).some(student => this.normalizeStudentRosterName(student?.name) === value || (!entry.nickname && this.normalizeStudentRosterName(student?.note) === value)) || Object.values(roster).some(record => this.normalizeStudentRosterName(record.label) === value);
       const repeated = groups.get(value).length > 1;
-      return existing || repeated ? [{ index, entry, reason: [existing ? '與現有名單重複' : '', repeated ? '本次 CSV 有同名項目' : ''].filter(Boolean).join('；') }] : [];
+      const reasons = [sameNumber ? '座號／學號已存在（勾選後更新原帳號，保留點數與歷程）' : '', sameName ? '與現有名單的姓名或暱稱重複' : '', repeated ? '本次 CSV 有同名項目' : ''].filter(Boolean);
+      return reasons.length ? [{ index, entry, reason: reasons.join('；') }] : [];
     });
   }
 
@@ -19441,7 +19439,7 @@ class App {
       if (!this.isAdmin || classCode !== (window.currentClassCode || '')) throw Error('教室或教師身分已切換，請重新匯入。');
       const oldRoster = rosterSnap.val() || {}, oldStudents = studentsSnap.val() || {};
       const replacing = mode === 'replace';
-      rows = await this.chooseStudentRosterDuplicates(rows, replacing ? {} : oldStudents, replacing ? {} : oldRoster);
+      rows = await this.chooseStudentRosterDuplicates(rows, oldStudents, oldRoster);
       if (!rows) return;
       if (!rows.length) { this.showNotification('未匯入名冊', '未勾選任何重複項目，沒有資料需要匯入。'); return; }
       if (!this.isAdmin || classCode !== (window.currentClassCode || '')) throw Error('教室或教師身分已切換，未執行匯入。');
