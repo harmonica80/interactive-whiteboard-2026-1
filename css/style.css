@@ -7816,7 +7816,8 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
 
 .wc-ranking-header {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
@@ -7825,9 +7826,25 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
 
 .wc-ranking-header h4 {
   margin: 0;
+  white-space: nowrap;
   font-size: 15px;
   font-weight: bold;
   color: var(--text-primary);
+}
+
+.wc-ranking-limit {
+  font-size: 14px;
+  font-weight: normal;
+  color: var(--text-secondary);
+}
+
+.wc-ranking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
 }
 
 .wc-ranking-list {

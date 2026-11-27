@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=509">
+  <link rel="stylesheet" href="css/style.css?v=510">
   <link rel="stylesheet" href="css/presentation.css?v=c3">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -621,7 +621,6 @@
                 </select>
                 <input type="file" id="wcCustomMaskInput" accept="image/*" style="display: none;" onchange="window.wordCloud?.uploadCustomMask(this.files[0])">
                 <button type="button" class="presentation-tool-btn purple" onclick="window.wordCloud?.exportPng()" title="下載文字雲成果圖">💾 匯出 PNG</button>
-                <button type="button" class="presentation-tool-btn" onclick="window.app?.openAdminFeature('gameWordCloud')" title="進入文字雲管理後台">⚙️ 出題設定</button>
               </div>
             </div>
 
@@ -666,10 +665,9 @@
               <!-- 右欄：熱門詞頻排行榜 -->
               <div class="wc-ranking-card" id="wcRankingCard">
                 <div class="wc-ranking-header">
-                  <h4>🏆 熱門詞頻排行</h4>
-                  <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <h4>🏆 熱門詞頻排行 <span class="wc-ranking-limit">Top 15</span></h4>
+                  <div class="wc-ranking-actions">
                     <button type="button" class="presentation-tool-btn active wc-teacher-only" onclick="window.app && window.app.openWordCloudStudentScoringModal()" style="display: none; padding: 2px 8px; height: 28px; font-size: 14px; border-radius: 6px;" title="指定單一或多位同學進行加分或扣分">🎯 指定加減分</button>
-                    <span style="font-size: 14px; color: var(--text-muted);">TOP 15</span>
                     <button type="button" class="presentation-tool-btn" id="btnToggleWcRanking" onclick="window.wordCloud?.toggleRankingSidebar()" title="收合熱門詞頻排行">▶ 收合</button>
                   </div>
                 </div>
