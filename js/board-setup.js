@@ -4,15 +4,18 @@
   host.innerHTML = `
     <h3 class="board-substep-title"><span class="board-substep-marker">B</span>建立修正版白板連結</h3>
     <form>
-      <label>連線方式<select name="mode">
-        <option value="secure">安全模式（專案匿名登入）</option>
-        <option value="simple">簡易模式（只貼資料庫網址）</option>
-      </select></label>
-      <div class="board-mode-summary">
+      <div class="board-mode-row">
+        <label class="board-mode-select">連線方式<select name="mode">
+          <option value="simple" selected>簡易模式（只貼資料庫網址）</option>
+          <option value="secure">安全模式（專案匿名登入）</option>
+        </select></label>
+        <div class="board-mode-summary">
         <p><strong>簡易模式</strong>　只需資料庫網址。採用公開規則時，知道網址的人可能讀寫資料。</p>
         <p><strong>安全模式</strong>　加入 Firebase Web App 設定並啟用匿名登入；任何取得設定的人都可能登入並讀寫，規則不區分老師與學生。</p>
+        </div>
       </div>
       <label>Realtime Database 網址<span class="board-url-hint">💡 請貼上剛才複製的資料庫 URL 網址</span><input required type="url" name="database" placeholder="https://…firebasedatabase.app"></label>
+      <div data-secure-settings hidden>
       <details class="board-guide">
         <summary>查看 Firebase 設定啟用匿名登入與網頁應用程式操作畫面</summary>
         <div class="board-guide-content">
@@ -29,17 +32,14 @@
             <figure><figcaption>3. 輸入方便辨識的應用程式名稱，點選「註冊應用程式」。</figcaption><img src="images/guide/board-setup-8.webp" alt="輸入應用程式名稱並註冊應用程式" loading="lazy"></figure>
             <figure><figcaption>4. 複製完整的 <code>const firebaseConfig = { … };</code>，貼到下方「Firebase Web App 設定」。設定中若沒有 databaseURL，請另外在下方填入資料庫網址。</figcaption><img src="images/guide/board-setup-config-v2.webp" alt="複製 firebaseConfig 設定物件" loading="lazy"></figure>
           </section>
-          <section data-guide-simple-rule>
-            <h3>發布資料庫規則</h3>
-            <p>在 Firebase 選擇 Realtime Database 的「規則」頁籤。先按下方的「複製資料庫規則」，再貼到規則編輯區並點選「發布」。</p>
-            <figure><figcaption>1. 使用下方簡易模式產生的規則。</figcaption><img src="images/guide/board-setup-1.webp" alt="Realtime Database 規則頁面，將簡易模式規則貼入編輯區再按發布" loading="lazy"></figure>
-          </section>
+
         </div>
       </details>
       <label data-config>Firebase Web App 設定
         <textarea name="config" rows="6" required placeholder="貼上 Firebase 控制台的 firebaseConfig 物件"></textarea>
       </label>
       <p data-help></p>
+      </div>
       <p>請將以下規則貼到 Firebase 的 Realtime Database「規則」頁籤並發布。規則會套用至資料庫的各個頂層項目。</p>
       <details data-guide-secure-rule class="board-guide" hidden><summary>查看發布資料庫規則的操作畫面</summary><div class="board-guide-content">
         <h3>發布資料庫規則</h3>
@@ -77,7 +77,12 @@
       <p data-short-status role="status"></p>
       <a data-open class="presentation-tool-btn">開啟修正版白板</a>
     </section>`;
-  document.querySelectorAll('.board-step-disclosure').forEach((step) => {
+  const steps = Array.from(document.querySelectorAll('.board-step-disclosure'));
+  steps.forEach((step) => {
+    step.setAttribute('name', 'board-setup-steps');
+    step.addEventListener('toggle', () => {
+      if (step.open) steps.forEach(other => { if (other !== step) other.open = false; });
+    });
     const button = step.querySelector('.board-collapse-btn');
     if (!button) return;
     button.addEventListener('click', () => {
@@ -123,11 +128,13 @@
   }
   function refresh() {
     const secure = mode.value === 'secure';
+    host.querySelector('[data-secure-settings]').hidden = !secure;
     host.querySelector('[data-config]').hidden = !secure;
     host.querySelector('[data-guide-secure]').hidden = !secure;
-    host.querySelector('[data-guide-simple-rule]').hidden = secure;
     host.querySelector('[data-guide-secure-rule]').hidden = !secure;
     config.required = secure;
+    config.disabled = !secure;
+    if (!secure) host.querySelector('[data-secure-settings] details').open = false;
     host.querySelector('[data-help]').textContent = secure
       ? '請在自己的專案啟用 Authentication 的匿名登入並貼上網頁應用程式的公開設定。以下規則允許該專案的已登入者讀寫資料；任何取得專案設定的人都可能匿名登入，規則無法區分老師與學生。'
       : '請自行設定資料庫規則。若開放公開讀寫，知道網址的人就可能讀取、修改或刪除資料。';

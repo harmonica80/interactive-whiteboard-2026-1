@@ -168,3 +168,9 @@
 
 #boardConnectionStatus.is-success .board-loading-spinner,#boardConnectionStatus.is-success .board-loading-progress,#boardConnectionStatus.is-success .board-loading-percent {display:none;}
 #boardConnectionStatus.is-success h2 {color:var(--accent-color);}
+
+/* 連線模式：窄版選單與右側說明，手機改為上下排列。 */
+.board-mode-row { display: grid; grid-template-columns: minmax(230px, 280px) minmax(0, 1fr); align-items: start; gap: 20px; margin: 12px 0; }
+.board-setup .board-mode-select { margin: 0; }
+.board-mode-row .board-mode-summary { margin: 0; }
+@media (max-width: 700px) { .board-mode-row { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
