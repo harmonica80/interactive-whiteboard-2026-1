@@ -9,8 +9,8 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=510">
-  <link rel="stylesheet" href="css/presentation.css?v=c3">
+  <link rel="stylesheet" href="css/style.css?v=511">
+  <link rel="stylesheet" href="css/presentation.css?v=c4">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -1196,12 +1196,12 @@
     <div class="presentation-modal-card" style="width: 95%; max-width: 1100px; max-height: 90vh;">
       <div class="presentation-modal-header">
         <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-          🆚 同學作答成果並排對比
+          🆚 同學作答成果並排比較
         </h3>
         <button type="button" onclick="window.presentationManager.closeComparisonModal()" style="border: none; background: none; font-size: 18px; cursor: pointer; color: var(--text-secondary);">✕</button>
       </div>
       <div style="flex: 1; overflow-y: auto; padding: 18px;">
-        <div id="presentationComparisonContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;"></div>
+        <div id="presentationComparisonContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px;"></div>
       </div>
       <div class="presentation-modal-footer">
         <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.closeComparisonModal()">關閉</button>
@@ -5300,7 +5300,7 @@
           <div id="avatarPickerGrid" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; max-height: 175px; overflow-y: auto; padding: 4px; border-radius: 8px; background: rgba(0,0,0,0.02);">
             <!-- 動態渲染頭像格 -->
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color);">
+          <div class="student-avatar-mobile-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color);">
             <span id="txtSelectedAvatarInfo" style="font-size: 14px; color: var(--text-muted); font-weight: 500;">目前選擇：機智小狐狸</span>
             <button type="button" onclick="window.app.randomPickAvatar()" style="background: none; border: none; color: var(--accent-color); font-size: 14px; cursor: pointer; padding: 0; font-weight: bold; display: inline-flex; align-items: center; gap: 2px;">🎲 隨機換頭像</button>
           </div>
@@ -6725,7 +6725,7 @@ Python</pre>
   <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/word_cloud.js?v=c5"></script>
   <script type="application/x-board-script" data-src="js/presentation-draft.js?v=c2"></script>
-  <script type="application/x-board-script" data-src="js/presentation_core.js?v=c9"></script>
+  <script type="application/x-board-script" data-src="js/presentation_core.js?v=c10"></script>
   <script type="application/x-board-script" data-src="js/group_manager.js?v=c1"></script>
   
   <!-- 問題彈出視窗 -->

@@ -828,6 +828,15 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
+.presentation-submission-card.selected { border-color: var(--accent-color); }
+.presentation-submission-checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-color);
+  cursor: pointer;
+}
+
 .presentation-submission-head {
   display: flex;
   align-items: center;

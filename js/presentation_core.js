@@ -1879,6 +1879,9 @@
       const hasQuestions = (slide.questions && slide.questions.length > 0) || slide.displayMode === 'floating';
       const pageSubs = (this.submissions && this.submissions[slide.id]) || {};
       const subEntries = Object.entries(pageSubs);
+      for (const uid of this.selectedSubmissionIds) {
+        if (!Object.hasOwn(pageSubs, uid)) this.selectedSubmissionIds.delete(uid);
+      }
 
       if (!hasQuestions) {
         submissionsList.innerHTML = `
@@ -1910,70 +1913,56 @@
 
       submissionsList.innerHTML = '';
 
-      // 檢查本頁是否包含手繪作答題或有提交手繪圖檔 (防呆：floating 模式下 slide.questions 可能為 undefined)
-      const isDrawQuestion = Array.isArray(slide.questions) && slide.questions.some(q => q.type === 'draw');
-
-      subEntries.slice().reverse().forEach(([uid, sub]) => {
-        if (isDrawQuestion || sub.drawDataUrl) {
-          // 圖 4 手繪作答縮圖卡片
-          const card = document.createElement('div');
-          const isSelected = this.selectedSubmissionIds.has(uid);
-          card.className = `presentation-draw-submission-card ${isSelected ? 'selected' : ''}`;
-
-          card.innerHTML = `
-            <div class="presentation-draw-submission-thumb-wrap">
-              <input type="checkbox" class="presentation-draw-submission-checkbox" data-uid="${uid}" ${isSelected ? 'checked' : ''}>
-              <img class="presentation-draw-submission-img" src="${sub.drawDataUrl || ''}" alt="${this.escapeHtml(sub.userName || '作品')}" title="點擊放大查看">
-            </div>
-            <div class="presentation-draw-submission-author">${sub.avatar || '👤'} ${this.escapeHtml(sub.userName || '同學')}</div>
-          `;
-
-          const chk = card.querySelector('.presentation-draw-submission-checkbox');
-          chk.onclick = (e) => {
-            e.stopPropagation();
-            if (chk.checked) {
-              this.selectedSubmissionIds.add(uid);
-              card.classList.add('selected');
-            } else {
-              this.selectedSubmissionIds.delete(uid);
-              card.classList.remove('selected');
-            }
-            if (txtSelectedCountBadge) {
-              txtSelectedCountBadge.textContent = `已選 ${this.selectedSubmissionIds.size}`;
-            }
-          };
-
-          const img = card.querySelector('.presentation-draw-submission-img');
-          img.onclick = () => {
-            if (sub.drawDataUrl) {
-              this.openZoomModal(sub.drawDataUrl, sub.userName || '同學');
-            }
-          };
-
-          submissionsList.appendChild(card);
-        } else {
-          // 一般文字/選擇題作答卡片
-          const card = document.createElement('div');
-          card.className = 'presentation-submission-card';
-
-          const timeStr = sub.timestamp ? new Date(sub.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-          let answerText = '';
-          if (typeof sub.answers === 'string') {
-            answerText = sub.answers;
-          } else if (typeof sub.answers === 'object') {
-            answerText = Object.entries(sub.answers).map(([qid, ans]) => `${ans}`).join(' | ');
-          }
-
-          card.innerHTML = `
-            <div class="presentation-submission-head">
-              <span class="presentation-student-name">${sub.avatar || '👤'} ${this.escapeHtml(sub.userName || '同學')}</span>
-              <span class="presentation-submission-time">${timeStr}</span>
-            </div>
-            <div class="presentation-submission-answer">${this.escapeHtml(answerText)}</div>
-          `;
-          submissionsList.appendChild(card);
-        }
+      subEntries.reverse().forEach(([uid, sub]) => {
+        const card = document.createElement('div');
+        card.className = sub.drawDataUrl ? 'presentation-draw-submission-card' : 'presentation-submission-card';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = sub.drawDataUrl ? 'presentation-draw-submission-checkbox' : 'presentation-submission-checkbox';
+        checkbox.setAttribute('aria-label', `選取 ${sub.userName || '同學'} 的回應`);
+        checkbox.checked = this.selectedSubmissionIds.has(uid);
+        card.classList.toggle('selected', checkbox.checked);
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) this.selectedSubmissionIds.add(uid);
+          else this.selectedSubmissionIds.delete(uid);
+          card.classList.toggle('selected', checkbox.checked);
+          if (txtSelectedCountBadge) txtSelectedCountBadge.textContent = `已選 ${this.selectedSubmissionIds.size}`;
+        });
+        this.fillSubmissionCard(card, sub, checkbox);
+        submissionsList.appendChild(card);
       });
+    }
+
+    fillSubmissionCard(card, sub, checkbox = null) {
+      const head = document.createElement('div');
+      head.className = 'presentation-submission-head';
+      const name = document.createElement(checkbox && !sub.drawDataUrl ? 'label' : 'span');
+      name.className = 'presentation-student-name';
+      if (checkbox && !sub.drawDataUrl) name.append(checkbox);
+      name.append(`${sub.avatar || '👤'} ${sub.userName || '同學'}`);
+      const time = document.createElement('span');
+      time.className = 'presentation-submission-time';
+      if (sub.timestamp) time.textContent = new Date(sub.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      head.append(name, time);
+      if (sub.drawDataUrl) {
+        const thumb = document.createElement('div');
+        thumb.className = 'presentation-draw-submission-thumb-wrap';
+        if (checkbox) thumb.append(checkbox);
+        const img = document.createElement('img');
+        img.className = 'presentation-draw-submission-img';
+        img.src = sub.drawDataUrl;
+        img.alt = `${sub.userName || '同學'} 的手繪作答`;
+        img.title = '點擊放大查看';
+        img.onclick = () => this.openZoomModal(sub.drawDataUrl, sub.userName || '同學');
+        thumb.append(img);
+        card.append(thumb, head);
+        return;
+      }
+      const answer = document.createElement('div');
+      answer.className = 'presentation-submission-answer';
+      const text = typeof sub.answers === 'string' ? sub.answers : Object.values(sub.answers || {}).join(' | ');
+      answer.textContent = text || '（無文字回應）';
+      card.append(head, answer);
     }
 
     // 渲染學生端與老師端作答介面 (圖 1 & 圖 2: 可收合、自訂選擇題選項、圖 3: 手繪作答工具列)
@@ -2222,7 +2211,7 @@
           });
           qContainer.appendChild(grid);
         }
-        // 手繪標記作答題 (圖 5: 移除題幹標題與下方重複按鈕，說明文字指向畫面上方「提交作答」)
+        // 手繪標記作答題 (圖 5: 移除題幹標題與下方重複按鈕，說明文字指向畫面上方「送出作答」)
         else if (q.type === 'draw') {
           const drawNotice = document.createElement('div');
           drawNotice.style.background = '#e0f2fe';
@@ -2235,7 +2224,7 @@
           drawNotice.style.textAlign = 'center';
           drawNotice.innerHTML = `
             🎨 <b>手繪標記作答模式</b><br>
-            請直接於簡報畫布上手繪作答, 完成後點擊畫面上方「提交作答」送出!
+            請直接於簡報畫布上手繪作答，完成後點選畫面上方的「送出作答」。
           `;
           qContainer.appendChild(drawNotice);
         }
@@ -2509,7 +2498,7 @@
       const slide = this.getCurrentSlide();
       if (!slide) return;
       if (!this.studentDrawStrokes || this.studentDrawStrokes.length === 0) {
-        this.notify('提示', '請先在畫面上進行手繪標記後再提交作答！');
+        this.notify('提示', '請先在畫面上進行手繪標記後再送出作答！');
         return;
       }
       const { studentDrawCanvas } = this.els;
@@ -2596,36 +2585,19 @@
       if (!slide) return;
       const pageSubs = (this.submissions && this.submissions[slide.id]) || {};
 
-      const selectedList = Object.entries(pageSubs).filter(([uid, sub]) => this.selectedSubmissionIds.has(uid) && sub.drawDataUrl);
+      const selectedList = Object.entries(pageSubs).filter(([uid]) => this.selectedSubmissionIds.has(uid));
       if (selectedList.length === 0) {
-        this.notify('提示', '請先在右側「即時回應」清單勾選要比較的同學手繪作品！');
+        this.notify('提示', '請先在「即時回應」勾選要比較的作答。');
         return;
       }
 
-      container.innerHTML = '';
-      selectedList.forEach(([uid, sub]) => {
-        const item = document.createElement('div');
-        item.style.background = '#ffffff';
-        item.style.border = '1px solid var(--border-color)';
-        item.style.borderRadius = '10px';
-        item.style.padding = '10px';
-        item.style.display = 'flex';
-        item.style.flexDirection = 'column';
-        item.style.gap = '8px';
-        item.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
-
-        item.innerHTML = `
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-weight: 700; color: var(--text-primary); font-size: 14px;">${sub.avatar || '👤'} ${this.escapeHtml(sub.userName || '同學')}</span>
-            <span style="font-size: 14px; color: var(--text-secondary);">${sub.timestamp ? new Date(sub.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-          </div>
-          <div style="background: #0f172a; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; aspect-ratio: 16/9; cursor: pointer;" title="點擊放大查看">
-            <img src="${sub.drawDataUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-          </div>
-        `;
-        item.querySelector('img').onclick = () => this.openZoomModal(sub.drawDataUrl, sub.userName);
-        container.appendChild(item);
-      });
+      container.replaceChildren();
+      for (const [, sub] of selectedList) {
+        const card = document.createElement('div');
+        card.className = 'presentation-submission-card';
+        this.fillSubmissionCard(card, sub);
+        container.appendChild(card);
+      }
 
       this.openModal(modal);
     }

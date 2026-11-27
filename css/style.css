@@ -10492,6 +10492,25 @@ body.is-admin-logged-in .floating-student-avatar-container {
 
 /* 手機姓名與頭像設定：分類收成單行，頭像三行捲動，儲存操作固定可見。 */
 .student-avatar-category-mobile { display: none; }
+@media (min-width: 601px) {
+  #studentNameModal .student-name-card {
+    display: flex;
+    flex-direction: column;
+    max-height: 90dvh !important;
+    overflow: hidden !important;
+  }
+  #studentNameModal .student-name-heading,
+  #studentNameModal .student-name-actions { flex-shrink: 0; }
+  #studentNameModal .student-name-form { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  #studentNameModal .student-avatar-mobile-footer { display: none !important; }
+  #studentNameModal .student-avatar-picker { container-type: inline-size; }
+  #studentNameModal #avatarPickerGrid {
+    grid-auto-rows: calc((100cqw - 50px) / 8);
+    max-height: calc((100cqw - 50px) * 3 / 8 + 20px) !important;
+  }
+  #studentNameModal #avatarPickerGrid .avatar-grid-item { min-height: 0; height: 100%; aspect-ratio: auto; }
+}
+
 @media (max-width: 600px) {
   #studentNameModal .student-name-card {
     display: flex;
