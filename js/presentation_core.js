@@ -1755,51 +1755,68 @@
       card.dataset.presentationSortLayout = layout;
       card.querySelectorAll('img').forEach(image => image.draggable = false);
       if (!this.canReorderSlides()) return;
-      card.classList.add('presentation-sortable-slide'); card.draggable = true;
-      const markTarget = (target, x, y) => {
-        document.querySelectorAll('.presentation-sort-before,.presentation-sort-after').forEach(el => el.classList.remove('presentation-sort-before','presentation-sort-after'));
-        if (!target || !target.parentElement || target.dataset.presentationSlideId === this.draggedSlideId) return null;
-        const rect = target.getBoundingClientRect(), after = layout === 'grid' || getComputedStyle(target.parentElement).flexDirection === 'row' ? x > rect.left + rect.width / 2 : y > rect.top + rect.height / 2;
-        target.classList.add(after ? 'presentation-sort-after' : 'presentation-sort-before');
-        return { id: target.dataset.presentationSlideId, after };
-      };
-      const clear = () => {
-        document.querySelectorAll('.presentation-sort-before,.presentation-sort-after,.presentation-slide-dragging').forEach(el => el.classList.remove('presentation-sort-before','presentation-sort-after','presentation-slide-dragging'));
-        this.draggedSlideId = null; this.suppressSlideClickUntil = performance.now() + 300;
-      };
-      card.addEventListener('dragstart', event => {
-        if (!this.canReorderSlides() || event.target.closest('button')) { event.preventDefault(); return; }
-        this.draggedSlideId = slideId; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', slideId); card.classList.add('presentation-slide-dragging');
-      });
-      card.addEventListener('dragover', event => { if (!this.draggedSlideId || !this.canReorderSlides()) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; markTarget(card, event.clientX, event.clientY); });
-      card.addEventListener('drop', event => {
-        if (!this.draggedSlideId || !this.canReorderSlides()) return;
-        event.preventDefault(); event.stopPropagation(); const source = this.draggedSlideId, target = markTarget(card, event.clientX, event.clientY); clear();
-        if (target) this.reorderSlides(source, target.id, target.after);
-      });
-      card.addEventListener('dragend', clear);
-      const handle = document.createElement('button'); handle.type = 'button'; handle.className = 'presentation-slide-drag-handle'; handle.textContent = '⠿'; handle.title = '拖曳調整簡報順序'; handle.setAttribute('aria-label', '拖曳調整簡報順序');
+      // 統一以指標事件移動完整縮圖，避免瀏覽器原生拖曳只顯示小型影像。
+      card.classList.add('presentation-sortable-slide'); card.draggable = false;
+      const handle = document.createElement('button');
+      handle.type = 'button'; handle.className = 'presentation-slide-drag-handle'; handle.textContent = '⠿';
+      handle.title = '拖曳調整簡報順序'; handle.setAttribute('aria-label', '拖曳調整簡報順序');
       handle.onclick = event => { event.preventDefault(); event.stopPropagation(); };
-      handle.addEventListener('pointerdown', event => {
+      card.append(handle);
+      card.addEventListener('pointerdown', event => {
         if (!this.canReorderSlides() || event.button !== 0) return;
-        event.preventDefault(); event.stopPropagation(); handle.setPointerCapture(event.pointerId); this.draggedSlideId = slideId;
+        const pressedButton = event.target.closest('button');
+        if (pressedButton && pressedButton !== handle) return;
+        // 觸控仍可在縮圖上滑動捲頁，以把手調整順序。
+        if (event.pointerType !== 'mouse' && pressedButton !== handle) return;
+        event.preventDefault(); event.stopPropagation(); card.setPointerCapture(event.pointerId);
+        const sourceRect = card.getBoundingClientRect();
+        const offsetX = event.clientX - sourceRect.left, offsetY = event.clientY - sourceRect.top;
+        const startX = event.clientX, startY = event.clientY;
         let target = null, ghost = null;
+        const clearMarkers = () => document.querySelectorAll('.presentation-sort-before,.presentation-sort-after').forEach(el => el.classList.remove('presentation-sort-before','presentation-sort-after'));
         const move = ev => {
-          if (!ghost) { ghost = card.cloneNode(true); ghost.classList.add('presentation-slide-drag-ghost'); ghost.style.width = card.getBoundingClientRect().width + 'px'; (document.fullscreenElement || document.body).append(ghost); card.classList.add('presentation-slide-dragging'); }
-          ghost.style.left = ev.clientX + 12 + 'px'; ghost.style.top = ev.clientY + 12 + 'px';
+          if (!this.canReorderSlides()) { finish(ev); return; }
+          if (!ghost && Math.hypot(ev.clientX - startX, ev.clientY - startY) < 6) return;
+          if (!ghost) {
+            ghost = card.cloneNode(true); ghost.classList.add('presentation-slide-drag-ghost'); ghost.removeAttribute('data-presentation-slide-id');
+            ghost.style.width = sourceRect.width + 'px'; ghost.style.height = sourceRect.height + 'px';
+            (document.fullscreenElement || document.body).append(ghost);
+            card.classList.add('presentation-slide-dragging'); this.draggedSlideId = slideId;
+          }
+          ghost.style.left = ev.clientX - offsetX + 'px'; ghost.style.top = ev.clientY - offsetY + 'px';
+          clearMarkers(); target = null;
           const hovered = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-presentation-slide-id]');
-          target = hovered?.parentElement === card.parentElement ? markTarget(hovered, ev.clientX, ev.clientY) : null;
+          if (hovered && hovered !== card && hovered.parentElement === card.parentElement) {
+            const rect = hovered.getBoundingClientRect();
+            const horizontal = layout === 'grid' || getComputedStyle(card.parentElement).flexDirection === 'row';
+            const after = horizontal ? ev.clientX > rect.left + rect.width / 2 : ev.clientY > rect.top + rect.height / 2;
+            hovered.classList.add(after ? 'presentation-sort-after' : 'presentation-sort-before');
+            target = { id: hovered.dataset.presentationSlideId, after };
+          }
           const area = card.parentElement.closest('.presentation-thumbnails-container') || card.parentElement.parentElement;
-          if (area) { const rect = area.getBoundingClientRect(); if (layout === 'list' && getComputedStyle(card.parentElement).flexDirection === 'row') { if (ev.clientX < rect.left + 35) area.scrollLeft -= 18; else if (ev.clientX > rect.right - 35) area.scrollLeft += 18; } else { if (ev.clientY < rect.top + 35) area.scrollTop -= 18; else if (ev.clientY > rect.bottom - 35) area.scrollTop += 18; } }
+          if (area) {
+            const rect = area.getBoundingClientRect();
+            if (layout === 'list' && getComputedStyle(card.parentElement).flexDirection === 'row') {
+              if (ev.clientX < rect.left + 35) area.scrollLeft -= 18;
+              else if (ev.clientX > rect.right - 35) area.scrollLeft += 18;
+            } else {
+              if (ev.clientY < rect.top + 35) area.scrollTop -= 18;
+              else if (ev.clientY > rect.bottom - 35) area.scrollTop += 18;
+            }
+          }
         };
         const finish = ev => {
-          handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', finish); handle.removeEventListener('pointercancel', finish); handle.removeEventListener('lostpointercapture', finish);
-          ghost?.remove(); const destination = target; clear();
-          if (ev.type === 'pointerup' && destination) this.reorderSlides(slideId, destination.id, destination.after);
+          card.removeEventListener('pointermove', move); card.removeEventListener('pointerup', finish);
+          card.removeEventListener('pointercancel', finish); card.removeEventListener('lostpointercapture', finish);
+          if (card.hasPointerCapture(event.pointerId)) card.releasePointerCapture(event.pointerId);
+          if (!ghost) return;
+          ghost.remove(); clearMarkers(); card.classList.remove('presentation-slide-dragging');
+          this.draggedSlideId = null; this.suppressSlideClickUntil = performance.now() + 300;
+          if (ev.type === 'pointerup' && target && this.canReorderSlides()) this.reorderSlides(slideId, target.id, target.after);
         };
-        handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', finish); handle.addEventListener('pointercancel', finish); handle.addEventListener('lostpointercapture', finish);
+        card.addEventListener('pointermove', move); card.addEventListener('pointerup', finish);
+        card.addEventListener('pointercancel', finish); card.addEventListener('lostpointercapture', finish);
       });
-      card.append(handle);
     }
 
     // 渲染左側縮圖列表
