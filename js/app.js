@@ -12448,10 +12448,14 @@ class App {
                 this.playerCanon.pauseVideo();
               }
               this.applyMuteState();
-              if (this.pendingMusicUrl) {
-                const url = this.pendingMusicUrl;
-                this.pendingMusicUrl = null;
-                this.updateMusicSource(url);
+              const pendingUrl = this.pendingMusicUrl;
+              this.pendingMusicUrl = null;
+              if (pendingUrl) {
+                // 更新來源只準備影片，由 playAudio 統一負責開始播放。
+                const playing = this.currentAudioPlaying;
+                this.currentAudioPlaying = 'none';
+                this.updateMusicSource(pendingUrl);
+                this.currentAudioPlaying = playing;
               }
               if (this.isAdmin && this.currentAudioPlaying === 'canon') this.playAudio('canon');
             },
