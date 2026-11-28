@@ -6717,7 +6717,6 @@ class App {
         <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; animation: blinkPulse 1.2s infinite; flex-shrink: 0;"></span>
         <span style="white-space: nowrap;">${item.icon} ${item.title} (${item.status})</span>
         <button type="button" onclick="${item.previewAction}" title="一鍵切換至前台學生畫面預覽" style="background: rgba(0, 122, 255, 0.12); border: 1px solid #007aff; color: #0062cc; border-radius: 8px; padding: 3px 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">👁️ 前台畫面</button>
-        <button type="button" onclick="${item.settingAction}" title="進入此項目的後台控場頁面" style="background: white; border: 1px solid #ff3b30; color: #d70015; border-radius: 8px; padding: 3px 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⚙️ 設定</button>
         <button type="button" onclick="${item.stopAction}" title="直接強制停止此活動" style="background: #ff3b30; border: none; color: white; border-radius: 8px; padding: 3px 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⏹️ 停止</button>
       </div>
     `).join('');
