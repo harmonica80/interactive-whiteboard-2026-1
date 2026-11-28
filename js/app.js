@@ -21540,46 +21540,55 @@ class App {
     });
   }
 
-  async rewardVideoQuizBatch(targetType = 'correct', quiz = window.videoQuiz?.resolveCurrentActiveQuiz(),
-    answersMap = window.videoQuiz?.cachedRemoteAnswers) {
+  async rewardVideoQuizBatch(targetType = 'correct', quiz = window.videoQuiz?.resolveCurrentActiveQuiz()) {
     if (!this.isAdmin || this._videoQuizRewardPending || !['correct', 'all'].includes(targetType)) return;
-    const questions = quiz?.allQuestions?.length ? quiz.allQuestions : quiz?.questions || [];
-    const targets = new Map();
-    let unmatched = 0;
-    for (const [key, student] of Object.entries(answersMap || {})) {
-      const uid = student?.userId || key;
-      const qualifies = questions.some(question => {
-        const answer = student?.answers?.[question.id];
-        return answer && (targetType === 'all' || (question.type !== 'text' && answer.isCorrect === true));
-      });
-      if (qualifies) {
-        const roster = this.registeredStudents || {};
-        let rosterUid = [student.studentUid, student.userId, key].find(id => id && roster[id] && !roster[id].deletedAt);
-        if (!rosterUid && student.userName) {
+    const quizManager = window.videoQuiz;
+    const answersRef = quizManager?.answersRef;
+    const classCode = window.currentClassCode;
+    if (!quiz || !answersRef) {
+      this.showNotification('無法獎勵', '找不到目前測驗的作答資料，請先開啟測驗統計。');
+      return;
+    }
+    this._videoQuizRewardPending = true;
+    this.setVideoQuizRewardButtonsDisabled(true);
+    try {
+      const [answersSnapshot, rosterSnapshot] = await Promise.all([
+        answersRef.once('value'),
+        db.ref('quiz/students').once('value')
+      ]);
+      if (!this.isAdmin || classCode !== window.currentClassCode || answersRef !== quizManager.answersRef) return;
+      const answers = answersSnapshot.val() || {};
+      const roster = rosterSnapshot.val() || {};
+      this.registeredStudents = roster;
+      const questions = quiz.allQuestions?.length ? quiz.allQuestions : quiz.questions || [];
+      const targets = new Map();
+      let unmatched = 0;
+      for (const [key, student] of Object.entries(answers)) {
+        if (!student || !questions.some(question => {
+          const answer = student.answers?.[question.id];
+          return answer && (targetType === 'all' || (question.type !== 'text' && answer.isCorrect === true));
+        })) continue;
+        let uid = [student.studentUid, student.userId, key].find(id => id && roster[id] && !roster[id].deletedAt);
+        if (!uid && student.userName) {
           const name = this.normalizeStudentRosterName(student.userName);
           const matches = Object.entries(roster).filter(([, profile]) => profile && !profile.deletedAt &&
             [profile.name, ...(Array.isArray(profile.previousNames) ? profile.previousNames : [])]
               .some(value => this.normalizeStudentRosterName(value) === name));
-          if (matches.length === 1) rosterUid = matches[0][0];
+          if (matches.length === 1) uid = matches[0][0];
         }
-        if (rosterUid) targets.set(rosterUid, { uid: rosterUid, name: roster[rosterUid].name || student.userName || '同學' });
+        if (uid) targets.set(uid, { uid, name: roster[uid].name || student.userName || '同學' });
         else unmatched++;
       }
-    }
-    if (!targets.size) {
-      const message = targetType === 'correct' ? '目前沒有同學答對這份影片測驗的計分題。' : '目前沒有同學參與這份影片測驗。';
-      this.showNotification('提示', message);
-      return;
-    }
-    const reason = targetType === 'correct' ? '影片出題測驗答對獎勵' : '影片出題測驗參與作答獎勵';
-    this._videoQuizRewardPending = true;
-    this.setVideoQuizRewardButtonsDisabled(true);
-    try {
-      await this.rewardBatchTargets([...targets.values()], reason);
+      if (!targets.size) {
+        this.showNotification('無法獎勵', unmatched ? '作答帳號無法唯一對應學生名冊，請確認學生帳號。'
+          : targetType === 'correct' ? '目前沒有同學答對這份影片測驗的計分題。' : '目前沒有同學參與這份影片測驗。');
+        return;
+      }
+      await this.rewardBatchTargets([...targets.values()], targetType === 'correct' ? '影片出題測驗答對獎勵' : '影片出題測驗參與作答獎勵');
       if (unmatched) this.showNotification('部分作答無法給點', `有 ${unmatched} 筆作答無法唯一對應學生名冊，請確認學生帳號。`);
     } catch (err) {
       console.error('影片測驗批次獎勵未完成', err);
-      this.showNotification('影片測驗獎勵未完成', '請先查看點數記錄，確認哪些同學已收到獎勵。');
+      this.showNotification('影片測驗獎勵未完成', '請確認資料庫連線，並查看點數記錄確認哪些同學已收到獎勵。');
     } finally {
       this._videoQuizRewardPending = false;
       this.setVideoQuizRewardButtonsDisabled(false);
