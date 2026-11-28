@@ -7781,25 +7781,55 @@ class App {
     summary.textContent = `${room.title} · ${room.items.length} 項 · 約 ${this.formatQuotaBytes(bytes)}`;
     details.append(summary);
     const groups = new Map();
-    for (const item of room.items) {
-      if (!groups.has(item.group)) {
-        const fieldset = document.createElement('fieldset');
-        const legend = document.createElement('legend');
-        legend.textContent = item.group;
-        fieldset.append(legend);
-        details.append(fieldset);
-        groups.set(item.group, fieldset);
+    const itemInputs = new Map();
+    const bulkInputs = [];
+    const updateChecked = (items, checked) => {
+      for (const item of items) {
+        if (checked) scan.selected.add(item);
+        else scan.selected.delete(item);
+        itemInputs.get(item).checked = checked;
       }
+      for (const control of bulkInputs) {
+        const count = control.items.filter(item => scan.selected.has(item)).length;
+        control.input.checked = count > 0 && count === control.items.length;
+        control.input.indeterminate = count > 0 && count < control.items.length;
+      }
+      this.updateCloudCleanupSelection();
+    };
+    const createBulkControl = (items, title) => {
       const label = document.createElement('label');
+      label.className = 'cloud-cleanup-select-all';
+      label.addEventListener('click', event => event.stopPropagation());
       const input = document.createElement('input');
       input.type = 'checkbox';
-      input.addEventListener('change', () => {
-        if (input.checked) scan.selected.add(item);
-        else scan.selected.delete(item);
-        this.updateCloudCleanupSelection();
-      });
-      label.append(input, `${item.label}（約 ${this.formatQuotaBytes(item.bytes)}${item.blobSizeUnknown ? '，未計入獨立媒體檔' : ''}）`);
-      groups.get(item.group).append(label);
+      input.disabled = items.length === 0;
+      input.setAttribute('aria-label', `核選全部：${title}`);
+      input.addEventListener('change', () => updateChecked(items, input.checked));
+      label.append(input, '核選全部');
+      bulkInputs.push({ input, items });
+      return label;
+    };
+    summary.append(createBulkControl(room.items, room.title));
+    for (const item of room.items) {
+      if (!groups.has(item.group)) groups.set(item.group, []);
+      groups.get(item.group).push(item);
+    }
+    for (const [group, items] of groups) {
+      const fieldset = document.createElement('fieldset');
+      const legend = document.createElement('legend');
+      legend.append(group, createBulkControl(items, `${room.title}／${group}`));
+      fieldset.append(legend);
+      details.append(fieldset);
+      for (const item of items) {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = scan.selected.has(item);
+        input.addEventListener('change', () => updateChecked([item], input.checked));
+        itemInputs.set(item, input);
+        label.append(input, `${item.label}（約 ${this.formatQuotaBytes(item.bytes)}${item.blobSizeUnknown ? '，未計入獨立媒體檔' : ''}）`);
+        fieldset.append(label);
+      }
     }
     if (!room.items.length || room.warnings.length) {
       const status = document.createElement('p');
