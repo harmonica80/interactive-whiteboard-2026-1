@@ -470,6 +470,19 @@ body {
   transition: border-color 0.2s, background 0.3s;
 }
 
+.question-keyboard-hint {
+  display: none;
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  .question-keyboard-hint {
+    display: block;
+  }
+}
+
 .question-textarea {
   min-height: 80px;
   line-height: 1.5;
