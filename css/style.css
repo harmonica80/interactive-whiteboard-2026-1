@@ -10727,3 +10727,7 @@ body.is-admin-logged-in .floating-student-avatar-container {
 .wc-bank-upload-actions { margin-top: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .wc-bank-upload-actions span { font-size: 14px; color: var(--text-secondary); }
 .wc-bank-upload-actions kbd { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; }
+
+@media (max-width: 768px) {
+  #mobileUserAvatarBtn, #displayUserNameTagMobile { display: none !important; }
+}
