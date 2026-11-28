@@ -3861,6 +3861,12 @@ body {
 }
 
 .vq-launch-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
   width: min(90vw, 480px);
   box-sizing: border-box;
   padding: 24px;
