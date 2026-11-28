@@ -6245,7 +6245,7 @@ class App {
       },
       systemReset: {
         id: 'adminResetSection',
-        title: '系統重設與備份管理',
+        title: '班級資料重設與備份管理',
         category: '班級管理',
         icon: 'images/admin_icons/system_reset.svg'
       },
@@ -28512,7 +28512,7 @@ class App {
       { key: 'vidMgmt', title: '影片管理', category: '同學提問與資料分享', icon: 'images/admin_icons/vid_mgmt.svg' },
       { key: 'classSound', title: '測驗與互動音效設定', category: '系統與安全性', icon: 'images/admin_icons/class_sound.svg' },
       { key: 'classSecurity', title: '教師身分與密碼安全設定', category: '系統設定', icon: 'images/admin_icons/class_security.svg' },
-      { key: 'systemReset', title: '系統重設與備份管理', category: '系統與安全性', icon: 'images/admin_icons/system_reset.svg' },
+      { key: 'systemReset', title: '班級資料重設與備份管理', category: '系統與安全性', icon: 'images/admin_icons/system_reset.svg' },
       { key: 'whiteboardFeatures', title: '功能模組啟用設定', category: '系統與安全性', icon: 'images/admin_icons/system_reset.svg' }
     ];
   }
