@@ -8941,6 +8941,15 @@ class App {
 
   bindQuestionEvents() {
     this.questionInput = document.getElementById('questionInput');
+    const compactQuestionInput = window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)');
+    const compactPlaceholder = this.questionInput.placeholder;
+    const updateQuestionPlaceholder = () => {
+      this.questionInput.placeholder = compactQuestionInput.matches
+        ? compactPlaceholder
+        : this.questionInput.dataset.desktopPlaceholder;
+    };
+    updateQuestionPlaceholder();
+    compactQuestionInput.addEventListener('change', updateQuestionPlaceholder);
     this.askBtn = document.getElementById('askBtn');
     this.questionList = document.getElementById('questionList');
     this.questionsRef = db.ref('questions');
