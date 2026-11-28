@@ -6282,7 +6282,8 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-shrink: 0;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .admin-dashboard-expand-btns {
@@ -6295,8 +6296,8 @@ body {
 }
 
 .firebase-quota-banner-dashboard-slot {
-  flex: 1 1 360px;
-  max-width: 680px;
+  flex: 0 1 390px;
+  max-width: 390px;
   min-width: 280px;
 }
 
