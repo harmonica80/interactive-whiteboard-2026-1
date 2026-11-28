@@ -78,13 +78,47 @@
       if (!allowed()) return;
       if (!window.documentPictureInPicture) { alert('此瀏覽器不支援獨立置頂視窗；請使用 Chrome 或 Edge，或使用頁面上的浮動計時器。'); return; }
       try {
-        pip = await window.documentPictureInPicture.requestWindow({width: 340, height: 390});
+        pip = await window.documentPictureInPicture.requestWindow({width: 340, height: 168, preferInitialWindowPlacement: true});
         const d = pip.document; d.title = '課堂計時器'; const style = d.createElement('style');
         const c = getComputedStyle(document.documentElement); for (const name of ['--bg-card','--bg-input','--text-primary','--accent-color','--border-color']) d.documentElement.style.setProperty(name, c.getPropertyValue(name));
-        style.textContent = 'body{margin:0;display:grid;place-items:center;height:100vh;background:var(--bg-card);color:var(--text-primary);font-family:system-ui;text-align:center}strong{font-size:58px;font-variant-numeric:tabular-nums;color:var(--accent-color)}p{font-size:16px;margin:4px}img{width:80px;height:80px;object-fit:contain}img[hidden]{display:none}.controls{display:flex;justify-content:center;gap:5px;flex-wrap:wrap}.controls button{margin:4px 0}button{display:block;margin:8px auto 0;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-input);color:var(--text-primary);font:600 14px system-ui;cursor:pointer}'; d.head.appendChild(style);
+        style.textContent = `
+          body {
+            box-sizing: border-box; margin: 0; min-height: 100vh; padding: 8px;
+            display: grid; place-items: center; text-align: center;
+            background: var(--bg-card); color: var(--text-primary); font-family: system-ui;
+          }
+          .timer { display: grid; justify-items: center; gap: 5px; }
+          .readout { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 76px; }
+          strong { font-size: 58px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent-color); }
+          p { font-size: 16px; line-height: 1.25; margin: 0; }
+          img { width: 72px; height: 72px; object-fit: contain; }
+          img[hidden] { display: none; }
+          .controls { display: flex; justify-content: center; gap: 6px; }
+          button {
+            padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 8px;
+            background: var(--bg-input); color: var(--text-primary);
+            font: 600 14px system-ui; white-space: nowrap; cursor: pointer;
+          }
+        `;
+        d.head.appendChild(style);
         const box=d.createElement('div'), label=d.createElement('p'), value=d.createElement('strong'), settings=d.createElement('button'), picture=d.createElement('img'), controls=d.createElement('div'); label.textContent='⏱️ 課堂計時器'; value.id='pipTime'; picture.id='pipAnimation';picture.alt='計時動畫';picture.hidden=true; controls.className='controls';
         for(const [text,title,method] of [['▶','開始','toggle'],['↺','重設','reset']]){const btn=d.createElement('button');btn.type='button';if(method==='toggle')btn.id='pipToggle';btn.textContent=text;btn.title=title;btn.setAttribute('aria-label',title);btn.addEventListener('click',()=>timer[method]());controls.appendChild(btn);}
-        settings.type='button'; settings.textContent='開啟計時器設定'; settings.addEventListener('click',()=>{ if (!allowed()) return; window.focus(); timer.open(); }); box.append(label,picture,value,controls,settings); d.body.appendChild(box);timer.setAnimation($('practiceTimerAnimation')?.value||'none'); update();
+        settings.type = 'button';
+        settings.textContent = '開啟計時器設定';
+        settings.addEventListener('click', () => {
+          if (!allowed()) return;
+          window.focus();
+          timer.open();
+        });
+        controls.append(settings);
+        const readout = d.createElement('div');
+        readout.className = 'readout';
+        readout.append(picture, value);
+        box.className = 'timer';
+        box.append(label, readout, controls);
+        d.body.appendChild(box);
+        timer.setAnimation($('practiceTimerAnimation')?.value || 'none');
+        update();
       } catch (_) { alert('無法開啟置頂視窗，請確認瀏覽器允許畫中畫視窗。'); }
     }
   };
