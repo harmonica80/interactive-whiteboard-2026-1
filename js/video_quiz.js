@@ -2380,7 +2380,6 @@
               <button type="button" class="presentation-tool-btn active" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="font-size: 14px; padding: 4px 10px;" title="查看全班答題分佈與排行榜">📊 查看本題統計</button>
               <button type="button" class="presentation-tool-btn desktop-only" onclick="window.app.switchToTab('panel-admin')" style="font-size: 14px; padding: 4px 10px;" title="若您是老師，點此登入管理後台">⚙️ 後台登入</button>
             `}
-            <button type="button" onclick="window.videoQuiz.hideQuestionOverlay()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="暫時收合題目視窗">✕</button>
           </div>
         </div>
         <h3 style="font-size: 18px; line-height: 1.5; margin: 0 0 12px 0; color: var(--text-primary);">${this.escapeHtml(question.prompt)}</h3>
@@ -3091,6 +3090,7 @@
 
         <!-- 全班排行榜 -->
         <h4 style="margin: 20px 0 10px 0; font-size: 16px;">🏆 全班成績排行榜</h4>
+        <div data-video-quiz-analytics-rewards></div>
         <div style="max-height: 220px; overflow-y: auto; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); padding: 8px;">
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <thead>
@@ -3132,6 +3132,25 @@
           </button>
         </div>
       `;
+      if (window.app?.isAdmin) {
+        const toolbar = document.getElementById('videoQuizScoringBar');
+        if (toolbar) {
+          const rewards = toolbar.cloneNode(true);
+          rewards.removeAttribute('id');
+          const classCode = window.currentClassCode;
+          rewards.querySelectorAll('[data-video-quiz-reward]').forEach(button => {
+            button.removeAttribute('onclick');
+            button.disabled = Boolean(window.app._videoQuizRewardPending);
+            button.addEventListener('click', () => {
+              if (window.currentClassCode === classCode) {
+                window.app.rewardVideoQuizBatch(button.dataset.videoQuizReward, quiz, answersMap);
+              }
+            });
+          });
+          container.querySelector('[data-video-quiz-analytics-rewards]').append(rewards);
+          window.app.updateActivityScoringBarUI();
+        }
+      }
     }
 
     // 匯出全班成績 CSV (多影片測驗組合彙整全體題目)

@@ -3835,7 +3835,7 @@
               </div>
 
               <!-- 🎯 第四階段：影片出題測驗計分對象設定（個人／分組／雙軌）與一鍵加分 -->
-              <div class="activity-scoring-config-bar" style="margin-bottom: 16px;">
+              <div id="videoQuizScoringBar" class="activity-scoring-config-bar" style="margin-bottom: 16px;">
                 <div class="activity-scoring-row">
                   <span class="activity-scoring-title">🎯 計分設定：</span>
                   <div class="activity-scoring-mode-group">
@@ -3853,8 +3853,8 @@
                     </select>
                   </div>
                   <div class="activity-scoring-actions">
-                    <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardVideoQuizBatch('correct')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="一鍵獎勵在影片測驗中答對題目的同學或所屬小組">🎁 獎勵影片答對同學</button>
-                    <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardVideoQuizBatch('all')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="一鍵獎勵所有參與影片測驗作答的同學或所屬小組">🎁 獎勵全體參與</button>
+                    <button type="button" class="presentation-tool-btn success" data-video-quiz-reward="correct" onclick="window.app && window.app.rewardVideoQuizBatch('correct')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="一鍵獎勵在影片測驗中答對題目的同學或所屬小組">🎁 獎勵影片答對同學</button>
+                    <button type="button" class="presentation-tool-btn" data-video-quiz-reward="all" onclick="window.app && window.app.rewardVideoQuizBatch('all')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="一鍵獎勵所有參與影片測驗作答的同學或所屬小組">🎁 獎勵全體參與</button>
                   </div>
                 </div>
               </div>
@@ -6705,7 +6705,7 @@ Python</pre>
   <script type="application/x-board-script" data-admin-only data-src="js/timer_music_manager.js?v=c2"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c13"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c54"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c55"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c13"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
@@ -6713,7 +6713,7 @@ Python</pre>
   <script type="application/x-board-script" data-admin-only data-src="js/dilemma-question-bank.js?v=c3"></script>
   <script type="application/x-board-script" data-admin-only data-src="js/dilemma-bank-manager.js?v=c3"></script>
   <script type="application/x-board-script" data-src="js/dilemma-game.js?v=c8"></script>
-  <script type="application/x-board-script" data-src="js/video_quiz.js?v=c4"></script>
+  <script type="application/x-board-script" data-src="js/video_quiz.js?v=c5"></script>
   <script type="application/x-board-script" data-src="js/word_cloud.js?v=c5"></script>
   <script type="application/x-board-script" data-src="js/presentation-draft.js?v=c2"></script>
   <script type="application/x-board-script" data-src="js/presentation_core.js?v=c10"></script>

@@ -21507,37 +21507,42 @@ class App {
     }
   }
 
-  async rewardVideoQuizBatch(targetType = 'correct') {
-    const vq = window.videoQuiz;
-    if (!vq || !vq.allAnswers) {
-      this.showNotification('提示', '目前尚無影片測驗作答記錄！');
-      return;
-    }
-    const quizId = (vq.activeSession && vq.activeSession.quizId) || vq.selectedQuizId || Object.keys(vq.allAnswers)[0];
-    const quizAnswers = (quizId && vq.allAnswers[quizId]) || {};
-    const studentMap = new Map();
-
-    Object.values(quizAnswers).forEach(qAnsObj => {
-      if (!qAnsObj || typeof qAnsObj !== 'object') return;
-      Object.entries(qAnsObj).forEach(([uid, ans]) => {
-        if (!ans) return;
-        if (targetType === 'correct' && !ans.isCorrect) return;
-        const actualUid = ans.userId || uid;
-        const name = ans.userName || '同學';
-        if (!studentMap.has(actualUid)) {
-          studentMap.set(actualUid, { uid: actualUid, name });
-        }
-      });
+  setVideoQuizRewardButtonsDisabled(disabled) {
+    document.querySelectorAll('[data-video-quiz-reward]').forEach(button => {
+      button.disabled = disabled;
     });
+  }
 
-    const targets = Array.from(studentMap.values());
-    if (targets.length === 0) {
-      this.showNotification('提示', targetType === 'correct' ? '目前尚無在影片測驗中答對的同學記錄！' : '目前尚無影片測驗參與作答記錄！');
+  async rewardVideoQuizBatch(targetType = 'correct', quiz = window.videoQuiz?.resolveCurrentActiveQuiz(),
+    answersMap = window.videoQuiz?.cachedRemoteAnswers) {
+    if (!this.isAdmin || this._videoQuizRewardPending || !['correct', 'all'].includes(targetType)) return;
+    const questions = quiz?.allQuestions?.length ? quiz.allQuestions : quiz?.questions || [];
+    const targets = new Map();
+    for (const [key, student] of Object.entries(answersMap || {})) {
+      const uid = student?.userId || key;
+      const qualifies = questions.some(question => {
+        const answer = student?.answers?.[question.id];
+        return answer && (targetType === 'all' || (question.type !== 'text' && answer.isCorrect === true));
+      });
+      if (uid && qualifies) targets.set(uid, { uid, name: student.userName || '同學' });
+    }
+    if (!targets.size) {
+      const message = targetType === 'correct' ? '目前沒有同學答對這份影片測驗的計分題。' : '目前沒有同學參與這份影片測驗。';
+      this.showNotification('提示', message);
       return;
     }
-
     const reason = targetType === 'correct' ? '影片出題測驗答對獎勵' : '影片出題測驗參與作答獎勵';
-    await this.rewardBatchTargets(targets, reason);
+    this._videoQuizRewardPending = true;
+    this.setVideoQuizRewardButtonsDisabled(true);
+    try {
+      await this.rewardBatchTargets([...targets.values()], reason);
+    } catch (err) {
+      console.error('影片測驗批次獎勵未完成', err);
+      this.showNotification('影片測驗獎勵未完成', '請先查看點數記錄，確認哪些同學已收到獎勵。');
+    } finally {
+      this._videoQuizRewardPending = false;
+      this.setVideoQuizRewardButtonsDisabled(false);
+    }
   }
 
   async rewardWheelWinner(customPts = null, customName = null) {
