@@ -45,7 +45,40 @@
       window.parent.boardTarget?.mode === target.mode &&
       window.parent.boardTarget?.config.projectId === target.config.projectId ? window.parent : null;
     window.boardTarget = target;
-    const scripts = [...document.querySelectorAll('script[data-src]')];
+    const sources = [...document.querySelectorAll('script[data-src]')];
+    const scripts = sources.filter(source => !source.hasAttribute('data-admin-only'));
+    const adminScripts = sources.filter(source => source.hasAttribute('data-admin-only'));
+    let adminLoad;
+    window.loadBoardAdminModules = () => {
+      if (!window.app?.isAdmin) return Promise.resolve(false);
+      if (!adminLoad) {
+        adminLoad = Promise.allSettled(adminScripts.map(source => loadScript(source))).then(results => {
+          const failure = results.find(result => result.status === 'rejected');
+          if (failure) throw failure.reason;
+          document.dispatchEvent(new Event('board-admin-ready'));
+          window.boardAdminModulesReady = true;
+          return true;
+        }).catch(error => {
+          adminLoad = null;
+          console.warn('教師後台模組載入失敗', error);
+          window.app?.showNotification('後台載入失敗', '請檢查網路連線後，再開啟管理後台。');
+          return false;
+        });
+      }
+      return adminLoad;
+    };
+
+    function loadScript(source) {
+      if (source.dataset.loaded === 'true') return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.async = false;
+        script.src = source.dataset.src;
+        script.onload = () => { source.dataset.loaded = 'true'; resolve(); };
+        script.onerror = () => { script.remove(); reject(new Error('無法載入 ' + source.dataset.src)); };
+        document.head.appendChild(script);
+      });
+    }
     // 可提前下載，但仍須等 Firebase 就緒後依原順序執行。
     scripts.forEach(source => {
       const preload = document.createElement('link');
@@ -108,18 +141,11 @@
     setProgress(40, '連線完成，正在載入白板功能…');
     let loadedScripts = 0;
     // 依原始順序執行，讓已有的傳統腳本繼續共用全域物件。
-    await Promise.all(scripts.map(source => new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.async = false;
-      script.src = source.dataset.src;
-      script.onload = () => {
-        loadedScripts += 1;
-        setProgress(40 + 55 * loadedScripts / scripts.length, '正在載入白板功能（' + loadedScripts + '／' + scripts.length + '）…');
-        resolve();
-      };
-      script.onerror = () => reject(new Error('無法載入 ' + source.dataset.src));
-      document.head.appendChild(script);
-    })));
+    await Promise.all(scripts.map(async source => {
+      await loadScript(source);
+      loadedScripts += 1;
+      setProgress(40 + 55 * loadedScripts / scripts.length, '正在載入白板功能（' + loadedScripts + '／' + scripts.length + '）…');
+    }));
     document.dispatchEvent(new Event('board-ready', { bubbles: true }));
     window.dispatchEvent(new Event('board-modules-started'));
     setProgress(100, '載入完成。');

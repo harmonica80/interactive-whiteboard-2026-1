@@ -1633,7 +1633,7 @@
   global.focusQB = new FocusQuestionBankManager();
 
   // 綁定視窗外點擊關閉
-  document.addEventListener('board-ready', () => {
+  document.addEventListener('board-admin-ready', () => {
     const modal = document.getElementById('modal-focus-question-bank');
     if (modal) {
       modal.addEventListener('click', (e) => {

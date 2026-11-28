@@ -41,5 +41,5 @@
     template(){if(!canEdit())return;download('左右為難題庫範本.csv','領域,難度,題目,答案,提示\r\n自然,國小,蝙蝠是哺乳類而非鳥類。,對,比較繁殖與哺育後代的方式。');},
     reset(){if(!canEdit()||!confirm('確定恢復預設題庫？目前自訂題目將被取代，建議先匯出備份。'))return;try{window.boardStorage.local.removeItem(storageKey);initialize();if($('dilemmaBankDialog').open){clearForm();render();}alert('已恢復預設題庫。');}catch(e){alert('恢復失敗，請檢查瀏覽器儲存空間。');}}
   };
-  document.addEventListener('board-ready',()=>initialize());
+  document.addEventListener('board-admin-ready',()=>initialize());
 })();

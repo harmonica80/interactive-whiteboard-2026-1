@@ -580,7 +580,8 @@
   global.TimerMusicManager = TimerMusicManager;
   global.timerMusicManager = new TimerMusicManager();
 
-  document.addEventListener('board-ready', () => {
+  document.addEventListener('board-admin-ready', () => {
+    global.timerMusicManager.updateDropdown();
     const modal = document.getElementById('modal-timer-music-manager');
     if (modal) {
       modal.addEventListener('click', (e) => {

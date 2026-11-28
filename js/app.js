@@ -122,8 +122,6 @@ class App {
       }, { passive: true });
     });
     
-    // 自動初始化 YouTube iframe API
-    this.loadYoutubeAPI();
     this.focusStartTimeLocal = 0;
     this.focusCurrentExpected = 1;
     this.focusGridSize = 36;
@@ -1129,10 +1127,10 @@ class App {
       });
     }
 
-    // 若點擊時希望同步更新名稱為頭像名稱
+    // 只有名稱欄位空白時，才提供頭像名稱作為預設名稱。
     if (updateName && (this.isAdmin || this.studentProfileSettings?.allowNicknameEdit !== false) && !document.getElementById('inputStudentModalName')?.readOnly) {
       const input = document.getElementById('inputStudentModalName');
-      if (input) {
+      if (input && input.value.trim() === '') {
         if (typeof this.selectedAvatarId === 'string') {
           const presetMatch = this.selectedAvatarId.match(/^(?:preset_)?(fruits|snacks|taiwan)_(\d+)$/);
           if (presetMatch) {
@@ -2327,6 +2325,12 @@ class App {
     if (targetId === 'panel-admin' && !this.isAdmin) {
       this.openAdminPasswordModal();
       return;
+    }
+
+    if (targetId === 'panel-admin' && window.loadBoardAdminModules && !window.boardAdminModulesReady) {
+      return window.loadBoardAdminModules().then(loaded => {
+        if (loaded && this.isAdmin) this.switchToTab(targetId);
+      });
     }
 
     const fsEl = document.fullscreenElement;
@@ -6201,6 +6205,11 @@ class App {
   }
 
   openAdminFeature(featureKey) {
+    if (this.isAdmin && featureKey !== 'practiceTimer' && window.loadBoardAdminModules && !window.boardAdminModulesReady) {
+      return window.loadBoardAdminModules().then(loaded => {
+        if (loaded && this.isAdmin) this.openAdminFeature(featureKey);
+      });
+    }
     if (featureKey === 'practiceTimer') {
       const select = document.getElementById('adminQuickSwitchSelect');
       if (select && this.currentAdminFeatureKey) select.value = this.currentAdminFeatureKey;
@@ -12653,85 +12662,99 @@ class App {
     }
   }
 
-  loadYoutubeAPI() {
-    if (window.YT && window.YT.Player) {
+  loadYoutubeAPI(player) {
+    if (player === 'canon') this.needsCanonPlayer = true;
+    if (player === 'bell') this.needsBellPlayer = true;
+    if (window.YT?.Player) {
       this.initYoutubePlayers();
       return;
     }
+    if (this.waitingForTimerYoutube) return;
+    this.waitingForTimerYoutube = true;
 
-    const prevReady = window.onYouTubeIframeAPIReady;
+    const previous = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
-      if (typeof prevReady === 'function') prevReady();
-      this.initYoutubePlayers();
-    };
-
-    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-      const tag = document.createElement('script');
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      if (firstScriptTag && firstScriptTag.parentNode) {
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-      } else {
-        document.head.appendChild(tag);
+      try { previous?.(); }
+      finally {
+        this.waitingForTimerYoutube = false;
+        if (this.isAdmin) this.initYoutubePlayers();
       }
+    };
+    let script = document.querySelector('script[src*="youtube.com/iframe_api"]');
+    const needsScript = !script;
+    if (needsScript) {
+      script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
     }
+    script.addEventListener('error', () => {
+      this.waitingForTimerYoutube = false;
+      script.remove();
+      if (this.isPlayingClassBell) this.stopClassBell();
+      if (this.currentAudioPlaying === 'canon') this.currentAudioPlaying = 'none';
+      if (this.isAdmin) this.showNotification('音訊載入失敗', '請確認網路連線後再試。');
+    }, { once: true });
+    if (needsScript) document.head.appendChild(script);
   }
 
   initYoutubePlayers() {
     try {
       const validOrigin = (window.location.origin && window.location.origin !== 'null') ? window.location.origin : undefined;
-      this.playerCanon = new YT.Player('canonPlayer', {
-        height: '200',
-        width: '200',
-        videoId: this.currentVideoId || 'MnhXZRw_ATU',
-        playerVars: {
-          autoplay: 0,
-          controls: 0,
-          disablekb: 1,
-          fs: 0,
-          modestbranding: 1,
-          rel: 0,
-          showinfo: 0,
-          enablejsapi: 1,
-          origin: validOrigin
-        },
-        events: {
-          onReady: (event) => {
-            this.ytPlayersReady = true;
-            try {
-              if (event && event.target && typeof event.target.getIframe === 'function') {
-                const iframe = event.target.getIframe();
-                if (iframe) {
-                  iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+      if (this.needsCanonPlayer && !this.playerCanon && this.currentAudioPlaying === 'canon') {
+        this.playerCanon = new YT.Player('canonPlayer', {
+          height: '200',
+          width: '200',
+          videoId: this.currentVideoId || 'MnhXZRw_ATU',
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            modestbranding: 1,
+            rel: 0,
+            showinfo: 0,
+            enablejsapi: 1,
+            origin: validOrigin
+          },
+          events: {
+            onReady: (event) => {
+              this.ytPlayersReady = true;
+              try {
+                if (event && event.target && typeof event.target.getIframe === 'function') {
+                  const iframe = event.target.getIframe();
+                  if (iframe) {
+                    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                  }
+                }
+              } catch (e) {}
+              if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+                this.playerCanon.pauseVideo();
+              }
+              this.applyMuteState();
+              if (this.pendingMusicUrl) {
+                const url = this.pendingMusicUrl;
+                this.pendingMusicUrl = null;
+                this.updateMusicSource(url);
+              }
+              if (this.isAdmin && this.currentAudioPlaying === 'canon') this.playAudio('canon');
+            },
+            onStateChange: (event) => {
+              // Loop video: when ended, seek to start time and play
+              if (event.data === YT.PlayerState.ENDED) {
+                if (this.playerCanon && typeof this.playerCanon.seekTo === 'function') {
+                  this.playerCanon.seekTo(this.currentVideoStart || 0, true);
+                  this.playerCanon.playVideo();
                 }
               }
-            } catch (e) {}
-            if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
-              this.playerCanon.pauseVideo();
+            },
+            onError: (event) => {
+              console.warn("YouTube player error code:", event.data);
             }
-            this.applyMuteState();
-            if (this.pendingMusicUrl) {
-              this.updateMusicSource(this.pendingMusicUrl);
-              this.pendingMusicUrl = null;
-            }
-          },
-          onStateChange: (event) => {
-            // Loop video: when ended, seek to start time and play
-            if (event.data === YT.PlayerState.ENDED) {
-              if (this.playerCanon && typeof this.playerCanon.seekTo === 'function') {
-                this.playerCanon.seekTo(this.currentVideoStart || 0, true);
-                this.playerCanon.playVideo();
-              }
-            }
-          },
-          onError: (event) => {
-            console.warn("YouTube player error code:", event.data);
           }
-        }
-      });
+        });
+      }
 
       const bellElem = document.getElementById('bellPlayer');
-      if (bellElem) {
+      if (this.needsBellPlayer && !this.playerBell && this.isPlayingClassBell && bellElem) {
         this.playerBell = new YT.Player('bellPlayer', {
           height: '200',
           width: '200',
@@ -12758,9 +12781,7 @@ class App {
                   }
                 }
               } catch (e) {}
-              if (this.playerBell && typeof this.playerBell.pauseVideo === 'function') {
-                this.playerBell.pauseVideo();
-              }
+              if (this.isAdmin && this.isPlayingClassBell) this.startClassBell();
             },
             onStateChange: (event) => {
               if (event.data === YT.PlayerState.ENDED) {
@@ -12934,7 +12955,8 @@ class App {
           return;
         }
 
-        // 備用/自訂 YouTube 引擎 (支援全系列自訂 YouTube 連結)
+        // 首次播放時才建立卡農或自訂音樂播放器。
+        if (!this.ytPlayersReady) this.loadYoutubeAPI('canon');
         if (this.ytPlayersReady && this.playerCanon) {
           if (typeof this.playerCanon.loadVideoById === 'function' && this.currentVideoId) {
             this.playerCanon.loadVideoById({
@@ -13019,6 +13041,7 @@ class App {
   }
 
   startClassBell() {
+    if (!this.isAdmin) return;
     this.isPlayingClassBell = true;
     const btn = document.getElementById('classBellBtn');
     if (btn) {
@@ -13043,20 +13066,8 @@ class App {
       } catch (e) {
         console.error("Error playing class bell via YouTube:", e);
       }
-    } else if (this.ytPlayersReady && this.playerCanon) {
-      try {
-        if (typeof this.playerCanon.loadVideoById === 'function') {
-          this.playerCanon.loadVideoById({
-            videoId: 'N8Rh854U3H0',
-            startSeconds: 0
-          });
-        }
-        if (typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
-        if (typeof this.playerCanon.setVolume === 'function') this.playerCanon.setVolume(100);
-        if (typeof this.playerCanon.playVideo === 'function') this.playerCanon.playVideo();
-      } catch (e) {
-        console.error("Error playing class bell fallback:", e);
-      }
+    } else {
+      this.loadYoutubeAPI('bell');
     }
   }
 
