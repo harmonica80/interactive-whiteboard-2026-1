@@ -1306,6 +1306,7 @@
     }
 
     destroyPlayer() {
+      this.pendingQuestionSeek = null;
       this.playerGeneration = (this.playerGeneration || 0) + 1;
       this.playerContainerId = null;
       if (this.pollTimer) {
@@ -1874,13 +1875,9 @@
       this.triggeredQuestions.add(q.id);
 
       const targetTime = Math.max(0, (q.time || 0) - 0.5);
-      if (this.playerType === 'youtube' && this.ytPlayer && typeof this.ytPlayer.seekTo === 'function') {
-        this.ytPlayer.seekTo(targetTime, true);
-        this.pauseVideo();
-      } else if (this.playerType === 'html5' && this.html5Player) {
-        this.html5Player.currentTime = targetTime;
-        this.pauseVideo();
-      }
+      this.pauseVideo();
+      // 保留目前畫面，待老師繼續播放時再跳到題目的時間點。
+      this.pendingQuestionSeek = targetTime;
 
       if (this.currentMode === 'sync') {
         this.broadcastQuestion(q, index);
@@ -2017,6 +2014,10 @@
     // 教師點擊繼續播放
     resumeSyncPlayback() {
       this.hideQuestionOverlay();
+      if (this.pendingQuestionSeek != null) {
+        this.seekTo(this.pendingQuestionSeek);
+        this.pendingQuestionSeek = null;
+      }
       if (this.sessionRef) {
         this.sessionRef.update({
           status: 'playing',
@@ -2736,6 +2737,10 @@
     // 答題後繼續播放
     continueAfterAnswer() {
       this.hideQuestionOverlay();
+      if (this.pendingQuestionSeek != null) {
+        this.seekTo(this.pendingQuestionSeek);
+        this.pendingQuestionSeek = null;
+      }
       this.playVideo();
 
       // 已載入的作答也算完成，組合測驗則以所有影片的題目判斷。
