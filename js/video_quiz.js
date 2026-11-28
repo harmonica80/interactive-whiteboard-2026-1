@@ -465,6 +465,7 @@
       }
       this.updateQuizAnswersListener();
       this.updateAdminBroadcastUI(this.lastSession);
+      window.app?.updateAdminActiveActivitiesUI?.();
     }
 
     // 初始化介面與事件綁定

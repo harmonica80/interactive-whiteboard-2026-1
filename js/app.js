@@ -6640,12 +6640,15 @@ class App {
     }
 
     // 4. 影片出題測驗 (Video Quiz)
-    if (window.videoQuiz && (window.videoQuiz.isSyncPlaying || (window.videoQuiz.activeSession && window.videoQuiz.activeSession.status === 'playing'))) {
+    const videoQuiz = window.videoQuiz;
+    const videoSessionActive = Boolean(videoQuiz?.lastSession?.status && videoQuiz.lastSession.status !== 'idle');
+    const videoSelfActive = Boolean(videoQuiz?.lastQuizSettings?.mode === 'self' && videoQuiz.lastQuizSettings.assignedQuizId);
+    if (videoSessionActive || videoSelfActive) {
       activeItems.push({
         key: 'quizVideo',
         icon: '🎬',
         title: '影片出題測驗',
-        status: '同步中',
+        status: videoSelfActive ? '自主學習中' : '進行中',
         previewAction: "window.app.previewStudentActivity('quizVideo')",
         settingAction: "window.app.openAdminFeature('quizVideo')",
         stopAction: "window.app.quickStopVideoQuiz()"
