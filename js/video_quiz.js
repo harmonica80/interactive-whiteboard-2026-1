@@ -119,7 +119,7 @@
     {
       id: 'cset_comprehensive_default',
       name: '綜合影音複習測驗組',
-      quizIds: ['vq_science_solar', 'vq_eye_cells'],
+      quizIds: ['vq_solar_system', 'vq_eye_cells'],
       quizCount: 2,
       createdAt: 1725550000000,
       totalQuestions: 7
@@ -127,7 +127,7 @@
     {
       id: 'cset_interdisciplinary_default',
       name: '跨學科精選測驗組',
-      quizIds: ['vq_eye_cells', 'vq_science_solar'],
+      quizIds: ['vq_eye_cells', 'vq_solar_system'],
       quizCount: 2,
       createdAt: 1789574400000,
       totalQuestions: 7
@@ -186,7 +186,8 @@
 
       // Firebase 同步參照
       this.sessionRef = typeof db !== 'undefined' ? db.ref('quiz/videoQuizSession') : null;
-      this.answersRef = typeof db !== 'undefined' ? db.ref('quiz/videoQuizAnswers') : null;
+      this.quizRootRef = typeof db !== 'undefined' ? db.ref('quiz') : null;
+      this.answersRef = null;
       this.quizzesRef = typeof db !== 'undefined' ? db.ref('quiz/videoQuizzes') : null;
       this.settingsRef = typeof db !== 'undefined' ? db.ref('quiz/videoQuizSettings') : null;
       this.customSetsRef = typeof db !== 'undefined' ? db.ref('quiz/videoQuizCustomSets') : null;
@@ -350,14 +351,6 @@
         this.handleRemoteSessionUpdate(session);
       });
 
-      // 監聽全班即時答題資料 (用於即時統計與排行榜)
-      if (this.answersRef) {
-        this.answersRef.on('value', (snapshot) => {
-          const answers = snapshot.val() || {};
-          this.handleRemoteAnswersUpdate(answers);
-        });
-      }
-
       // 監聽線上題庫同步 (各教室線上同步)
       if (this.quizzesRef) {
         this.quizzesRef.on('value', (snapshot) => {
@@ -386,6 +379,7 @@
               }
               this.renderQuizSelector();
               this.renderEditorQuizList();
+              if (this.pendingSelfAssignment) this.startAssignedSelfQuiz(this.pendingSelfAssignment);
             }
           }
         });
@@ -399,6 +393,7 @@
           const wasInitial = isInitialSettingsLoad;
           isInitialSettingsLoad = false;
           if (!val) return;
+          this.lastQuizSettings = val;
           const mode = (val.mode === 'self' || val.mode === 'sync') ? val.mode : 'sync';
           
           if (mode === 'self') {
@@ -406,11 +401,10 @@
             if (val.assignedQuizId && !this.isTeacher && !window.app?.isAdmin) {
               this.hasAssignedSelfQuiz = true;
               this.applyGlobalMode('self');
-              this.selectQuiz(val.assignedQuizId);
               // 如果是初次載入網頁，僅當指派時間是 15 分鐘以內的新鮮指派時才切換分頁
               const isRecent = val.assignedAt ? (Date.now() - val.assignedAt < 15 * 60 * 1000) : false;
               if (!wasInitial || isRecent) {
-                this.startSelfPacedQuiz(val.assignedQuizId);
+                this.startAssignedSelfQuiz(val);
                 if (!wasInitial && window.app && typeof window.app.switchToTab === 'function') {
                   if (window.app.activeTabId !== 'panel-video-quiz') {
                     window.app.switchToTab('panel-video-quiz');
@@ -420,6 +414,7 @@
             }
           } else {
             this.hasAssignedSelfQuiz = false;
+            this.pendingSelfAssignment = null;
             this.applyGlobalMode('sync');
           }
         });
@@ -447,12 +442,15 @@
 
           this.renderCustomSetsList();
           this.renderQuizSelector();
+          if (this.pendingSelfAssignment) this.startAssignedSelfQuiz(this.pendingSelfAssignment);
         });
       }
     }
 
     // 初始化介面與事件綁定
     init() {
+      if (this.initialized) return;
+      this.initialized = true;
       this.renderCustomSetsList();
       this.renderQuizSelector();
       this.renderEditorQuizList();
@@ -460,7 +458,7 @@
       this.applyGlobalMode(this.globalMode);
       
       // 預設選取第一部測驗
-      if (this.quizzes.length > 0) {
+      if (!this.activeQuiz && !this.lastQuizSettings?.assignedQuizId && this.quizzes.length > 0) {
         this.selectQuiz(this.quizzes[0].id);
       }
 
@@ -601,6 +599,7 @@
     // 管理員登入 / 登出狀態連動
     setAdminState(isAdmin) {
       this.isTeacher = !!isAdmin;
+      this.updateQuizAnswersListener();
       const link = document.getElementById('vqAdminQuickLinkWrapper');
       if (link) link.style.display = this.isTeacher ? 'block' : 'none';
       const selectorRow = document.getElementById('vqSelfQuizSelectorRow');
@@ -620,6 +619,11 @@
 
     // 當切換進入「影片出題測驗」分頁時的觸發邏輯
     onTabEnter() {
+      this.updateQuizAnswersListener();
+      if (this.globalMode === 'self' && this.lastQuizSettings?.assignedQuizId) {
+        if (this.lastQuizSettings.mode === 'self') this.startAssignedSelfQuiz(this.lastQuizSettings);
+        return;
+      }
       if (this.isTeacher || window.app?.isAdmin) {
         this.renderSyncTeacherControls();
       } else {
@@ -666,7 +670,7 @@
         }
 
         if (this.lastSession.status === 'question' && this.lastSession.currentQuestion && !this.isTeacher && !window.app?.isAdmin) {
-          this.showQuestionOverlay(this.lastSession.currentQuestion, false);
+          this.handleRemoteSessionUpdate(this.lastSession);
         }
       }
     }
@@ -854,8 +858,8 @@
 
       if (mode === 'editor') {
         this.renderEditorQuizList();
-      } else if (mode === 'self' && this.activeQuiz) {
-        this.startSelfPacedQuiz(this.activeQuiz.id);
+      } else if (mode === 'self' && this.lastQuizSettings?.assignedQuizId) {
+        this.startAssignedSelfQuiz(this.lastQuizSettings);
       } else if (mode === 'sync') {
         this.handleRemoteSessionUpdate(this.lastSession);
       }
@@ -984,27 +988,7 @@
         return;
       }
 
-      if (this.globalMode === 'self') {
-        this.hasAssignedSelfQuiz = true;
-        this.applyGlobalMode('self');
-        this.startSelfPacedQuiz(quizId);
-        if (this.settingsRef) {
-          this.settingsRef.update({
-            mode: 'self',
-            assignedQuizId: quizId,
-            updatedAt: Date.now()
-          });
-        }
-        if (window.app && typeof window.app.switchToTab === 'function') {
-          window.app.switchToTab('panel-video-quiz');
-        }
-        if (window.app) {
-          const quizTitle = this.activeQuiz?.title || '指定單元';
-          window.app.showNotification('自主學習', `已指派「${quizTitle}」，學生端同步切換至此測驗！`);
-        }
-      } else {
-        this.startSyncQuizAsTeacher(quizId);
-      }
+      return this.requestQuizLaunch(quizId, this.globalMode);
     }
 
     // 選取指定測驗
@@ -1410,94 +1394,182 @@
     // 情境 A：全班同步播放測驗 (Teacher-led Sync)
     // ==========================================
 
-    // 老師發起全班同步測驗
-    startSyncQuizAsTeacher(quizId, customQuizData = null) {
-      let quiz = customQuizData;
-      if (!quiz) {
-        if (typeof quizId === 'string' && quizId.startsWith('custom:')) {
-          const setId = quizId.replace('custom:', '');
-          const set = (this.customSets || []).find(s => s.id === setId);
-          if (set) {
-            const subQuizIds = (set.quizIds && set.quizIds.length > 0) ? set.quizIds : [set.quizId || 'vq_science_solar'];
-            const allSubQuizzes = subQuizIds.map(id => this.quizzes.find(q => q.id === id)).filter(Boolean);
-            this.currentCustomSet = set;
-            this.currentSetQuizIndex = 0;
-            const currentSubQuiz = allSubQuizzes[0] || this.quizzes[0];
-
-            quiz = JSON.parse(JSON.stringify(currentSubQuiz));
-            quiz.id = `custom_${set.id}`;
-            quiz.customSetId = set.id;
-            quiz.customSetName = set.name;
-            quiz.currentSubQuizIndex = 0;
-            quiz.totalSubQuizzes = allSubQuizzes.length;
-            quiz.allSubQuizIds = subQuizIds;
-            quiz.allSubQuizzes = allSubQuizzes;
-            quiz.allQuestions = allSubQuizzes.flatMap((sq, sqIdx) => 
-              (sq.questions || []).map(q => ({
-                ...q,
-                videoTitle: sq.title,
-                videoIndex: sqIdx + 1
-              }))
-            );
-            quiz.title = `🌟 ${set.name}`;
-            quiz.description = `【測驗組合】第 1/${allSubQuizzes.length} 部：《${currentSubQuiz.title}》（共 ${quiz.allQuestions.length} 題測驗）`;
-          }
-        } else {
-          quiz = this.quizzes.find(q => q.id === quizId) || this.activeQuiz;
-          this.currentCustomSet = null;
-          this.currentSetQuizIndex = 0;
-        }
+    resolveQuizForLaunch(quizId) {
+      if (typeof quizId !== 'string' || !quizId) return null;
+      if (!quizId.startsWith('custom:')) {
+        const quiz = this.quizzes.find(q => q.id === quizId);
+        return quiz ? { quiz, set: null } : null;
       }
-      if (!quiz) {
-        if (window.app) window.app.showNotification('錯誤', '請先選擇有效的影片測驗！');
+      const set = this.customSets.find(item => item.id === quizId.slice(7));
+      if (!set) return null;
+      const ids = (set.quizIds?.length ? set.quizIds : [set.quizId])
+        .map(id => id === 'vq_science_solar' ? 'vq_solar_system' : id);
+      const subQuizzes = ids.map(id => this.quizzes.find(q => q.id === id));
+      if (!subQuizzes.length || subQuizzes.some(quiz => !quiz)) return null;
+      const first = subQuizzes[0];
+      const allQuestions = subQuizzes.flatMap((quiz, index) => (quiz.questions || []).map(question => ({
+        ...question, videoTitle: quiz.title, videoIndex: index + 1
+      })));
+      return { set: { ...set, quizIds: ids }, quiz: {
+        ...first, id: `custom_${set.id}`, title: `🌟 ${set.name}`,
+        description: `【測驗組合】第 1/${ids.length} 部：《${first.title}》（共 ${allQuestions.length} 題測驗）`,
+        customSetId: set.id, customSetName: set.name, currentSubQuizIndex: 0, totalSubQuizzes: ids.length,
+        allSubQuizIds: ids, allSubQuizzes: subQuizzes, allQuestions
+      } };
+    }
+
+    startSyncQuizAsTeacher(quizId) {
+      return this.requestQuizLaunch(quizId, 'sync');
+    }
+
+    chooseQuizLaunch(title, mode, canResume) {
+      const dialog = document.createElement('dialog');
+      dialog.className = 'vq-launch-dialog';
+      dialog.setAttribute('aria-label', '選擇影片測驗開始方式');
+      const heading = document.createElement('h3');
+      heading.textContent = mode === 'sync' ? '發起全班同步測驗' : '指派自主學習測驗';
+      const name = document.createElement('p');
+      name.textContent = title;
+      const description = document.createElement('p');
+      description.textContent = canResume
+        ? '接續會保留已交答案，只補做未完成的題目。全新測驗會替換這份測驗上次的作答結果。'
+        : '這份測驗目前沒有可接續的作答結果。';
+      const form = document.createElement('form');
+      form.method = 'dialog';
+      for (const [value, text, style] of [
+        ['resume', '接續上次作答', canResume ? ' active' : ''],
+        ['new', '開始全新測驗', canResume ? ' danger' : ' active'],
+        ['cancel', '取消', '']
+      ]) {
+        const button = document.createElement('button');
+        button.type = 'submit';
+        button.value = value;
+        button.textContent = text;
+        button.className = 'presentation-tool-btn' + style;
+        button.disabled = value === 'resume' && !canResume;
+        button.autofocus = value === (canResume ? 'resume' : 'cancel');
+        form.append(button);
+      }
+      dialog.append(heading, name, description, form);
+      (document.fullscreenElement || document.body).append(dialog);
+      return new Promise(resolve => {
+        dialog.addEventListener('close', () => {
+          dialog.remove();
+          resolve(dialog.returnValue);
+        }, { once: true });
+        dialog.showModal();
+      });
+    }
+
+    async findLegacyQuizAnswers(quizId, quiz) {
+      const root = this.quizRootRef;
+      const [session, settings, answers] = await Promise.all(
+        ['videoQuizSession', 'videoQuizSettings', 'videoQuizAnswers']
+          .map(async path => (await root.child(path).once('value')).val())
+      );
+      const knownQuizId = settings?.mode === 'self' ? settings.assignedQuizId : session?.quizId;
+      if (knownQuizId && knownQuizId !== quizId && knownQuizId !== quiz.id) return {};
+      const questionIds = new Set((quiz.allQuestions || quiz.questions || []).map(question => question.id));
+      return Object.fromEntries(Object.entries(answers || {}).filter(([, student]) => {
+        const ids = Object.keys(student?.answers || {});
+        return ids.length > 0 && ids.every(id => questionIds.has(id));
+      }));
+    }
+
+    async requestQuizLaunch(quizId, mode) {
+      if (!window.app?.isAdmin || this.quizLaunchPending) return;
+      const selection = this.resolveQuizForLaunch(quizId);
+      if (!selection || !this.quizRootRef) {
+        window.app.showNotification('無法發起測驗', '找不到指定的影片、組合內容或教室連線。');
         return;
       }
-      this.activeQuiz = quiz;
+      this.quizLaunchPending = true;
+      const root = this.quizRootRef;
+      const classCode = window.currentClassCode;
+      try {
+        const { quiz, set } = selection;
+        const key = encodeURIComponent(quizId).replace(/\./g, '%2E');
+        const lastRef = root.child(`videoQuizLastRound/${key}`);
+        const last = (await lastRef.once('value')).val();
+        const legacy = last?.id ? {} : await this.findLegacyQuizAnswers(quizId, quiz);
+        const hasAnswers = last?.id
+          ? (await root.child(`videoQuizRuns/${key}/${last.id}`).orderByKey().limitToFirst(1).once('value')).exists()
+          : Object.keys(legacy).length > 0;
+        const choice = await this.chooseQuizLaunch(quiz.title, mode, hasAnswers);
+        if (!['new', 'resume'].includes(choice) || !window.app?.isAdmin || window.currentClassCode !== classCode) return;
+        const latest = (await lastRef.once('value')).val();
+        if (!window.app?.isAdmin || window.currentClassCode !== classCode || (choice === 'resume' && !hasAnswers)) return;
+        if (latest?.id !== last?.id) {
+          window.app.showNotification('測驗已更新', '另一個視窗已發起這份測驗，請再選一次。');
+          return;
+        }
+        const now = Date.now();
+        const sessionId = root.push().key;
+        const round = {
+          key, id: choice === 'resume' && last?.id ? last.id : sessionId, resume: choice === 'resume'
+        };
+        const settings = { mode, assignedQuizId: mode === 'self' ? quizId : null, assignedAt: now, updatedAt: now };
+        if (mode === 'self') settings.answerRound = round;
+        const cleanQuiz = JSON.parse(JSON.stringify(quiz));
+        if (cleanQuiz.id === 'vq_eye_cells' || cleanQuiz.title?.includes('視錐細胞與視桿細胞')) {
+          cleanQuiz.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
+          cleanQuiz.youtubeId = 'J4BJB48jdfw';
+        }
+        const session = mode === 'sync' ? {
+          sessionId, status: 'waiting', quizId: cleanQuiz.id, quizData: cleanQuiz, currentSubQuizIndex: 0,
+          currentTime: 0, currentQuestionIndex: -1, questionStartTime: 0,
+          allowRepeat: !round.resume && !!this.allowStudentRepeat, createdAt: now, answerRound: round
+        } : { status: 'idle', updatedAt: now };
+        const updates = {
+          videoQuizSettings: settings, videoQuizSession: session,
+          [`videoQuizLastRound/${key}`]: { id: round.id }
+        };
+        if (choice === 'new' && last?.id) updates[`videoQuizRuns/${key}/${last.id}`] = null;
+        if (choice === 'resume' && !last?.id) {
+          for (const [uid, student] of Object.entries(legacy)) {
+            updates[`videoQuizRuns/${key}/${round.id}/${uid}`] = student;
+          }
+        }
+        await root.update(updates);
+        this.lastQuizSettings = settings;
+        this.applyGlobalMode(mode);
+        this.setQuizAnswerRound(round, mode === 'sync' ? 'sync:' + sessionId : 'self:' + quizId + ':' + now);
+        this.activeQuiz = cleanQuiz;
+        this.currentCustomSet = set;
+        this.currentSetQuizIndex = 0;
+        this.lastSession = session;
+        this.updateQuizAnswersListener();
+        if (mode === 'sync') {
+          this.hasAssignedSelfQuiz = false;
+          this.openStartedSyncQuiz(cleanQuiz, session);
+        }
+        else {
+          this.hasAssignedSelfQuiz = true;
+          this.updateQuizAnswersListener();
+          this.selfAssignmentLoaded = settings;
+          this.startSelfPacedQuiz(quizId, cleanQuiz);
+          this.updateAdminBroadcastUI(session);
+          window.app.switchToTab('panel-video-quiz');
+        }
+        window.app.showNotification('影片出題測驗', `已${round.resume ? '接續' : '發起'}「${quiz.title}」`);
+      } catch (err) {
+        console.error('影片測驗發起失敗', err);
+        window.app.showNotification('無法發起測驗', '請確認教室連線後再試一次。');
+      } finally {
+        this.quizLaunchPending = false;
+      }
+    }
+
+    openStartedSyncQuiz(quiz, sessionData) {
       this.isTeacher = true;
       this.triggeredQuestions.clear();
+      this.hideQuestionOverlay();
       this.currentActiveQuestion = null;
       this.lastMediaTime = null;
       this.lastTeacherTickTime = 0;
-      this.currentSyncSessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      this.currentSyncSessionId = sessionData.sessionId;
       this.syncEventSeq = 0;
       this.handledEventIds = new Set();
-      this.isQuestionOverlayShowing = false;
-
-      // 清除前次作答記錄
-      if (this.answersRef) {
-        this.answersRef.remove();
-      }
-
-      // 確保同步資料乾淨
-      const cleanQuiz = JSON.parse(JSON.stringify(quiz));
-      if (cleanQuiz.id === 'vq_eye_cells' || (cleanQuiz.title && cleanQuiz.title.includes('視錐細胞與視桿細胞'))) {
-        cleanQuiz.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
-        cleanQuiz.youtubeId = 'J4BJB48jdfw';
-        quiz.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
-        quiz.youtubeId = 'J4BJB48jdfw';
-      }
-
-      // 設定 Firebase 同步廣播狀態
-      const sessionData = {
-        sessionId: this.currentSyncSessionId,
-        status: 'waiting',
-        quizId: quiz.id,
-        quizData: cleanQuiz,
-        currentSubQuizIndex: this.currentSetQuizIndex || 0,
-        currentTime: 0,
-        currentQuestionIndex: -1,
-        questionStartTime: 0,
-        allowRepeat: !!this.allowStudentRepeat,
-        createdAt: Date.now()
-      };
-
-      this.lastSession = sessionData;
-
-      if (this.sessionRef) {
-        this.sessionRef.set(sessionData).then(() => {
-          if (window.app) window.app.showNotification('成功', `已發起「${quiz.title}」全班同步測驗！`);
-        });
-      }
 
       // 隱藏閒置提示，開啟播放器容器
       const studentNotice = document.getElementById('vqSyncStudentIdleNotice');
@@ -1524,7 +1596,7 @@
         this.sessionRef.set({ status: 'idle', sessionId: null, updatedAt: Date.now() });
       }
       if (this.settingsRef) {
-        this.settingsRef.update({ mode: 'sync', assignedQuizId: null, updatedAt: Date.now() });
+        this.settingsRef.set({ mode: 'sync', assignedQuizId: null, updatedAt: Date.now() });
       }
       this.globalMode = 'sync';
       this.hasAssignedSelfQuiz = false;
@@ -1533,6 +1605,7 @@
       this.currentSyncSessionId = null;
       this.handledEventIds.clear();
       this.lastSession = { status: 'idle' };
+      this.updateQuizAnswersListener();
       this.updateAdminBroadcastUI(this.lastSession);
       const activeRow = document.getElementById('vqActiveActionRow');
       if (activeRow) activeRow.style.display = 'none';
@@ -1617,6 +1690,7 @@
       // 篩選啟用之題目 (若有設定片段範圍，需在片段範圍內)
       const validQuestions = questions.filter(q => {
         if (q.enabled === false) return false;
+        if (!isTeacherMode && this.answerRound && this.userAnswers[q.id]) return false;
         if (this.activeQuiz.startTime > 0 && q.time < this.activeQuiz.startTime) return false;
         if (this.activeQuiz.endTime > 0 && q.time > this.activeQuiz.endTime) return false;
         return true;
@@ -1717,7 +1791,7 @@
           currentQuestion: cleanQuestion,
           questionStartTime: Date.now(),
           currentTime: this.currentTime || 0,
-          allowRepeat: !!this.allowStudentRepeat
+          allowRepeat: !this.answerRound?.resume && !!this.allowStudentRepeat
         });
       }
       this.showQuestionOverlay(question, true);
@@ -1753,7 +1827,7 @@
 
     // 需求 4：切換學生端重播重複出題設定
     toggleAllowStudentRepeat(checked) {
-      this.allowStudentRepeat = !!checked;
+      this.allowStudentRepeat = !this.answerRound?.resume && !!checked;
       if (this.sessionRef) {
         this.sessionRef.update({
           allowRepeat: this.allowStudentRepeat
@@ -1805,7 +1879,7 @@
           currentTime: 0,
           currentQuestionIndex: -1,
           currentQuestion: null,
-          allowRepeat: !!this.allowStudentRepeat
+          allowRepeat: !this.answerRound?.resume && !!this.allowStudentRepeat
         });
       }
 
@@ -1831,21 +1905,22 @@
     // 需求 6：影片播放結束時自動銜接下一部影片
     handleVideoEnded() {
       if (this.currentCustomSet && this.currentCustomSet.quizIds && this.currentCustomSet.quizIds.length > 1) {
+        const roundToken = this.answerRoundToken;
         if (this.currentSetQuizIndex < this.currentCustomSet.quizIds.length - 1) {
           const nextIndex = this.currentSetQuizIndex + 1;
-          if (this.isTeacher) {
+          if (this.isTeacher && this.currentMode === 'sync') {
             if (window.app) {
               window.app.showNotification('提示', `第 ${this.currentSetQuizIndex + 1} 部影片播放結束，即將自動播放第 ${nextIndex + 1} 部影片！`);
             }
             setTimeout(() => {
-              this.loadCustomSetVideo(nextIndex);
+              if (this.answerRoundToken === roundToken) this.loadCustomSetVideo(nextIndex);
             }, 1200);
           } else if (this.currentMode === 'self') {
             if (window.app) {
               window.app.showNotification('提示', `第 ${this.currentSetQuizIndex + 1} 部影片播放結束，即將自動播放第 ${nextIndex + 1} 部影片！`);
             }
             setTimeout(() => {
-              this.loadSelfPacedCustomSetVideo(nextIndex);
+              if (this.answerRoundToken === roundToken) this.loadSelfPacedCustomSetVideo(nextIndex);
             }, 1200);
           }
           return;
@@ -1920,7 +1995,7 @@
     }
 
     // 處理遠端廣播更新 (學生端與老師端同步)
-    handleRemoteSessionUpdate(session) {
+    async handleRemoteSessionUpdate(session) {
       if (session && session.quizData && (session.quizData.id === 'vq_eye_cells' || (session.quizData.title && session.quizData.title.includes('視錐細胞與視桿細胞')))) {
         if (session.quizData.youtubeId !== 'J4BJB48jdfw' || session.quizData.videoUrl !== 'https://www.youtube.com/watch?v=J4BJB48jdfw') {
           session.quizData.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
@@ -1928,6 +2003,10 @@
         }
       }
       this.lastSession = session;
+      if (session && session.status !== 'idle') {
+        this.setQuizAnswerRound(session.answerRound, 'sync:' + (session.sessionId || session.quizId));
+      }
+      this.updateQuizAnswersListener();
       this.updateAdminBroadcastUI(session);
       if (window.app && typeof window.app.updateAdminActiveActivitiesUI === 'function') {
         window.app.updateAdminActiveActivitiesUI();
@@ -2034,6 +2113,14 @@
           // 學生端收到老師的題目事件後立即顯示，不得再等待自己的播放器或計時器到達相同秒數
           this.pauseVideo();
 
+          try {
+            await this.loadOwnQuizAnswers();
+          } catch (err) {
+            if (this.lastSession === session) window.app?.showNotification('作答載入失敗', '請重新開啟影片出題測驗後再試。');
+            return;
+          }
+          if (this.lastSession !== session) return;
+
           // 事件去重：避免網路重送造成重複彈窗
           const eventId = session.eventId || `${session.sessionId || 's'}_${session.questionId || session.currentQuestion.id}_${session.seq || 0}`;
           if (this.handledEventIds.has(eventId) && this.isQuestionOverlayShowing) {
@@ -2043,7 +2130,7 @@
 
           const qId = session.currentQuestion.id;
           const hasAnswered = !!this.userAnswers[qId];
-          const allowRepeat = session.allowRepeat !== false;
+          const allowRepeat = !session.answerRound?.resume && session.allowRepeat !== false;
 
           // 關鍵防卡死：僅在使用者處於「影片出題測驗」分頁時才彈出題目覆蓋視窗，絕不遮蔽提問區或登入按鈕
           if (isVideoQuizActive) {
@@ -2065,10 +2152,7 @@
           this.pauseVideo();
         } else if (session.status === 'completed') {
           this.hideQuestionOverlay();
-          if (isVideoQuizActive) {
-            const quiz = this.resolveCurrentActiveQuiz();
-            this.showClassAnalytics(quiz, this.cachedRemoteAnswers || {});
-          }
+          if (isVideoQuizActive) this.showCurrentQuestionAnalytics();
         }
       }
     }
@@ -2115,7 +2199,7 @@
             `;
           }).join('')}
           <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; color: var(--text-secondary); margin-left: 6px; white-space: nowrap;" title="勾選時，重播影片或跳題時學生端會再次跳出題目作答">
-            <input type="checkbox" id="vqAllowRepeatCheckbox" onchange="window.videoQuiz.toggleAllowStudentRepeat(this.checked)" ${this.allowStudentRepeat ? 'checked' : ''}> 重播時學生重複出題
+            <input type="checkbox" id="vqAllowRepeatCheckbox" onchange="window.videoQuiz.toggleAllowStudentRepeat(this.checked)" ${this.allowStudentRepeat && !this.answerRound?.resume ? 'checked' : ''} ${this.answerRound?.resume ? 'disabled' : ''}> 重播時學生重複出題
           </label>
         </div>
       `;
@@ -2155,53 +2239,50 @@
     // 情境 B：學生自主學習測驗 (Self-paced)
     // ==========================================
 
-    startSelfPacedQuiz(quizId, customQuizData = null) {
-      let quiz = customQuizData;
-      if (!quiz) {
-        if (typeof quizId === 'string' && quizId.startsWith('custom:')) {
-          const setId = quizId.replace('custom:', '');
-          const set = (this.customSets || []).find(s => s.id === setId);
-          if (set) {
-            const subQuizIds = (set.quizIds && set.quizIds.length > 0) ? set.quizIds : [set.quizId || 'vq_science_solar'];
-            const allSubQuizzes = subQuizIds.map(id => this.quizzes.find(q => q.id === id)).filter(Boolean);
-            this.currentCustomSet = set;
-            this.currentSetQuizIndex = 0;
-            const currentSubQuiz = allSubQuizzes[0] || this.quizzes[0];
+    async startAssignedSelfQuiz(settings) {
+      if (this.lastQuizSettings !== settings) return;
+      const id = settings.assignedQuizId;
+      if (!id) return;
+      if (this.selfAssignmentLoaded === settings && this.currentMode === 'self' &&
+          this.playerType) return;
+      if (this.loadingSelfAssignment !== settings) {
+        this.loadingSelfAssignment = settings;
+        this.destroyPlayer();
+        this.hideQuestionOverlay();
+        this.activeQuiz = null;
+        const progress = document.getElementById('vqSelfProgressInfo');
+        if (progress) progress.textContent = '正在載入指定測驗與作答進度…';
+      }
+      const selection = this.resolveQuizForLaunch(id);
+      if (!selection) {
+        this.pendingSelfAssignment = settings;
+        return;
+      }
+      this.pendingSelfAssignment = null;
+      this.setQuizAnswerRound(settings.answerRound, 'self:' + id + ':' + (settings.updatedAt || 0));
+      try {
+        await this.loadOwnQuizAnswers();
+      } catch (err) {
+        if (this.lastQuizSettings === settings) window.app?.showNotification('作答載入失敗', '請重新開啟影片出題測驗後再試。');
+        return;
+      }
+      if (this.lastQuizSettings !== settings) return;
+      if (this.selfAssignmentLoaded === settings && this.currentMode === 'self' && this.playerType) return;
+      this.selfAssignmentLoaded = settings;
+      this.startSelfPacedQuiz(id, selection.quiz);
+    }
 
-            quiz = JSON.parse(JSON.stringify(currentSubQuiz));
-            quiz.id = `custom_${set.id}`;
-            quiz.customSetId = set.id;
-            quiz.customSetName = set.name;
-            quiz.currentSubQuizIndex = 0;
-            quiz.totalSubQuizzes = allSubQuizzes.length;
-            quiz.allSubQuizIds = subQuizIds;
-            quiz.allSubQuizzes = allSubQuizzes;
-            quiz.allQuestions = allSubQuizzes.flatMap((sq, sqIdx) => 
-              (sq.questions || []).map(q => ({
-                ...q,
-                videoTitle: sq.title,
-                videoIndex: sqIdx + 1
-              }))
-            );
-            quiz.title = `🌟 ${set.name}`;
-            quiz.description = `【測驗組合】第 1/${allSubQuizzes.length} 部：《${currentSubQuiz.title}》（共 ${quiz.allQuestions.length} 題測驗）`;
-          }
-        } else {
-          quiz = this.quizzes.find(q => q.id === quizId) || this.activeQuiz;
-          this.currentCustomSet = null;
-          this.currentSetQuizIndex = 0;
-        }
-      }
+    startSelfPacedQuiz(quizId, customQuizData = null) {
+      const selection = this.resolveQuizForLaunch(quizId);
+      const quiz = customQuizData || selection?.quiz;
       if (!quiz) return;
-      if (quiz.id === 'vq_eye_cells' || (quiz.title && quiz.title.includes('視錐細胞與視桿細胞'))) {
-        quiz.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
-        quiz.youtubeId = 'J4BJB48jdfw';
-      }
+      this.currentCustomSet = selection?.set || null;
+      this.currentSetQuizIndex = 0;
       this.activeQuiz = quiz;
       this.isTeacher = !!(window.app?.isAdmin || this.isTeacher);
       this.triggeredQuestions.clear();
       this.currentActiveQuestion = null;
-      this.userAnswers = {};
+      this.hideQuestionOverlay();
       if (this.isTeacher) {
         this.renderSyncTeacherControls();
       }
@@ -2280,22 +2361,6 @@
       if (!question) return;
       this.currentActiveQuestion = question;
       this.isQuestionOverlayShowing = true;
-
-      // 自動校正當前 activeQuiz，確保統計與作答所屬題目一致
-      if (!this.activeQuiz || !(
-        (this.activeQuiz.questions || []).some(item => item.id === question.id) ||
-        (this.activeQuiz.allQuestions || []).some(item => item.id === question.id)
-      )) {
-        const matched = (this.quizzes || []).find(q =>
-          (q.questions || []).some(item => item.id === question.id) ||
-          (q.allQuestions || []).some(item => item.id === question.id)
-        );
-        if (matched) {
-          this.activeQuiz = matched;
-        } else if (this.lastSession && this.lastSession.quizData) {
-          this.activeQuiz = this.lastSession.quizData;
-        }
-      }
 
       const overlay = document.getElementById('vqQuestionOverlay');
       const content = document.getElementById('vqQuestionOverlayContent');
@@ -2434,8 +2499,8 @@
     }
 
     // 學生提交答案
-    submitCurrentAnswer() {
-      if (!this.currentActiveQuestion) return;
+    async submitCurrentAnswer() {
+      if (!this.currentActiveQuestion || this.answerSubmitting) return;
       const q = this.currentActiveQuestion;
       let userAnswer = null;
       let isCorrect = false;
@@ -2505,16 +2570,19 @@
         score = isCorrect ? (q.points || 10) : 0;
       }
 
-      this.userAnswers[q.id] = {
-        questionId: q.id,
-        type: q.type,
-        answer: userAnswer,
-        isCorrect,
-        score
-      };
-
-      // 儲存至 Firebase
-      this.syncUserAnswerToFirebase(q.id, this.userAnswers[q.id]);
+      const answer = { questionId: q.id, type: q.type, answer: userAnswer, isCorrect, score };
+      const token = this.answerRoundToken;
+      this.answerSubmitting = true;
+      try {
+        await this.syncUserAnswerToFirebase(q.id, answer);
+      } catch (err) {
+        window.app?.showNotification('作答未儲存', '請確認教室連線後再送出。');
+        return;
+      } finally {
+        this.answerSubmitting = false;
+      }
+      if (token !== this.answerRoundToken || this.currentActiveQuestion !== q) return;
+      this.userAnswers[q.id] = answer;
 
       // 呈現即時答題反饋
       const feedbackArea = document.getElementById('vqQuestionFeedbackArea');
@@ -2600,10 +2668,13 @@
       this.hideQuestionOverlay();
       this.playVideo();
 
-      // 檢查是否所有題目都已完成
-      if (this.activeQuiz && this.activeQuiz.questions && this.triggeredQuestions.size >= this.activeQuiz.questions.length) {
+      // 已載入的作答也算完成，組合測驗則以所有影片的題目判斷。
+      const questions = this.activeQuiz?.allQuestions || this.activeQuiz?.questions || [];
+      if (this.currentMode === 'self' && questions.length &&
+          questions.every(question => question.enabled === false || this.userAnswers[question.id])) {
+        const token = this.answerRoundToken;
         setTimeout(() => {
-          this.checkSelfQuizCompletion();
+          if (this.answerRoundToken === token) this.checkSelfQuizCompletion();
         }, 1500);
       }
     }
@@ -2639,22 +2710,64 @@
       return userId;
     }
 
-    // 同步作答資料至 Firebase
-    syncUserAnswerToFirebase(questionId, answerObj) {
+    setQuizAnswerRound(round, activation) {
+      if (!this.quizRootRef || !activation) return;
+      const path = round?.id ? `videoQuizRuns/${round.key}/${round.id}` : 'videoQuizAnswers';
+      const token = path + ':' + activation;
+      if (this.answerRoundToken !== token) {
+        this.answerRoundToken = token;
+        this.answersRef = this.quizRootRef.child(path);
+        this.cachedRemoteAnswers = {};
+        this.userAnswers = {};
+        this.ownAnswersLoad = null;
+      }
+      this.answerRound = round || null;
+      this.updateQuizAnswersListener();
+    }
+
+    loadOwnQuizAnswers() {
+      if (!this.answersRef) return Promise.resolve();
+      const uid = this.getAnswerUserId();
+      if (!uid) return Promise.reject(new Error('尚未登入'));
+      const token = this.answerRoundToken;
+      if (this.ownAnswersLoad?.uid === uid) return this.ownAnswersLoad.promise;
+      this.userAnswers = {};
+      const promise = this.answersRef.child(uid).child('answers').once('value').then(snapshot => {
+        if (this.answerRoundToken === token && this.ownAnswersLoad?.uid === uid) {
+          this.userAnswers = { ...(snapshot.val() || {}), ...this.userAnswers };
+        }
+      }).catch(error => {
+        if (this.answerRoundToken === token && this.ownAnswersLoad?.uid === uid) this.ownAnswersLoad = null;
+        throw error;
+      });
+      this.ownAnswersLoad = { uid, promise };
+      return promise;
+    }
+
+    updateQuizAnswersListener() {
+      const analyticsOpen = document.getElementById('vqAnalyticsModal')?.style.display === 'flex';
+      const inQuiz = window.app?.activeTabId === 'panel-video-quiz';
+      const active = this.globalMode === 'self' ? this.hasAssignedSelfQuiz : this.lastSession && this.lastSession.status !== 'idle';
+      const target = window.app?.isAdmin && (analyticsOpen || (inQuiz && active)) ? this.answersRef : null;
+      if (this.listeningQuizAnswersRef === target) return;
+      this.listeningQuizAnswersRef?.off('value', this.quizAnswersCallback);
+      this.listeningQuizAnswersRef = target;
+      if (target) {
+        this.quizAnswersCallback = snapshot => {
+          if (this.listeningQuizAnswersRef === target) this.handleRemoteAnswersUpdate(snapshot.val() || {});
+        };
+        target.on('value', this.quizAnswersCallback);
+      }
+    }
+
+    async syncUserAnswerToFirebase(questionId, answerObj) {
       if (!this.answersRef) return;
       const userId = this.getAnswerUserId();
-      if (!userId) {
-        window.app?.showNotification('無法同步作答', '請確認已完成登入後重新整理。');
-        return;
-      }
+      if (!userId) throw new Error('尚未登入');
       const userName = window.boardStorage.local.getItem('user_nickname') || '同學_' + userId.slice(-4);
-
-      this.answersRef.child(userId).update({
-        userId,
-        userName,
-        updatedAt: Date.now()
+      await this.answersRef.child(userId).update({
+        userId, userName, updatedAt: Date.now(), [`answers/${questionId}`]: answerObj
       });
-      this.answersRef.child(userId).child('answers').child(questionId).set(answerObj);
     }
 
     // 接收遠端全班答題更新
@@ -2682,64 +2795,28 @@
 
     // 解析當前題目或場次真正所屬的測驗物件，防止統計面板顯示錯位
     resolveCurrentActiveQuiz() {
-      // 1. 若當前有作用中題目，優先根據題目 ID 尋找所屬測驗
-      if (this.currentActiveQuestion) {
-        const qId = this.currentActiveQuestion.id;
-        if (this.activeQuiz && (
-          (this.activeQuiz.questions || []).some(item => item.id === qId) ||
-          (this.activeQuiz.allQuestions || []).some(item => item.id === qId)
-        )) {
-          return this.activeQuiz;
-        }
-
-        const matched = (this.quizzes || []).find(q =>
-          (q.questions || []).some(item => item.id === qId) ||
-          (q.allQuestions || []).some(item => item.id === qId)
-        );
-        if (matched) {
-          this.activeQuiz = matched;
-          return matched;
-        }
-
-        if (this.customSets && this.customSets.length > 0) {
-          for (const set of this.customSets) {
-            const subQuizIds = (set.quizIds && set.quizIds.length > 0) ? set.quizIds : [set.quizId];
-            const foundSub = (this.quizzes || []).find(q =>
-              subQuizIds.includes(q.id) && (q.questions || []).some(item => item.id === qId)
-            );
-            if (foundSub) {
-              this.activeQuiz = foundSub;
-              return foundSub;
-            }
-          }
-        }
+      if (this.currentMode === 'self' && this.lastQuizSettings?.assignedQuizId) {
+        return this.activeQuiz;
       }
-
-      // 2. 檢查最新 Firebase Session 中記錄的測驗
-      if (this.lastSession) {
-        if (this.lastSession.quizData) {
-          this.activeQuiz = this.lastSession.quizData;
-          return this.activeQuiz;
-        }
-        if (this.lastSession.quizId) {
-          const matched = (this.quizzes || []).find(q => q.id === this.lastSession.quizId);
-          if (matched) {
-            this.activeQuiz = matched;
-            return matched;
-          }
-        }
-      }
-
-      // 3. 回傳當前 activeQuiz 或預設第 1 個測驗
-      if (!this.activeQuiz && this.quizzes && this.quizzes.length > 0) {
-        this.activeQuiz = this.quizzes[0];
+      if (this.lastSession?.status && this.lastSession.status !== 'idle') {
+        return this.lastSession.quizData || this.quizzes.find(quiz => quiz.id === this.lastSession.quizId) || null;
       }
       return this.activeQuiz;
     }
 
-    showCurrentQuestionAnalytics() {
+    async showCurrentQuestionAnalytics() {
       const quiz = this.resolveCurrentActiveQuiz();
       if (!quiz) return;
+      const ref = this.answersRef;
+      if (!window.app?.isAdmin && ref) {
+        try {
+          const snapshot = await ref.once('value');
+          if (this.answersRef === ref) this.showClassAnalytics(quiz, snapshot.val() || {});
+        } catch (err) {
+          window.app?.showNotification('無法讀取統計', '請確認教室連線後再試。');
+        }
+        return;
+      }
       this.showClassAnalytics(quiz, this.cachedRemoteAnswers || {});
     }
 
@@ -2748,6 +2825,7 @@
       if (!modal) return;
       this.renderAnalyticsDashboard(quiz, answersMap);
       modal.style.display = 'flex';
+      this.updateQuizAnswersListener();
 
       // 若有當前作用題目，平滑捲動至本題卡片
       setTimeout(() => {
@@ -2763,6 +2841,7 @@
     closeClassAnalytics() {
       const modal = document.getElementById('vqAnalyticsModal');
       if (modal) modal.style.display = 'none';
+      this.updateQuizAnswersListener();
     }
 
     renderAnalyticsDashboard(quiz, answersMap) {
@@ -3656,63 +3735,17 @@
       if (window.app) window.app.showNotification('成功', `已刪除測驗組合「${set.name}」。`);
     }
 
-    // 從自訂組合直接發起全班同步測驗
+    // 從組合或單題測驗卡片發起測驗
     startSyncQuizFromCustomSet(setId) {
-      const set = this.customSets.find(s => s.id === setId);
-      if (!set) return;
-
-      this.setGlobalMode('sync');
-      this.startSyncQuizAsTeacher('custom:' + setId);
+      return this.startSyncQuizAsTeacher('custom:' + setId);
     }
 
-    // 將自訂組合指派給自主學習模式
     assignCustomSetToSelfPaced(setId) {
-      const set = this.customSets.find(s => s.id === setId);
-      if (!set) return;
-
-      this.globalMode = 'self';
-      this.hasAssignedSelfQuiz = true;
-      this.applyGlobalMode('self');
-      this.startSelfPacedQuiz('custom:' + setId);
-      if (this.settingsRef) {
-        this.settingsRef.update({
-          mode: 'self',
-          assignedQuizId: 'custom:' + setId,
-          updatedAt: Date.now()
-        });
-      }
-      this.updateAdminBroadcastUI(this.lastSession);
-      if (window.app && typeof window.app.switchToTab === 'function') {
-        window.app.switchToTab('panel-video-quiz');
-      }
-      if (window.app) {
-        window.app.showNotification('成功', `已指派「${set.name}」進入個人自主學習！`);
-      }
+      return this.launchSelfPacedQuiz('custom:' + setId);
     }
 
-    // 從單題測驗卡片直接指派進入個人自主學習模式
     launchSelfPacedQuiz(quizId) {
-      const quiz = this.quizzes.find(q => q.id === quizId);
-      if (!quiz) return;
-
-      this.globalMode = 'self';
-      this.hasAssignedSelfQuiz = true;
-      this.applyGlobalMode('self');
-      this.startSelfPacedQuiz(quizId);
-      if (this.settingsRef) {
-        this.settingsRef.update({
-          mode: 'self',
-          assignedQuizId: quizId,
-          updatedAt: Date.now()
-        });
-      }
-      this.updateAdminBroadcastUI(this.lastSession);
-      if (window.app && typeof window.app.switchToTab === 'function') {
-        window.app.switchToTab('panel-video-quiz');
-      }
-      if (window.app) {
-        window.app.showNotification('自主學習模式', `已指派「${quiz.title}」進入個人自主學習！學生端已同步切換。`);
-      }
+      return this.requestQuizLaunch(quizId, 'self');
     }
 
     // 切換影片在前台的開放 / 隱藏狀態 (需求 a)

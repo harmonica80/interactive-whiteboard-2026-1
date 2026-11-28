@@ -2377,6 +2377,7 @@ class App {
     if (targetId !== 'panel-video-quiz') {
       if (window.videoQuiz && typeof window.videoQuiz.pauseVideo === 'function') {
         window.videoQuiz.pauseVideo();
+        window.videoQuiz.closeClassAnalytics?.();
       }
     } else {
       if (window.videoQuiz && typeof window.videoQuiz.init === 'function') {
@@ -19215,7 +19216,7 @@ class App {
     const names = new Set([...Object.values(students), ...visibleStudents].flatMap(s => [s?.name, ...(s?.previousNames || [])]).filter(Boolean));
     for (const uid of uids) updates[`quiz/students/${uid}`] = null;
     for (const key of Object.keys(existing)) updates[`student_roster/${key}`] = null;
-    const clearPaths = ['student_reaction_counts', 'quiz/answers', 'quiz/videoQuizAnswers', 'videoQuiz/answers', 'presentation/submissions', 'quiz/focusGame', 'quiz/current', 'quiz/liveReactions', 'quiz/wordCloud/submissions', 'comments', 'attendance', 'points/settlements', 'quiz/whispers/items'];
+    const clearPaths = ['student_reaction_counts', 'quiz/answers', 'quiz/videoQuizAnswers', 'quiz/videoQuizRuns', 'quiz/videoQuizLastRound', 'videoQuiz/answers', 'presentation/submissions', 'quiz/focusGame', 'quiz/current', 'quiz/liveReactions', 'quiz/wordCloud/submissions', 'comments', 'attendance', 'points/settlements', 'quiz/whispers/items'];
     for (const path of clearPaths) updates[path] = null;
     updates['quiz/wordCloud/active/active'] = false;
     const grouped = window.currentClassCode ? ['activeGroups', 'groupSets'] : ['groups/activeGroups', 'groups/groupSets'];
@@ -30909,6 +30910,8 @@ function resetAll() {
     db.ref('quiz/videoQuizSession').remove(),
     db.ref('quiz/videoQuizSettings').remove(),
     db.ref('quiz/videoQuizAnswers').remove(),
+    db.ref('quiz/videoQuizRuns').remove(),
+    db.ref('quiz/videoQuizLastRound').remove(),
     db.ref('quiz/students').remove(),
     db.ref('student_roster').remove(),
     db.ref('quiz/profileSettings/rosterEnabled').remove(),
