@@ -6322,7 +6322,54 @@ body {
 .firebase-quota-actions {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 5px;
+  margin-inline-start: auto;
+}
+
+.firebase-quota-banner-dashboard-slot .firebase-quota-header {
+  flex-wrap: nowrap;
+}
+
+.firebase-quota-banner-dashboard-slot .firebase-quota-actions {
+  white-space: nowrap;
+}
+
+@media (max-width: 650px) {
+  .firebase-quota-banner-dashboard-slot .firebase-quota-header {
+    flex-wrap: wrap;
+  }
+}
+
+.cloud-cleanup-room {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.cloud-cleanup-room summary {
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cloud-cleanup-room fieldset {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin: 10px 0 0;
+  padding: 6px 10px;
+  min-width: 0;
+}
+
+.cloud-cleanup-room label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  overflow-wrap: anywhere;
 }
 
 .quota-action-btn,

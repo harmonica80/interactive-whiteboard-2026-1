@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=512">
+  <link rel="stylesheet" href="css/style.css?v=513">
   <link rel="stylesheet" href="css/presentation.css?v=c4">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1423,7 +1423,7 @@
 
             <!-- 圖檔導引流程圖 -->
             <div style="margin-left: 42px; margin-bottom: 20px;" class="step-img-box">
-              <img src="images/guide/step12_security_guide.webp?v=2" alt="步驟5 教師專屬安全設定流程" class="step-img" style="max-width: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
+              <img src="images/guide/step12_security_guide.svg?v=3" alt="步驟5 教師專屬安全設定流程" class="step-img" style="max-width: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
             </div>
 
             <ol style="font-size: 16px; margin: 0 0 16px 0; padding-left: 64px; color: var(--text-primary); line-height: 1.8;">
@@ -1431,7 +1431,7 @@
                 <strong>首次進入管理後台</strong>：點選白板畫面右下角的「<span style="color: var(--accent-color); font-weight: bold;">💡 燈泡</span>」，再選擇「<span style="color: var(--accent-color); font-weight: bold;">管理後台</span>」按鈕。首次登入時可使用初始預設密碼 <code>1234</code> 進入（享有自首次啟用起算一週／7 天寬限期）；登入後請及早設定專屬密碼與安全自救問題。
               </li>
               <li style="margin-bottom: 12px;">
-                <strong>前往 F 項目設定專屬密碼</strong>：登入後，請於「班級管理」選單點選「<span style="color: #4f46e5; font-weight: bold;">F. 教師身分與密碼安全設定</span>」。在此自訂您的專屬管理密碼（至少 4 碼）。<strong>一旦設定完成，舊預設密碼即刻失效</strong>，避免他人任意進入。
+                <strong>設定教師專屬密碼</strong>：登入後，請於「系統設定」選單點選「<span style="color: #4f46e5; font-weight: bold;">教師身分與密碼安全設定</span>」。在此自訂您的專屬管理密碼（至少 8 碼）。<strong>一旦設定完成，舊預設密碼即刻失效</strong>，避免他人任意進入。
               </li>
               <li style="margin-bottom: 12px;">
                 <strong>填寫安全提示與自救問題</strong>：強烈建議設定「密碼提示」與「安全自救問題」（例如：第一所任教學校）。若日後遺忘密碼，不需外部 Email，點選登入畫面的「❓ 忘記密碼？」即可回答題目秒自救重設！
@@ -1580,7 +1580,6 @@
                       <span>📊 Firebase 免費空間與每日、每月流量額度說明</span>
                     </div>
                     <div class="firebase-quota-actions" onclick="event.stopPropagation();">
-                      <button type="button" class="quota-mini-btn danger" onclick="window.app && window.app.openCloudCleanupModal()" title="開啟雲端大檔與過期歷程清理中心">🧹 深度清理大檔</button>
                       <button type="button" class="quota-mini-btn" onclick="window.open(window.boardTarget.config.projectId ? 'https://console.firebase.google.com/project/' + encodeURIComponent(window.boardTarget.config.projectId) + '/database' : 'https://console.firebase.google.com/', '_blank', 'noopener')" title="前往 Firebase Console 查看官方即時用量與帳單">🔗 前往 Firebase 主控台查看</button>
                       <button type="button" class="quota-mini-btn quota-collapse-toggle-btn" onclick="window.app && window.app.toggleFirebaseQuotaBlock(event)" title="展開或折疊額度說明區塊">▼ 展開</button>
                     </div>
@@ -1627,110 +1626,98 @@
                 <div class="admin-cat-title">
                   <span>🏫</span>
                   <span>班級管理</span>
-                  <span class="admin-cat-badge">10 個功能</span>
+                  <span class="admin-cat-badge">9 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
               <div class="admin-cat-body">
                 <div class="admin-features-grid">
-                  <!-- A. 班級開課管理與切換班級 -->
+                  <!-- 班級開課管理與切換班級 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classReg')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/class_reg.svg" width="64" height="64" alt="班級開課管理與切換班級">
                     </div>
-                    <div class="admin-feature-card-title">A. 班級開課管理與切換班級</div>
+                    <div class="admin-feature-card-title">班級開課管理與切換班級</div>
                     <div class="admin-feature-card-desc">建立開課班級代碼、編輯班級資訊。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- B. 班級專屬頭像管理與圖鑑上傳 -->
+                  <!-- 班級專屬頭像管理與圖鑑上傳 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classAvatar')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/class_avatar.svg" width="64" height="64" alt="班級專屬頭像管理與圖鑑上傳">
                     </div>
-                    <div class="admin-feature-card-title">B. 班級專屬頭像管理與圖鑑上傳</div>
+                    <div class="admin-feature-card-title">班級專屬頭像管理與圖鑑上傳</div>
                     <div class="admin-feature-card-desc">為各班級指派專屬學生頭像圖鑑庫、自訂頭像上傳與切換圖鑑組合。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- C. 跨班教材與測驗複製(多班級一鍵同步) -->
+                  <!-- 跨班教材與測驗複製(多班級一鍵同步) -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classCopy')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/class_copy.svg" width="64" height="64" alt="跨班教材與測驗複製">
                     </div>
-                    <div class="admin-feature-card-title">C. 跨班教材與測驗複製</div>
+                    <div class="admin-feature-card-title">跨班教材與測驗複製</div>
                     <div class="admin-feature-card-desc">多班級一鍵同步教材、影片與題庫，自動排除個人記錄。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- D. 測驗與互動音效設定 -->
+                  <!-- 測驗與互動音效設定 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classSound')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/class_sound.svg" width="64" height="64" alt="測驗與互動音效設定">
                     </div>
-                    <div class="admin-feature-card-title">D. 測驗與互動音效設定</div>
+                    <div class="admin-feature-card-title">測驗與互動音效設定</div>
                     <div class="admin-feature-card-desc">自訂教學互動（專注力測驗、隨堂測驗、影片出題等）的答對與答錯音效，支援即時試聽。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- E. 系統重設與備份管理 -->
+                  <!-- 系統重設與備份管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('systemReset')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/system_reset.svg" width="64" height="64" alt="系統重設與備份管理">
                     </div>
-                    <div class="admin-feature-card-title">E. 系統重設與備份管理</div>
+                    <div class="admin-feature-card-title">系統重設與備份管理</div>
                     <div class="admin-feature-card-desc">清除所有課堂資料（提問、測驗、圖片及白板），或匯出/匯入 JSON 課堂備份記錄。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- F. 教師身分與密碼安全設定 -->
-                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('classSecurity')">
-                    <div class="admin-feature-icon-box">
-                      <img src="images/admin_icons/class_security.svg" width="64" height="64" alt="教師身分與密碼安全設定">
-                    </div>
-                    <div class="admin-feature-card-title">F. 教師身分與密碼安全設定</div>
-                    <div class="admin-feature-card-desc">自訂教師專屬密碼（多班級通用）、密碼提示、安全提問自救與防暴力破解保護。</div>
-                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
-                  </div>
-
-
-
-                  <!-- H. 學生名冊與參與歷程管理 -->
+                  <!-- 學生名冊與參與歷程管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classStudents')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/class_students.svg" width="64" height="64" alt="學生名冊與參與歷程管理">
                     </div>
-                    <div class="admin-feature-card-title">H. 學生名冊與參與歷程管理</div>
+                    <div class="admin-feature-card-title">學生名冊與參與歷程管理</div>
                     <div class="admin-feature-card-desc">檢視本班同學名單、近期登入時間、線上連線狀態，支援修改姓名與頭像、刪除學生，並可查閱每位同學之發問、上傳、留言與測驗作答歷程。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- I. 學生個人積分管理 (課堂給點與榮譽榜) -->
+                  <!-- 學生個人積分管理 (課堂給點與榮譽榜) -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classPoints')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/class_points.svg" width="64" height="64" alt="學生個人積分管理">
                     </div>
-                    <div class="admin-feature-card-title">I. 學生個人積分管理</div>
+                    <div class="admin-feature-card-title">學生個人積分管理</div>
                     <div class="admin-feature-card-desc">課堂表現給點與自訂加減分、常用理由標籤批次獎勵、學生端即時激勵動畫，以及大螢幕課堂榮譽排行榜。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- J. 線上點名與出缺勤管理 -->
+                  <!-- 線上點名與出缺勤管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classAttendance')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/class_attendance.svg" width="64" height="64" alt="線上點名與出缺勤管理">
                     </div>
-                    <div class="admin-feature-card-title">J. 線上點名與出缺勤管理</div>
+                    <div class="admin-feature-card-title">線上點名與出缺勤管理</div>
                     <div class="admin-feature-card-desc">課堂一鍵自動偵測線上學生並預先標記出席、出席/遲到/請假/缺席四態切換、出席自動給點獎勵，以及歷次點名記錄與 CSV 匯出。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- K. 學生分組與小組積分管理 -->
+                  <!-- 學生分組與小組積分管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classGroups')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/class_groups.svg" width="64" height="64" alt="學生分組與小組積分管理">
                     </div>
-                    <div class="admin-feature-card-title">K. 學生分組與小組積分管理</div>
+                    <div class="admin-feature-card-title">學生分組與小組積分管理</div>
                     <div class="admin-feature-card-desc">依人數或組數自動分組、手動拖曳調整、線上狀態篩選、歷史分組快照載入，以及獨立小組積分與結算轉移機制。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
@@ -1752,22 +1739,22 @@
               </div>
               <div class="admin-cat-body">
                 <div class="admin-features-grid">
-                  <!-- A. 選擇題測驗 -->
+                  <!-- 選擇題測驗 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('quizChoice')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/quiz_choice.svg" width="64" height="64" alt="選擇題測驗">
                     </div>
-                    <div class="admin-feature-card-title">A. 選擇題測驗</div>
+                    <div class="admin-feature-card-title">選擇題測驗</div>
                     <div class="admin-feature-card-desc">建立單選、複選、圖文配對題，題目支援文字、圖片與 Youtube 影片、Google雲端硬碟音檔。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- B. 影片出題測驗 -->
+                  <!-- 影片出題測驗 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('quizVideo')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/quiz_video.svg" width="64" height="64" alt="影片出題測驗">
                     </div>
-                    <div class="admin-feature-card-title">B. 影片出題測驗</div>
+                    <div class="admin-feature-card-title">影片出題測驗</div>
                     <div class="admin-feature-card-desc">支援一段影片出多個題目，題型包括單選、複選與圖文配對，且可將多段影片群組成「測驗組合」，一起進行測驗。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
@@ -1793,52 +1780,52 @@
                     <div class="admin-feature-card-desc">自訂練習時間、儲存常用設定、最後 10 秒倒數提示音，並可開啟獨立置頂視窗。</div>
                     <div class="admin-feature-btn-pill">開啟計時器 ➔</div>
                   </div>
-                  <!-- A. 搶答 -->
+                  <!-- 搶答 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('gameBuzz')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/game_buzz.svg" width="64" height="64" alt="搶答">
                     </div>
-                    <div class="admin-feature-card-title">A. 搶答</div>
+                    <div class="admin-feature-card-title">搶答</div>
                     <div class="admin-feature-card-desc">發起倒數搶答按鈕、即時毫秒精度排行榜、搶答狀態啟動與停止控制。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- B. 專注力測驗 -->
+                  <!-- 專注力測驗 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('gameFocus')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/game_focus.svg" width="64" height="64" alt="專注力測驗">
                     </div>
-                    <div class="admin-feature-card-title">B. 專注力測驗</div>
+                    <div class="admin-feature-card-title">專注力測驗</div>
                     <div class="admin-feature-card-desc">舒爾特方格、翻牌記憶、字力測驗、成語典故與左右為難對錯挑戰。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- C. 隨機抽人 (5種模式) -->
+                  <!-- 隨機抽人 (5種模式) -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('gameWheel')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/game_wheel.svg" width="64" height="64" alt="隨機抽人">
                     </div>
-                    <div class="admin-feature-card-title">C. 隨機抽人 (5種模式)</div>
+                    <div class="admin-feature-card-title">隨機抽人 (5種模式)</div>
                     <div class="admin-feature-card-desc">經典轉盤、老虎機、翻牌抽卡、幸運籤筒、閃電極速抽 5 大類型，支援線上名單匯入與全班同步廣播。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- D. 即時互動回饋設定 -->
+                  <!-- 即時互動回饋設定 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classReaction')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/class_reaction.svg" width="64" height="64" alt="即時互動回饋設定">
                     </div>
-                    <div class="admin-feature-card-title">D. 即時互動回饋設定</div>
+                    <div class="admin-feature-card-title">即時互動回饋設定</div>
                     <div class="admin-feature-card-desc">切換全班右下角即時漂浮互動情境組合（經典表情、五大表情、1~5星評等、快選表決、理解度回報等）與各情境每秒點擊上限。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- E. 即時文字雲 -->
+                  <!-- 即時文字雲 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('gameWordCloud')">
                     <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 40px;">
                       ☁️
                     </div>
-                    <div class="admin-feature-card-title">E. 即時文字雲</div>
+                    <div class="admin-feature-card-title">即時文字雲</div>
                     <div class="admin-feature-card-desc">文字與圖片題型出題 (支援直接 Ctrl+V 貼上截圖與圖檔上傳)、全班即時詞頻螺旋雲演算、排行與高畫質 PNG 匯出。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
@@ -1858,32 +1845,32 @@
               </div>
               <div class="admin-cat-body">
                 <div class="admin-features-grid">
-                  <!-- A. 提問管理 -->
+                  <!-- 提問管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('qaMgmt')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/qa_mgmt.svg" width="64" height="64" alt="提問管理">
                     </div>
-                    <div class="admin-feature-card-title">A. 提問管理</div>
+                    <div class="admin-feature-card-title">提問管理</div>
                     <div class="admin-feature-card-desc">即時檢視學生留言與問題、群組分組歸檔、標註答覆與批次刪除整理。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- B. 圖片管理 -->
+                  <!-- 圖片管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('imgMgmt')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/img_mgmt.svg" width="64" height="64" alt="圖片管理">
                     </div>
-                    <div class="admin-feature-card-title">B. 圖片管理</div>
+                    <div class="admin-feature-card-title">圖片管理</div>
                     <div class="admin-feature-card-desc">學生上傳與作品圖片畫廊、依自訂群組分類歸檔、燈箱檢視與批次管理。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- C. 影片管理 -->
+                  <!-- 影片管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('vidMgmt')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/vid_mgmt.svg" width="64" height="64" alt="影片管理">
                     </div>
-                    <div class="admin-feature-card-title">C. 影片管理</div>
+                    <div class="admin-feature-card-title">影片管理</div>
                     <div class="admin-feature-card-desc">學生分享影片列表、影片資料夾歸檔、發起全體同步全螢幕廣播播放。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
@@ -1903,22 +1890,22 @@
               </div>
               <div class="admin-cat-body">
                 <div class="admin-features-grid">
-                  <!-- A. 最新消息 -->
+                  <!-- 最新消息 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('shareNews')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/share_news.svg" width="64" height="64" alt="最新消息">
                     </div>
-                    <div class="admin-feature-card-title">A. 最新消息</div>
+                    <div class="admin-feature-card-title">最新消息</div>
                     <div class="admin-feature-card-desc">發佈重要課堂公告、文字訊息、重點宣導圖片與網址，即時通知學生。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- B. 課程進度與教材 -->
+                  <!-- 課程進度與教材 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('shareMaterials')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/share_materials.svg" width="64" height="64" alt="課程進度與教材">
                     </div>
-                    <div class="admin-feature-card-title">B. 課程進度與教材</div>
+                    <div class="admin-feature-card-title">課程進度與教材</div>
                     <div class="admin-feature-card-desc">整理上傳課程講義教材、進階延伸閱讀、自訂分類資料夾與學習檔案。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
@@ -1926,27 +1913,37 @@
               </div>
             </div>
             <div class="admin-cat-block cat-collapsed" id="adminCatBlockSystem">
-              <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlockSystem')"><div class="admin-cat-title"><span>⚙️</span><span>系統設定</span><span class="admin-cat-badge">3 個功能</span></div><div class="admin-cat-toggle-arrow">▼</div></div>
+              <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlockSystem')"><div class="admin-cat-title"><span>⚙️</span><span>系統設定</span><span class="admin-cat-badge">5 個功能</span></div><div class="admin-cat-toggle-arrow">▼</div></div>
               <div class="admin-cat-body"><div class="admin-features-grid">
-                  <!-- A. 功能模組啟用設定 -->
+                  <!-- 功能模組啟用設定 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('whiteboardFeatures')">
                     <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
                       🎛️
                     </div>
-                    <div class="admin-feature-card-title">A. 功能模組啟用設定</div>
+                    <div class="admin-feature-card-title">功能模組啟用設定</div>
                     <div class="admin-feature-card-desc">自訂各教學功能模組啟用狀態（提問、圖片、影片、測驗、抽人、文字雲、白板、同步簡報、專注力等），未啟用之功能前台選單與後台總覽皆自動隱藏。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
-                  <!-- B. 懸浮按鈕顯示位置設定 -->
+                  <!-- 懸浮按鈕顯示位置設定 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('floatingButtonPosition')">
                     <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
                       🧭
                     </div>
-                    <div class="admin-feature-card-title">B. 懸浮按鈕顯示位置設定</div>
+                    <div class="admin-feature-card-title">懸浮按鈕顯示位置設定</div>
                     <div class="admin-feature-card-desc">自訂預設在右下角的懸浮按鈕顯示於左側或右側，並可自由選擇僅老師或全班一起同步調整。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
-                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('systemFaq')"><div class="admin-feature-icon-box" style="font-size:40px">❔</div><div class="admin-feature-card-title">C. 常見問題 FAQ</div><div class="admin-feature-card-desc">查看、編輯常見問題並調整顯示順序。</div><div class="admin-feature-btn-pill">進入全頁功能 ➔</div></div>
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('systemFaq')"><div class="admin-feature-icon-box" style="font-size:40px">❔</div><div class="admin-feature-card-title">常見問題 FAQ</div><div class="admin-feature-card-desc">查看、編輯常見問題並調整顯示順序。</div><div class="admin-feature-btn-pill">進入全頁功能 ➔</div></div>
+                  <!-- 教師身分與密碼安全設定 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('classSecurity')">
+                    <div class="admin-feature-icon-box">
+                      <img src="images/admin_icons/class_security.svg" width="64" height="64" alt="教師身分與密碼安全設定">
+                    </div>
+                    <div class="admin-feature-card-title">教師身分與密碼安全設定</div>
+                    <div class="admin-feature-card-desc">自訂教師專屬密碼（多班級通用）、密碼提示、安全提問自救與防暴力破解保護。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('cloudCleanup')"><div class="admin-feature-icon-box" style="font-size:40px">🧹</div><div class="admin-feature-card-title">Firebase 資料庫深度清理大檔案</div><div class="admin-feature-card-desc">按教室掃描可清理的檔案，核選要刪除的項目。</div><div class="admin-feature-btn-pill">進入全頁功能 ➔</div></div>
               </div></div>
             </div>
 
@@ -1961,49 +1958,50 @@
                 </button>
                 <div class="admin-workspace-title-box">
                   <img id="adminWorkspaceIcon" class="admin-workspace-icon" src="images/admin_icons/class_reg.svg" alt="功能圖示">
-                  <h2 id="adminWorkspaceTitle" class="admin-workspace-heading">A. 班級開課管理與切換班級</h2>
+                  <h2 id="adminWorkspaceTitle" class="admin-workspace-heading">班級開課管理與切換班級</h2>
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <label for="adminQuickSwitchSelect" style="font-size: 14px; font-weight: 700; color: var(--text-secondary); white-space: nowrap;">快速切換：</label>
                 <select id="adminQuickSwitchSelect" onchange="window.app.openAdminFeature(this.value)" class="question-input" style="font-size: 14px; padding: 7px 12px; margin: 0; min-width: 220px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-primary);">
                   <optgroup label="班級管理">
-                    <option value="classReg">A. 班級開課管理與切換班級</option>
-                    <option value="classAvatar">B. 班級專屬頭像管理與圖鑑上傳</option>
-                    <option value="classCopy">C. 跨班教材與測驗複製(多班級一鍵同步)</option>
-                    <option value="classSound">D. 測驗與互動音效設定</option>
-                    <option value="systemReset">E. 系統重設與備份管理</option>
-                    <option value="classSecurity">F. 教師身分與密碼安全設定</option>
-                    <option value="classStudents">H. 學生名冊與參與歷程管理</option>
-                    <option value="classPoints">I. 學生個人積分管理</option>
-                    <option value="classAttendance">J. 線上點名與出缺勤管理</option>
-                    <option value="classGroups">K. 學生分組與小組積分管理</option>
+                    <option value="classReg">班級開課管理與切換班級</option>
+                    <option value="classAvatar">班級專屬頭像管理與圖鑑上傳</option>
+                    <option value="classCopy">跨班教材與測驗複製(多班級一鍵同步)</option>
+                    <option value="classSound">測驗與互動音效設定</option>
+                    <option value="systemReset">系統重設與備份管理</option>
+                    <option value="classStudents">學生名冊與參與歷程管理</option>
+                    <option value="classPoints">學生個人積分管理</option>
+                    <option value="classAttendance">線上點名與出缺勤管理</option>
+                    <option value="classGroups">學生分組與小組積分管理</option>
                   </optgroup>
                   <optgroup label="測驗出題管理">
-                    <option value="quizChoice">A. 選擇題測驗</option>
-                    <option value="quizVideo">B. 影片出題測驗</option>
+                    <option value="quizChoice">選擇題測驗</option>
+                    <option value="quizVideo">影片出題測驗</option>
                   </optgroup>
                   <optgroup label="教學互動管理">
                     <option value="practiceTimer">⏱️ 課堂計時器</option>
-                    <option value="gameBuzz">A. 搶答</option>
-                    <option value="gameFocus">B. 專注力測驗</option>
-                    <option value="gameWheel">C. 隨機抽人 (5種模式)</option>
-                    <option value="classReaction">D. 即時互動回饋設定</option>
-                    <option value="gameWordCloud">E. 即時文字雲</option>
+                    <option value="gameBuzz">搶答</option>
+                    <option value="gameFocus">專注力測驗</option>
+                    <option value="gameWheel">隨機抽人 (5種模式)</option>
+                    <option value="classReaction">即時互動回饋設定</option>
+                    <option value="gameWordCloud">即時文字雲</option>
                   </optgroup>
                   <optgroup label="同學提問與資料分享管理">
-                    <option value="qaMgmt">A. 提問管理</option>
-                    <option value="imgMgmt">B. 圖片管理</option>
-                    <option value="vidMgmt">C. 影片管理</option>
+                    <option value="qaMgmt">提問管理</option>
+                    <option value="imgMgmt">圖片管理</option>
+                    <option value="vidMgmt">影片管理</option>
                   </optgroup>
                   <optgroup label="教師分享管理">
-                    <option value="shareNews">A. 最新消息</option>
-                    <option value="shareMaterials">B. 課程進度與教材</option>
+                    <option value="shareNews">最新消息</option>
+                    <option value="shareMaterials">課程進度與教材</option>
                   </optgroup>
                   <optgroup label="系統設定">
-                    <option value="whiteboardFeatures">A. 功能模組啟用設定</option>
-                    <option value="floatingButtonPosition">B. 懸浮按鈕顯示位置設定</option>
-                    <option value="systemFaq">C. 常見問題 FAQ</option>
+                    <option value="whiteboardFeatures">功能模組啟用設定</option>
+                    <option value="floatingButtonPosition">懸浮按鈕顯示位置設定</option>
+                    <option value="systemFaq">常見問題 FAQ</option>
+                    <option value="classSecurity">教師身分與密碼安全設定</option>
+                    <option value="cloudCleanup">Firebase 資料庫深度清理大檔案</option>
                   </optgroup>
                 </select>
               </div>
@@ -2011,8 +2009,14 @@
 
             <!-- 所有功能區塊容器 (各功能保留既有 ID，全頁模式下單一顯示且展開) -->
             <div id="adminFeaturesContainer">
+          <div class="admin-section admin-section-collapsible collapsed" id="adminCloudCleanupSection">
+            <div class="admin-section-body">
+              <p>依教室查看雲端歷程、教材、分享檔案和暫存，逐項選擇要清理的內容。</p>
+              <button type="button" class="presentation-tool-btn" onclick="window.app.openCloudCleanupModal()">🧹 Firebase 資料庫深度清理大檔案</button>
+            </div>
+          </div>
           <div class="admin-section admin-section-collapsible collapsed" id="adminSystemFaqSection">
-            <div class="admin-section-header"><h3>❔ C. 常見問題 FAQ</h3><span class="collapse-icon">▼</span></div>
+            <div class="admin-section-header"><h3>❔ 常見問題 FAQ</h3><span class="collapse-icon">▼</span></div>
             <div class="admin-section-body"><p class="system-faq-help">列出白板使用時的常見問題。管理者可編輯、新增、刪除並調整順序；內容儲存在目前課堂的資料庫。</p><p id="systemFaqStatus" role="status" class="system-faq-help">正在讀取…</p><div id="systemFaqList"></div><button type="button" class="presentation-tool-btn active" onclick="window.systemFaq.add()">➕ 新增問題</button></div>
           </div>
           <!-- 班級開課管理與切換班級 (可折疊區塊) -->
@@ -2584,25 +2588,11 @@
                   </div>
                 </div>
 
-                <!-- 雲端大檔與過期歷程清理欄 -->
-                <div style="flex: 1; min-width: 280px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
-                  <h3 style="margin-top: 0; margin-bottom: 12px; color: var(--danger-color); font-size: 19px; display: flex; align-items: center; gap: 8px;">
-                    <span>🧹</span> 雲端大檔與過期歷程清理
-                  </h3>
-                  <p style="font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px;">
-                    ⚡ 深度掃描並清理白板歷程筆記、簡報教材庫大檔、線上廣播暫存殘留與孤立附件，徹底降低 Firebase 360MB 每日流量消耗。
-                  </p>
-                  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <button class="presentation-tool-btn danger" onclick="window.app && window.app.openCloudCleanupModal()" style="flex: 1; min-width: 130px; justify-content: center; padding: 12px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-sizing: border-box; margin: 0;">
-                      🧹 開啟雲端大檔清理中心
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
 
-          <!-- F. 教師身分與密碼安全設定 (全頁模式) -->
+          <!-- 教師身分與密碼安全設定 (全頁模式) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminSecuritySection">
             <div class="admin-section-header">
               <h3>🛡️ 教師身分與管理員密碼安全設定</h3>
@@ -2674,7 +2664,7 @@
                       新管理員密碼：
                     </label>
                     <div style="position: relative;">
-                      <input type="password" id="secNewPasswordInput" class="question-input" placeholder="至少 4 碼 (例: 自訂英數)" style="margin: 0; width: 100%; padding-right: 40px; font-size: 14px;">
+                      <input type="password" id="secNewPasswordInput" minlength="8" autocomplete="new-password" class="question-input" placeholder="至少 8 碼 (例: 自訂英數)" style="margin: 0; width: 100%; padding-right: 40px; font-size: 14px;">
                       <button type="button" onclick="window.app.togglePasswordVisibility('secNewPasswordInput', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1;" title="切換顯示/隱藏密碼">👁️</button>
                     </div>
                   </div>
@@ -2684,7 +2674,7 @@
                       再次確認新密碼：
                     </label>
                     <div style="position: relative;">
-                      <input type="password" id="secNewPasswordConfirmInput" class="question-input" placeholder="請再次輸入相同密碼" style="margin: 0; width: 100%; padding-right: 40px; font-size: 14px;">
+                      <input type="password" id="secNewPasswordConfirmInput" minlength="8" autocomplete="new-password" class="question-input" placeholder="請再次輸入相同密碼" style="margin: 0; width: 100%; padding-right: 40px; font-size: 14px;">
                       <button type="button" onclick="window.app.togglePasswordVisibility('secNewPasswordConfirmInput', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1;" title="切換顯示/隱藏密碼">👁️</button>
                     </div>
                   </div>
@@ -2768,10 +2758,10 @@
             </div>
           </div>
 
-          <!-- G. 功能模組啟用設定 -->
+          <!-- 功能模組啟用設定 -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminWhiteboardFeaturesSection">
             <div class="admin-section-header">
-              <h3>🎛️ A. 功能模組啟用設定</h3>
+              <h3>🎛️ 功能模組啟用設定</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -2942,10 +2932,10 @@
             </div>
           </div>
 
-          <!-- H. 學生名冊與參與歷程管理 (可折疊區塊) -->
+          <!-- 學生名冊與參與歷程管理 (可折疊區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminClassStudentsSection">
             <div class="admin-section-header">
-              <h3>🧑‍🎓 H. 學生名冊與參與歷程管理</h3>
+              <h3>🧑‍🎓 學生名冊與參與歷程管理</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3039,10 +3029,10 @@
             </div>
           </div>
 
-          <!-- I. 學生個人積分管理 (可折疊全頁區塊) -->
+          <!-- 學生個人積分管理 (可折疊全頁區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminClassPointsSection">
             <div class="admin-section-header">
-              <h3>⭐️ I. 學生個人積分管理</h3>
+              <h3>⭐️ 學生個人積分管理</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3132,10 +3122,10 @@
             </div>
           </div>
 
-          <!-- J. 線上點名與出缺勤管理 (可折疊全頁區塊) -->
+          <!-- 線上點名與出缺勤管理 (可折疊全頁區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminClassAttendanceSection">
             <div class="admin-section-header">
-              <h3>📋 J. 線上點名與出缺勤管理</h3>
+              <h3>📋 線上點名與出缺勤管理</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3165,10 +3155,10 @@
             </div>
           </div>
 
-                    <!-- K. 學生分組與小組積分管理 (可折疊全頁區塊) -->
+                    <!-- 學生分組與小組積分管理 (可折疊全頁區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminClassGroupSection">
             <div class="admin-section-header">
-              <h3>👥 K. 學生分組與小組積分管理</h3>
+              <h3>👥 學生分組與小組積分管理</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3221,10 +3211,10 @@
             </div>
           </div>
 
-          <!-- L. 懸浮按鈕顯示位置設定 (可折疊全頁區塊) -->
+          <!-- 懸浮按鈕顯示位置設定 (可折疊全頁區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminFloatingButtonPositionSection">
             <div class="admin-section-header">
-              <h3>🧭 B. 懸浮按鈕顯示位置設定</h3>
+              <h3>🧭 懸浮按鈕顯示位置設定</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3347,10 +3337,10 @@
             </div>
           </div>
 
-          <!-- D. 即時互動回饋設定區 -->
+          <!-- 即時互動回饋設定區 -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminReactionSettingsSection">
             <div class="admin-section-header">
-              <h3>💖 D. 即時互動回饋設定</h3>
+              <h3>💖 即時互動回饋設定</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -5411,7 +5401,7 @@
               <ul>
                 <li><strong>六大活動計分設定列</strong>：專注力測驗、搶答、選擇題/配對題、影片出題、隨機抽人、即時文字雲全面新增統一的「計分設定」控制列，支援切換「👤 個人計分」、「👥 小組計分」、「🌟 個人＋小組同步」三種模式及每次獎勵點數（+1 / +2 / +3 / +5 點）。</li>
                 <li><strong>預設個人防呆與小組導引</strong>：系統預設固定為「個人計分」；若選擇「小組計分」時偵測到尚未建立分組，系統自動彈窗提醒並詢問是否一鍵前往分組設定。</li>
-                <li><strong>小組積分重設維護</strong>：於「K. 學生分組與小組積分管理」新增「🧹 清除小組目前積分」按鈕，可將全班小組積分歸零重新開始，並完整保留組員配置。</li>
+                <li><strong>小組積分重設維護</strong>：於「學生分組與小組積分管理」新增「🧹 清除小組目前積分」按鈕，可將全班小組積分歸零重新開始，並完整保留組員配置。</li>
               </ul>
             </li>
             <li><strong>🤫 「給老師的悄悄話」師生私訊管理系統：</strong>
@@ -6707,7 +6697,7 @@ Python</pre>
   <script src="js/archive-store.js?v=c2"></script>
   <script src="js/firebase-config.js?v=c9"></script>
   <script defer src="js/board-start.js?v=c12"></script>
-  <script type="application/x-board-script" data-src="js/teacher_auth_manager.js?v=c3"></script>
+  <script type="application/x-board-script" data-src="js/teacher_auth_manager.js?v=c4"></script>
   <script type="application/x-board-script" data-admin-only data-src="js/character_pool.js?v=c1"></script>
   <script type="application/x-board-script" data-admin-only data-src="js/classics_quiz_pool.js?v=c1"></script>
   <script type="application/x-board-script" data-admin-only data-src="js/song_quiz_pool.js?v=c1"></script>
@@ -6715,7 +6705,7 @@ Python</pre>
   <script type="application/x-board-script" data-admin-only data-src="js/timer_music_manager.js?v=c2"></script>
   <script type="application/x-board-script" data-src="js/matching_quiz.js?v=c1"></script>
   <script type="application/x-board-script" data-src="js/quiz.js?v=c13"></script>
-  <script type="application/x-board-script" data-src="js/app.js?v=c53"></script>
+  <script type="application/x-board-script" data-src="js/app.js?v=c54"></script>
   <script type="application/x-board-script" data-src="js/classroom-practice.js?v=c13"></script>
   <script type="application/x-board-script" data-src="js/system-faq.js?v=c4"></script>
   <script type="application/x-board-script" data-src="js/classics_quiz.js?v=c1"></script>
@@ -7035,8 +7025,8 @@ Python</pre>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-            <input type="password" id="recoveryNewPassword" class="question-input" placeholder="新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 14px;" oninput="window.teacherAuthManager.clearRecoveryError()">
-            <input type="password" id="recoveryNewPasswordConfirm" class="question-input" placeholder="確認新密碼" style="margin: 0; width: 100%; font-size: 14px;" oninput="window.teacherAuthManager.clearRecoveryError()">
+            <input type="password" id="recoveryNewPassword" minlength="8" autocomplete="new-password" class="question-input" placeholder="新密碼 (至少 8 碼)" style="margin: 0; width: 100%; font-size: 14px;" oninput="window.teacherAuthManager.clearRecoveryError()">
+            <input type="password" id="recoveryNewPasswordConfirm" minlength="8" autocomplete="new-password" class="question-input" placeholder="確認新密碼" style="margin: 0; width: 100%; font-size: 14px;" oninput="window.teacherAuthManager.clearRecoveryError()">
           </div>
 
           <button type="button" class="ask-btn" onclick="window.teacherAuthManager.submitQuestionRecovery()" style="width: 100%; height: 36px; font-size: 14px; font-weight: bold; border-radius: 8px; justify-content: center;">
@@ -9005,7 +8995,7 @@ Python</pre>
       <div class="reaction-collapsed-tooltip" id="reactionCollapsedTooltip">即時互動回饋</div>
     </div>
 
-    <!-- 展開狀態的互動列 (可由教師於「班級管理 > G. 即時互動回饋設定」切換不同教學情境) -->
+    <!-- 展開狀態的互動列 (可由教師於「班級管理 > 即時互動回饋設定」切換不同教學情境) -->
     <div class="reaction-expanded-bar" id="reactionExpandedBar">
       <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('❤️')" title="愛心 (認同/喜歡)">❤️</button>
       <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('👍')" title="讚 (學會了/贊成)">👍</button>
@@ -9181,9 +9171,9 @@ Python</pre>
     </div>
   </div>
 
-  <!-- 雲端大檔與過期歷程清理中心對話框 -->
+  <!-- Firebase 資料庫深度清理大檔案對話框 -->
   <div id="modalCloudCleanup" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 20050;" onclick="if(event.target===this) window.app && window.app.closeCloudCleanupModal()">
-    <div class="modal-content modal-card" style="width: 95%; max-width: 760px; max-height: 88vh; display: flex; flex-direction: column; border-radius: 20px; padding: 0; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.3); background: var(--bg-card); overflow: hidden; border: 1.5px solid var(--border-color);">
+    <div class="modal-content modal-card" style="width: 95%; max-width: 760px; max-height: 88vh; display: flex; flex-direction: column; border-radius: 20px; padding: 0; position: relative; box-shadow: var(--shadow); background: var(--bg-card); overflow: hidden; border: 1.5px solid var(--border-color);">
       
       <!-- 彈窗頂部 Header -->
       <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1.5px solid var(--border-color); background: var(--bg-card);">
@@ -9191,10 +9181,9 @@ Python</pre>
           <span style="font-size: 26px;">🧹</span>
           <div>
             <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-              <span>雲端大檔與過期歷程清理中心</span>
-              <span id="cloudCleanupStatusBadge" style="font-size: 14px; font-weight: 600; padding: 2px 8px; border-radius: 12px; background: rgba(0, 122, 255, 0.1); color: var(--accent-color);">深層掃描</span>
+              <span>Firebase 資料庫深度清理大檔案</span>
             </h3>
-            <p style="margin: 3px 0 0 0; font-size: 14px; color: var(--text-secondary);">掃描並清除資料庫中的大型歷史檔案與殘留暫存，大幅釋放空間並降低每日 360MB 下載流量</p>
+            <p style="margin: 3px 0 0 0; font-size: 14px; color: var(--text-secondary);">依教室查看掃描結果，勾選要清理的項目。</p>
           </div>
         </div>
         <button type="button" onclick="window.app && window.app.closeCloudCleanupModal()" style="border: none; background: transparent; font-size: 22px; cursor: pointer; color: var(--text-secondary); padding: 4px 8px;" title="關閉對話框">✕</button>
@@ -9206,10 +9195,10 @@ Python</pre>
         <!-- 頂部即時摘要列 -->
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px 16px; border-radius: 12px; background: var(--bg-input); border: 1px solid var(--border-color);">
           <div style="font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-            <span>💾 預估可清理項目總量：</span>
+            <span>💾 預估可清理空間：</span>
             <strong id="cloudCleanupTotalSizeText" style="font-size: 16px; color: var(--accent-color);">掃描中...</strong>
           </div>
-          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.scanCloudStorageUsage(true)" style="padding: 6px 14px; font-size: 14px; border-radius: 8px;">
+          <button type="button" class="presentation-tool-btn" id="cloudCleanupScanButton" onclick="window.app && window.app.scanCloudStorageUsage()" style="padding: 6px 14px; font-size: 14px; border-radius: 8px;">
             🔄 重新掃描
           </button>
         </div>
@@ -9226,6 +9215,7 @@ Python</pre>
       <!-- 彈窗底部操作列 -->
       <div style="padding: 14px 20px; border-top: 1.5px solid var(--border-color); background: var(--bg-card); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <span style="font-size: 14px; color: var(--text-secondary); line-height: 1.4;">💡 提示：白板筆記與簡報教材刪除前，可先於各模組介面點選「匯出 JSON」備份至電腦本機。</span>
+        <button type="button" class="presentation-tool-btn danger" id="cloudCleanupDeleteButton" disabled onclick="window.app && window.app.confirmCloudCleanup()">清理選取項目</button>
         <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.closeCloudCleanupModal()" style="padding: 8px 18px; font-size: 14px; border-radius: 10px;">
           關閉
         </button>

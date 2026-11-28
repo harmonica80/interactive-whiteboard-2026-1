@@ -18,6 +18,10 @@
   const DEFAULT_PASSWORD_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'; // '1234'
   const DEFAULT_PASSWORD_GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 預設密碼 1234 寬限期：7 天 (自啟用/初次登入起算 1 週)
   
+  const MIN_PASSWORD_LENGTH = 8;
+  const PASSWORD_KDF = 'pbkdf2-sha256';
+  const PASSWORD_KDF_ITERATIONS = 600000;
+
   const STORAGE_KEYS = {
     ACTIVE_TEACHER: 'wb_active_teacher_id',
     ACTIVE_TEACHER_NAME: 'wb_active_teacher_name',
@@ -87,6 +91,46 @@
         }
       }
       return this._fallbackSha256(text);
+    }
+
+    async derivePasswordHash(password, salt) {
+      if (!window.crypto?.subtle) {
+        throw new Error('請從 HTTPS 網頁開啟白板，以使用管理員密碼功能。');
+      }
+      const key = await window.crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+      );
+      const result = await window.crypto.subtle.deriveBits({
+        name: 'PBKDF2', hash: 'SHA-256', salt, iterations: PASSWORD_KDF_ITERATIONS
+      }, key, 256);
+      return Array.from(new Uint8Array(result), byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    isPasswordTooShort(password) {
+      return Array.from(password).length < MIN_PASSWORD_LENGTH;
+    }
+
+    async createPasswordHash(password) {
+      if (this.isPasswordTooShort(password)) {
+        throw new Error(`新密碼長度至少需 ${MIN_PASSWORD_LENGTH} 碼！`);
+      }
+      if (!window.crypto?.subtle) {
+        throw new Error('請從 HTTPS 網頁開啟白板，以設定管理員密碼。');
+      }
+      const salt = window.crypto.getRandomValues(new Uint8Array(16));
+      const saltHex = Array.from(salt, byte => byte.toString(16).padStart(2, '0')).join('');
+      const hash = await this.derivePasswordHash(password, salt);
+      return `${PASSWORD_KDF}$${PASSWORD_KDF_ITERATIONS}$${saltHex}$${hash}`;
+    }
+
+    async matchesPasswordHash(password, storedHash, legacyHash) {
+      if (/^[0-9a-f]{64}$/.test(storedHash || '')) return storedHash === legacyHash;
+      if (typeof storedHash !== 'string' || !storedHash) return false;
+      const [algorithm, iterations, saltHex, hash, ...rest] = storedHash.split('$');
+      if (algorithm !== PASSWORD_KDF || iterations !== String(PASSWORD_KDF_ITERATIONS) ||
+          !/^[0-9a-f]{32}$/.test(saltHex || '') || !/^[0-9a-f]{64}$/.test(hash || '') || rest.length) return false;
+      const salt = Uint8Array.from(saltHex.match(/../g), byte => parseInt(byte, 16));
+      return await this.derivePasswordHash(password, salt) === hash;
     }
 
     /**
@@ -401,7 +445,7 @@
           };
         }
 
-        if (inputHash === expectedHash) {
+        if (await this.matchesPasswordHash(inputTrimmed, expectedHash, inputHash)) {
           this.clearLockout();
           this.setActiveTeacher(teacherProfile.teacherId, teacherProfile.name);
           this.currentVerifiedTeacher = teacherProfile;
@@ -440,7 +484,7 @@
         const isSelfDefault = (!activeProfile.passwordHash || activeProfile.passwordHash === DEFAULT_PASSWORD_HASH);
         
         if (activeProfile && activeProfile.passwordHash && !isSelfDefault) {
-          if (inputHash === activeProfile.passwordHash) {
+          if (await this.matchesPasswordHash(inputTrimmed, activeProfile.passwordHash, inputHash)) {
             this.clearLockout();
             this.currentVerifiedTeacher = activeProfile;
             // 若在班級中且該班尚未綁定老師，自動綁定為該老師
@@ -476,7 +520,8 @@
               const allTeachers = snap.val();
               for (const tid in allTeachers) {
                 const t = allTeachers[tid];
-                if (t && t.passwordHash === inputHash) {
+                if (tid !== activeId && t?.passwordHash && t.passwordHash !== DEFAULT_PASSWORD_HASH &&
+                    await this.matchesPasswordHash(inputTrimmed, t.passwordHash, inputHash)) {
                   this.clearLockout();
                   this.setActiveTeacher(t.teacherId, t.name);
                   this.currentVerifiedTeacher = t;
@@ -666,11 +711,9 @@
       if (!answer || !newPassword) {
         throw new Error('請輸入安全問題的答案與新密碼！');
       }
-      if (newPassword.length < 4) {
-        throw new Error('新密碼長度至少需 4 碼！');
-      }
-      if (newPassword.trim() === '1234' && this.isDefaultPasswordExpired(profile)) {
-        throw new Error('初始預設密碼 1234 已超過 7 天（一週）寬限期，請自訂一組專屬新密碼！');
+      const trimmedPassword = newPassword.trim();
+      if (this.isPasswordTooShort(trimmedPassword)) {
+        throw new Error(`新密碼長度至少需 ${MIN_PASSWORD_LENGTH} 碼！`);
       }
 
       const profile = await this.getTeacherProfile(teacherId);
@@ -685,7 +728,7 @@
         throw new Error('安全問題答案不正確，請重新確認！');
       }
 
-      const newPasswordHash = await this.sha256(newPassword.trim());
+      const newPasswordHash = await this.createPasswordHash(trimmedPassword);
       await this.saveTeacherProfile(teacherId, {
         passwordHash: newPasswordHash
       });
@@ -1013,8 +1056,8 @@
         this.showRecoveryError('請填寫安全問題的正確答案！', answerInput);
         return;
       }
-      if (!p1 || p1.length < 4) {
-        this.showRecoveryError('新密碼長度至少需 4 碼！', newPwd1);
+      if (this.isPasswordTooShort(p1)) {
+        this.showRecoveryError(`新密碼長度至少需 ${MIN_PASSWORD_LENGTH} 碼！`, newPwd1);
         return;
       }
       if (p1 !== p2) {
@@ -1050,7 +1093,7 @@
     }
 
     /**
-     * 渲染後台「F. 教師身分與密碼安全設定」管理面板
+     * 渲染後台「教師身分與密碼安全設定」管理面板
      */
     async renderSecurityPanel() {
       const teacherId = this.getActiveTeacherId();
@@ -1174,19 +1217,14 @@
 
       // 檢查密碼更新
       if (p1 || p2) {
-        if (p1.length < 4) {
-          window.app.showNotification('密碼過短', '新密碼長度至少需 4 碼！');
+        if (this.isPasswordTooShort(p1)) {
+          window.app.showNotification('密碼過短', `新密碼長度至少需 ${MIN_PASSWORD_LENGTH} 碼！`);
           return;
         }
         if (p1 !== p2) {
           window.app.showNotification('密碼不相符', '兩次輸入的新密碼不一致，請重新檢查！');
           return;
         }
-        if (p1 === '1234' && this.isDefaultPasswordExpired()) {
-          window.app.showNotification('密碼不合規', '初始預設密碼 1234 已超過一週寬限期，不可再設定為預設密碼！請使用其他自訂專屬密碼。');
-          return;
-        }
-        updateData.passwordHash = await this.sha256(p1);
       }
 
       // 檢查安全提問更新
@@ -1195,6 +1233,7 @@
       }
 
       try {
+        if (p1) updateData.passwordHash = await this.createPasswordHash(p1);
         await this.saveTeacherProfile(teacherId, updateData);
         window.app.showNotification('💾 儲存成功', '教師身分與管理員密碼設定已成功同步至雲端！');
         
