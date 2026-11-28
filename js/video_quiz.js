@@ -1468,12 +1468,30 @@
           .map(async path => (await root.child(path).once('value')).val())
       );
       const knownQuizId = settings?.mode === 'self' ? settings.assignedQuizId : session?.quizId;
-      if (knownQuizId && knownQuizId !== quizId && knownQuizId !== quiz.id) return {};
       const questionIds = new Set((quiz.allQuestions || quiz.questions || []).map(question => question.id));
-      return Object.fromEntries(Object.entries(answers || {}).filter(([, student]) => {
-        const ids = Object.keys(student?.answers || {});
-        return ids.length > 0 && ids.every(id => questionIds.has(id));
-      }));
+      const legacyMatchesQuiz = knownQuizId === quizId || knownQuizId === quiz.id;
+      if (!legacyMatchesQuiz) {
+        // 舊版共用作答路徑有時混存不同測驗。保留能明確歸屬的題目。
+        const selectedQuizIds = new Set(quiz.allSubQuizIds || [quiz.id]);
+        for (const otherQuiz of this.quizzes) {
+          if (selectedQuizIds.has(otherQuiz.id)) continue;
+          for (const question of otherQuiz.questions || []) questionIds.delete(question.id);
+        }
+        if (knownQuizId) {
+          const lookupId = knownQuizId.startsWith('custom_') ? 'custom:' + knownQuizId.slice(7) : knownQuizId;
+          const otherQuiz = this.resolveQuizForLaunch(lookupId)?.quiz;
+          for (const question of otherQuiz?.allQuestions || otherQuiz?.questions || []) {
+            questionIds.delete(question.id);
+          }
+        }
+      }
+      const matched = [];
+      for (const [uid, student] of Object.entries(answers || {})) {
+        const entries = Object.entries(student?.answers || {}).filter(([id, answer]) =>
+          questionIds.has(id) && answer && typeof answer === 'object');
+        if (entries.length) matched.push([uid, { ...student, answers: Object.fromEntries(entries) }]);
+      }
+      return Object.fromEntries(matched);
     }
 
     async requestQuizLaunch(quizId, mode) {
@@ -1491,10 +1509,12 @@
         const key = encodeURIComponent(quizId).replace(/\./g, '%2E');
         const lastRef = root.child(`videoQuizLastRound/${key}`);
         const last = (await lastRef.once('value')).val();
-        const legacy = last?.id ? {} : await this.findLegacyQuizAnswers(quizId, quiz);
-        const hasAnswers = last?.id
-          ? (await root.child(`videoQuizRuns/${key}/${last.id}`).orderByKey().limitToFirst(1).once('value')).exists()
-          : Object.keys(legacy).length > 0;
+        const lastAnswersQuery = last?.id
+          ? root.child(`videoQuizRuns/${key}/${last.id}`).orderByKey().limitToFirst(1)
+          : null;
+        const hasRoundAnswers = lastAnswersQuery ? (await lastAnswersQuery.once('value')).exists() : false;
+        const legacy = !hasRoundAnswers && !last?.legacyClosed ? await this.findLegacyQuizAnswers(quizId, quiz) : {};
+        const hasAnswers = hasRoundAnswers || Object.keys(legacy).length > 0;
         const choice = await this.chooseQuizLaunch(quiz.title, mode, hasAnswers);
         if (!['new', 'resume'].includes(choice) || !window.app?.isAdmin || window.currentClassCode !== classCode) return;
         const latest = (await lastRef.once('value')).val();
@@ -1503,10 +1523,16 @@
           window.app.showNotification('測驗已更新', '另一個視窗已發起這份測驗，請再選一次。');
           return;
         }
+        if (choice === 'resume' && !hasRoundAnswers && lastAnswersQuery &&
+            (await lastAnswersQuery.once('value')).exists()) {
+          window.app.showNotification('剛收到新作答', '請再選一次「接續上次作答」，以載入最新結果。');
+          return;
+        }
+        if (!window.app?.isAdmin || window.currentClassCode !== classCode) return;
         const now = Date.now();
         const sessionId = root.push().key;
         const round = {
-          key, id: choice === 'resume' && last?.id ? last.id : sessionId, resume: choice === 'resume'
+          key, id: choice === 'resume' && hasRoundAnswers ? last.id : sessionId, resume: choice === 'resume'
         };
         const settings = { mode, assignedQuizId: mode === 'self' ? quizId : null, assignedAt: now, updatedAt: now };
         if (mode === 'self') settings.answerRound = round;
@@ -1522,10 +1548,10 @@
         } : { status: 'idle', updatedAt: now };
         const updates = {
           videoQuizSettings: settings, videoQuizSession: session,
-          [`videoQuizLastRound/${key}`]: { id: round.id }
+          [`videoQuizLastRound/${key}`]: { id: round.id, legacyClosed: true }
         };
         if (choice === 'new' && last?.id) updates[`videoQuizRuns/${key}/${last.id}`] = null;
-        if (choice === 'resume' && !last?.id) {
+        if (choice === 'resume' && !hasRoundAnswers) {
           for (const [uid, student] of Object.entries(legacy)) {
             updates[`videoQuizRuns/${key}/${round.id}/${uid}`] = student;
           }
