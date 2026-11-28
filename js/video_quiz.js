@@ -2835,9 +2835,10 @@
       if (!this.answersRef) throw new Error('目前沒有可作答的場次');
       const userId = this.getAnswerUserId();
       if (!userId) throw new Error('尚未登入');
-      const userName = window.boardStorage.local.getItem('user_nickname') || '同學_' + userId.slice(-4);
+      const studentUid = window.app?.getUserId?.() || userId;
+      const userName = window.app?.getCurrentUserName?.() || window.boardStorage.local.getItem('user_nickname') || '同學_' + userId.slice(-4);
       await this.answersRef.child(userId).update({
-        userId, userName, updatedAt: Date.now(), [`answers/${questionId}`]: answerObj
+        userId, studentUid, userName, updatedAt: Date.now(), [`answers/${questionId}`]: answerObj
       });
     }
 
