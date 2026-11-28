@@ -12684,19 +12684,19 @@ class App {
         if (bgAudio) bgAudio.pause();
         if (!this.ytPlayersReady) this.loadYoutubeAPI('canon');
         if (this.ytPlayersReady && this.playerCanon) {
-          if (typeof this.playerCanon.loadVideoById === 'function' && this.currentVideoId) {
-            this.playerCanon.loadVideoById({
-              videoId: this.currentVideoId,
-              startSeconds: this.currentVideoStart || 0
-            });
-          }
           if (!this.timerMuted && typeof this.playerCanon.unMute === 'function') {
             this.playerCanon.unMute();
           }
           if (typeof this.playerCanon.setVolume === 'function') {
             this.playerCanon.setVolume(100);
           }
-          if (typeof this.playerCanon.playVideo === 'function') {
+          // loadVideoById 本身就會播放，避免緊接著再次送出播放命令。
+          if (typeof this.playerCanon.loadVideoById === 'function' && this.currentVideoId) {
+            this.playerCanon.loadVideoById({
+              videoId: this.currentVideoId,
+              startSeconds: this.currentVideoStart || 0
+            });
+          } else if (typeof this.playerCanon.playVideo === 'function') {
             this.playerCanon.playVideo();
           }
         }
