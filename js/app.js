@@ -205,7 +205,7 @@ class App {
                              (this.timerState.endTime > Date.now()) &&
                              !this.isTimerExpired(this.timerState);
       if (isTimerRunning) {
-        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
+        if (!this.isHtml5Audio && this.currentAudioPlaying === 'canon' && this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
           this.playerCanon.playVideo();
           
           document.removeEventListener('click', resumeAudioOnGesture);
@@ -12458,7 +12458,7 @@ class App {
             },
             onStateChange: (event) => {
               // Loop video: when ended, seek to start time and play
-              if (event.data === YT.PlayerState.ENDED) {
+              if (event.data === YT.PlayerState.ENDED && this.isAdmin && this.currentAudioPlaying === 'canon' && !this.isHtml5Audio && this.timerState?.isActive && !this.timerState.isPaused && !this.isTimerExpired(this.timerState)) {
                 if (this.playerCanon && typeof this.playerCanon.seekTo === 'function') {
                   this.playerCanon.seekTo(this.currentVideoStart || 0, true);
                   this.playerCanon.playVideo();
@@ -12571,6 +12571,8 @@ class App {
 
     if (isAudioFile) {
       this.isHtml5Audio = true;
+      this.pendingMusicUrl = null;
+      if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') this.playerCanon.pauseVideo();
       if (bgAudio) {
         if (!bgAudio.src.endsWith(url)) {
           bgAudio.src = url;
@@ -12657,6 +12659,7 @@ class App {
         const musicSrc = this.currentMusicUrl || 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1';
         // 優先使用原生 HTML5 音訊引擎 (100% 必定響起)
         if (this.isHtml5Audio || musicSrc.includes('.mp3') || musicSrc.startsWith('audio/') || !musicSrc.includes('youtu')) {
+          if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') this.playerCanon.pauseVideo();
           if (bgAudio) {
             if (!bgAudio.src.endsWith(musicSrc)) {
               bgAudio.src = musicSrc;
@@ -12675,6 +12678,7 @@ class App {
         }
 
         // 首次播放時才建立卡農或自訂音樂播放器。
+        if (bgAudio) bgAudio.pause();
         if (!this.ytPlayersReady) this.loadYoutubeAPI('canon');
         if (this.ytPlayersReady && this.playerCanon) {
           if (typeof this.playerCanon.loadVideoById === 'function' && this.currentVideoId) {
