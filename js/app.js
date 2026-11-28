@@ -7166,13 +7166,9 @@ class App {
     this.showConfirmModal(
       '⏹️',
       '確定停止影片出題測驗？',
-      '這會立即結束全班同步播放與測驗。',
-      () => {
-        if (window.videoQuiz && typeof window.videoQuiz.stopSyncQuiz === 'function') {
-          window.videoQuiz.stopSyncQuiz();
-        } else {
-          db.ref('quiz/videoQuizSession').set(null);
-        }
+      '這會立即結束影片測驗，並停止學生端的自主學習影片。',
+      async () => {
+        if (!this.isAdmin || !(await window.videoQuiz?.stopSyncQuiz())) return;
         this.showNotification('已停止', '影片出題測驗已停止！');
         this.updateAdminActiveActivitiesUI();
       }
